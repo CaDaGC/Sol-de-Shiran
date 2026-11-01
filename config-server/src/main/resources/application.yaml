@@ -1,0 +1,13 @@
+server:
+  address: 127.0.0.1
+  port: 8888
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config
