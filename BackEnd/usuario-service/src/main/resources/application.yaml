@@ -1,0 +1,27 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: usuario-service
+
+  config:
+    import: "optional:configserver:http://localhost:8089/"
+
+  datasource:
+      url: jdbc:mysql://localhost:3307/usuario_db
+      username: root
+      password: mysql123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8762/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}

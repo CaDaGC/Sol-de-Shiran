@@ -1,5 +1,26 @@
+server:
+  port: 8061
+
 spring:
   application:
     name: api-gateway
   config:
-    import: configserver:http://localhost:8888
+    import: "optional:configserver:http://localhost:8089/"
+  cloud:
+    config:
+      override-none: false
+      allow-override: true
+      override-system-properties: false
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
+      defaultZone: http://localhost:8762/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret: ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456

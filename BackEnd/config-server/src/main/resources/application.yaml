@@ -1,13 +1,18 @@
 server:
-  address: 127.0.0.1
-  port: 8888
+  port: 8089
+
 spring:
   application:
     name: config-server
+
   profiles:
     active: native
-  cloud:
-    config:
-      server:
-        native:
-          search-locations: classpath:/config
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://service-registry:8762/eureka/
+
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
