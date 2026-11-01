@@ -3,7 +3,7 @@
 Referencia: Proyecto-microservicio-1. Paquete base: pe.upeu.edu.
 
 ```text
-Sol-de-Shiran/
+Sol-de-Shiran/BackEnd/
   config-server/
     src/main/java/pe/upeu/edu/configserver/
     src/main/resources/
@@ -49,3 +49,5 @@ las instancias con Eureka. Gateway enruta /api/** a security-microservice median
 el registro Eureka. Seguridad conserva registro, roles, sesiones y recuperación.
 El acceso a MySQL usa JDBC, con entidades, repositorios, servicios, controladores
 y DTO separados. No hay frontend ni microservicios de negocio en esta entrega.
+
+Abre BackEnd/pom.xml como proyecto independiente en IntelliJ para cargar las configuraciones de BackEnd/.run.
