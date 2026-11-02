@@ -43,6 +43,11 @@ spring:
           predicates:
             - Path=/api/v1/cabanas,/api/v1/cabanas/**
 
+        - id: ms-reservas
+          uri: lb://MS-RESERVAS
+          predicates:
+            - Path=/api/v1/reservas,/api/v1/reservas/**
+
 management:
   tracing:
     sampling:

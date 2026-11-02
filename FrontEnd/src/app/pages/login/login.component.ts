@@ -6,8 +6,12 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../services/auth';
+import {
+  ActivatedRoute,
+  Router,
+  RouterLink
+} from '@angular/router';
+import { AuthResponse, AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-login',
@@ -20,12 +24,13 @@ export class LoginComponent {
   readonly errorMessage = signal('');
   readonly enviando = signal(false);
 
-  loginForm: FormGroup;
+  readonly loginForm: FormGroup;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -43,14 +48,21 @@ export class LoginComponent {
     this.enviando.set(true);
 
     this.authService.login(this.loginForm.getRawValue()).subscribe({
-      next: (response) => {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('usuario', JSON.stringify(response));
-
+      next: (response: AuthResponse) => {
+        this.authService.guardarSesion(response);
         this.enviando.set(false);
 
-        // Aún no hay dashboard; después del login regresamos al catálogo.
-        void this.router.navigateByUrl('/catalogo');
+        const returnUrl =
+          this.route.snapshot.queryParamMap.get('returnUrl');
+
+        const destino =
+          returnUrl &&
+          returnUrl.startsWith('/') &&
+          !returnUrl.startsWith('//')
+            ? returnUrl
+            : '/catalogo';
+
+        void this.router.navigateByUrl(destino);
       },
       error: (error) => {
         console.error('Error al iniciar sesión.', error);

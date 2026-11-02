@@ -1,5 +1,9 @@
 <aside class="sidebar">
-  <a class="brand" routerLink="/catalogo" aria-label="Ir al catálogo de Sol de Shirán">
+  <a
+    class="brand"
+    routerLink="/catalogo"
+    aria-label="Ir al catálogo de Sol de Shirán"
+  >
     <span class="brand-mark">S</span>
     <span class="brand-text">
       <strong>Sol de Shirán</strong>
@@ -19,7 +23,7 @@
       <span>Catálogo</span>
     </a>
 
-    <a routerLink="/login" routerLinkActive="active">
+    <a *ngIf="!perfil()" routerLink="/login" routerLinkActive="active">
       <span class="nav-icon" aria-hidden="true">↗</span>
       <span>Iniciar sesión</span>
     </a>
@@ -29,4 +33,26 @@
     <span class="note-dot" aria-hidden="true"></span>
     <span>Descanso y naturaleza</span>
   </div>
+
+  <section class="account-panel" *ngIf="perfil() as usuario">
+    <div class="account-actions">
+      <span class="account-heading">Cuenta</span>
+      <button type="button" class="logout-button" (click)="cerrarSesion()">
+        <span aria-hidden="true">↪</span>
+        Cerrar sesión
+      </button>
+    </div>
+
+    <div class="account-profile">
+      <div class="avatar" aria-hidden="true">
+        {{ usuario.nombre.charAt(0).toUpperCase() }}
+      </div>
+
+      <div class="account-data">
+        <span class="account-role">{{ usuario.rol }}</span>
+        <strong class="account-name">{{ usuario.nombre }}</strong>
+        <span class="account-email">{{ usuario.email }}</span>
+      </div>
+    </div>
+  </section>
 </aside>

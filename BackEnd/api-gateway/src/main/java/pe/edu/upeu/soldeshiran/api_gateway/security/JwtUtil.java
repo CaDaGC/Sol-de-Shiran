@@ -26,8 +26,8 @@ public class JwtUtil {
         try {
             getClaims(token);
             return true;
-        } catch (Exception e) {
-            System.out.println("TOKEN INVALIDO: " + e.getMessage());
+        } catch (Exception exception) {
+            System.out.println("TOKEN INVALIDO: " + exception.getMessage());
             return false;
         }
     }
@@ -36,4 +36,13 @@ public class JwtUtil {
         return getClaims(token).get("rol", String.class);
     }
 
+    public Long getUserId(String token) {
+        Object value = getClaims(token).get("userId");
+
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+
+        throw new IllegalArgumentException("El token no contiene el claim userId.");
+    }
 }
