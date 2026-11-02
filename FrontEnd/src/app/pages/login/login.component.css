@@ -1,0 +1,105 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f4f6f8;
+  font-family: Arial, sans-serif;
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  width: 380px;
+  border-top: 5px solid #1b4d3e; /* Verde corporativo institucional */
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logo-badge {
+  display: inline-block;
+  background-color: #1b4d3e;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.login-header h2 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 22px;
+}
+
+.login-header p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 13px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #34495e;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #1b4d3e;
+}
+
+.error-msg {
+  background-color: #fadbd8;
+  color: #c0392b;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background-color: #d4a373; /* Tono cálido / madera del complejo */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #bc8a5f;
+}
+
+.btn-submit:disabled {
+  background-color: #d5d8dc;
+  cursor: not-allowed;
+}
