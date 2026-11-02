@@ -1,19 +1,22 @@
 <div class="login-container">
   <div class="login-card">
     <div class="login-header">
+      <a class="back-to-catalog" routerLink="/catalogo">← Volver al catálogo</a>
+
       <div class="logo-badge">SOL DE SHIRÁN</div>
-      <h2>Iniciar Sesión</h2>
+      <h2>Iniciar sesión</h2>
       <p>Complejo Turístico</p>
     </div>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
-        <label for="email">Correo Electrónico</label>
+        <label for="email">Correo electrónico</label>
         <input
           type="email"
           id="email"
           formControlName="email"
           placeholder="admin@soldeshiran.com"
+          autocomplete="username"
         />
       </div>
 
@@ -24,15 +27,20 @@
           id="password"
           formControlName="password"
           placeholder="••••••••"
+          autocomplete="current-password"
         />
       </div>
 
-      <div *ngIf="errorMessage" class="error-msg">
-        {{ errorMessage }}
+      <div *ngIf="errorMessage()" class="error-msg" role="alert">
+        {{ errorMessage() }}
       </div>
 
-      <button type="submit" [disabled]="loginForm.invalid" class="btn-submit">
-        Ingresar
+      <button
+        type="submit"
+        [disabled]="loginForm.invalid || enviando()"
+        class="btn-submit"
+      >
+        {{ enviando() ? 'Ingresando...' : 'Ingresar' }}
       </button>
     </form>
   </div>

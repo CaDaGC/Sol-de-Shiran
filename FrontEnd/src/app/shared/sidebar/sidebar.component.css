@@ -1,0 +1,138 @@
+:host {
+  display: block;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  display: flex;
+  width: 250px;
+  flex-direction: column;
+  padding: 28px 18px 20px;
+  color: #edf1e9;
+  background: #203d2e;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 30px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 12px;
+  color: #203d2e;
+  background: #d9b77a;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.brand-text strong,
+.brand-text small {
+  display: block;
+}
+
+.brand-text strong {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+}
+
+.brand-text small {
+  margin-top: 4px;
+  color: #c5d0c5;
+  font-size: 0.75rem;
+}
+
+.nav-heading {
+  margin: 12px 10px;
+  color: #afbeaf;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.side-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.side-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: 9px;
+  color: #e4e9e2;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.side-nav a:hover,
+.side-nav a.active {
+  color: #fff;
+  background: #315b3d;
+}
+
+.nav-icon {
+  width: 22px;
+  color: #d9b77a;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.sidebar-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding: 14px 10px 4px;
+  color: #c5d0c5;
+  font-size: 0.78rem;
+}
+
+.note-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9b77a;
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    position: relative;
+    inset: auto;
+    width: auto;
+    padding: 13px 16px;
+  }
+
+  .brand {
+    padding: 0 4px 12px;
+  }
+
+  .nav-heading,
+  .sidebar-note {
+    display: none;
+  }
+
+  .side-nav {
+    display: flex;
+    gap: 8px;
+  }
+
+  .side-nav a {
+    flex: 1;
+    justify-content: center;
+    padding: 10px;
+  }
+}

@@ -103,3 +103,14 @@
   background-color: #d5d8dc;
   cursor: not-allowed;
 }
+.back-to-catalog {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: #315b3d;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.back-to-catalog:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,32 @@
+<aside class="sidebar">
+  <a class="brand" routerLink="/catalogo" aria-label="Ir al catálogo de Sol de Shirán">
+    <span class="brand-mark">S</span>
+    <span class="brand-text">
+      <strong>Sol de Shirán</strong>
+      <small>Centro campestre</small>
+    </span>
+  </a>
+
+  <p class="nav-heading">NAVEGACIÓN</p>
+
+  <nav class="side-nav" aria-label="Navegación principal">
+    <a
+      routerLink="/catalogo"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      <span class="nav-icon" aria-hidden="true">⌂</span>
+      <span>Catálogo</span>
+    </a>
+
+    <a routerLink="/login" routerLinkActive="active">
+      <span class="nav-icon" aria-hidden="true">↗</span>
+      <span>Iniciar sesión</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-note">
+    <span class="note-dot" aria-hidden="true"></span>
+    <span>Descanso y naturaleza</span>
+  </div>
+</aside>

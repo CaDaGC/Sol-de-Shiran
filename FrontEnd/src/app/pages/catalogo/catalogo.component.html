@@ -1,0 +1,90 @@
+<main class="catalog-page">
+  <section class="hero">
+    <div class="hero-content">
+      <p class="eyebrow">DESCANSO · NATURALEZA · BIENESTAR</p>
+      <h1>Encuentra tu espacio para descansar</h1>
+      <p class="hero-description">
+        Conoce nuestras cabañas, sus características y tarifas por noche.
+      </p>
+    </div>
+  </section>
+
+  <section class="catalog-section" aria-labelledby="catalog-title">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">ALOJAMIENTO</p>
+        <h2 id="catalog-title">Nuestras cabañas</h2>
+      </div>
+
+      <p class="cabin-count" *ngIf="!cargando() && !mensajeError()">
+        {{ cabanas().length }}
+        {{ cabanas().length === 1 ? 'cabaña disponible' : 'cabañas disponibles' }}
+      </p>
+    </div>
+
+    <div class="status-message" *ngIf="cargando()" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p>Cargando cabañas...</p>
+    </div>
+
+    <div class="error-message" *ngIf="!cargando() && mensajeError()" role="alert">
+      <p>{{ mensajeError() }}</p>
+      <button type="button" class="retry-button" (click)="cargarCabanas()">
+        Volver a intentar
+      </button>
+    </div>
+
+    <div
+      class="empty-message"
+      *ngIf="!cargando() && !mensajeError() && cabanas().length === 0"
+      role="status"
+    >
+      <div class="empty-icon" aria-hidden="true">⌂</div>
+      <h3>Pronto tendremos cabañas para ti</h3>
+      <p>En este momento no hay cabañas activas en el catálogo.</p>
+    </div>
+
+    <div class="cabin-grid" *ngIf="!cargando() && !mensajeError() && cabanas().length > 0">
+      <article class="cabin-card" *ngFor="let cabana of cabanas()">
+        <div class="cabin-image-wrapper">
+          <img
+            class="cabin-image"
+            [src]="cabana.imagenPrincipal"
+            [alt]="'Imagen de ' + cabana.nombre"
+            loading="lazy"
+            (error)="mostrarImagenAlternativa($event)"
+          />
+          <span class="image-label">Sol de Shirán</span>
+        </div>
+
+        <div class="cabin-content">
+          <div class="cabin-title-row">
+            <h3>{{ cabana.nombre }}</h3>
+            <span class="capacity">Hasta {{ cabana.aforoMaximo }} huéspedes</span>
+          </div>
+
+          <p class="cabin-description">{{ cabana.descripcion }}</p>
+
+          <div class="cabin-details">
+            <span>
+              {{ cabana.numHabitaciones }}
+              {{ cabana.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
+            </span>
+            <span class="detail-separator" aria-hidden="true">•</span>
+            <span>
+              {{ cabana.numBanos }}
+              {{ cabana.numBanos === 1 ? 'baño' : 'baños' }}
+            </span>
+          </div>
+
+          <div class="cabin-footer">
+            <div class="price">
+              <strong>{{ formatearTarifa(cabana.tarifaNoche) }}</strong>
+              <span>por noche</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>

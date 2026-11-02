@@ -1,0 +1,19 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.business-layout {
+  min-height: 100vh;
+}
+
+.business-content {
+  min-height: 100vh;
+  margin-left: 250px;
+}
+
+@media (max-width: 700px) {
+  .business-content {
+    margin-left: 0;
+  }
+}
