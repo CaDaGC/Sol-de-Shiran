@@ -295,3 +295,27 @@
     gap: 18px;
   }
 }
+.cabin-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cabin-card-link:focus-visible {
+  outline: 3px solid #c87932;
+  outline-offset: 4px;
+  border-radius: 15px;
+}
+
+.cabin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.view-detail {
+  color: #315b3d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}

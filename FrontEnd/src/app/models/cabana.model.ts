@@ -8,3 +8,7 @@ export interface Cabana {
   tarifaNoche: number;
   imagenPrincipal: string;
 }
+
+export interface CabanaDetalle extends Cabana {
+  imagenesSecundarias: string[];
+}

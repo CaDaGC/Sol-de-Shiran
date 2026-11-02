@@ -2,13 +2,12 @@ package pe.edu.upeu.soldeshiran.catalogo_service.controller;
 
 import lombok.RequiredArgsConstructor;
 import pe.edu.upeu.soldeshiran.catalogo_service.dto.CabanaCatalogoResponse;
+import pe.edu.upeu.soldeshiran.catalogo_service.dto.CabanaDetalleResponse;
 import pe.edu.upeu.soldeshiran.catalogo_service.service.CabanaService;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,8 +21,17 @@ public class CabanaController {
     @GetMapping
     public ResponseEntity<List<CabanaCatalogoResponse>> listarCabanas() {
         return ResponseEntity.ok()
-                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=60")
+                .cacheControl(CacheControl.noCache())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(cabanaService.listarCabanasActivas());
+    }
+
+    @GetMapping("/{idCabana}")
+    public ResponseEntity<CabanaDetalleResponse> obtenerDetalle(
+            @PathVariable Long idCabana
+    ) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(cabanaService.obtenerDetalleCabanaActiva(idCabana));
     }
 }

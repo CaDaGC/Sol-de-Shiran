@@ -1,0 +1,124 @@
+<main class="detail-page">
+  <a class="back-button" routerLink="/catalogo">
+    <span aria-hidden="true">←</span>
+    Volver
+  </a>
+
+  <div class="status-message" *ngIf="cargando()" role="status">
+    <span class="loader" aria-hidden="true"></span>
+    <p>Cargando detalle de la cabaña...</p>
+  </div>
+
+  <section class="error-message" *ngIf="!cargando() && mensajeError()" role="alert">
+    <h1>No pudimos abrir esta cabaña</h1>
+    <p>{{ mensajeError() }}</p>
+    <a class="back-button" routerLink="/catalogo">Volver al catálogo</a>
+  </section>
+
+  <section
+    class="detail-grid"
+    *ngIf="!cargando() && !mensajeError() && cabana() as detalle"
+  >
+    <div class="gallery">
+      <div class="main-image-wrapper">
+        <img
+          class="main-image"
+          [src]="imagenActual()"
+          [alt]="'Imagen de ' + detalle.nombre"
+          (error)="mostrarImagenAlternativa($event)"
+        />
+
+        <button
+          *ngIf="imagenes().length > 1"
+          class="gallery-arrow previous"
+          type="button"
+          aria-label="Imagen anterior"
+          (click)="imagenAnterior()"
+        >
+          ‹
+        </button>
+
+        <button
+          *ngIf="imagenes().length > 1"
+          class="gallery-arrow next"
+          type="button"
+          aria-label="Imagen siguiente"
+          (click)="imagenSiguiente()"
+        >
+          ›
+        </button>
+
+        <span class="image-counter" *ngIf="imagenes().length > 1">
+          {{ indiceImagen() + 1 }} / {{ imagenes().length }}
+        </span>
+      </div>
+
+      <div class="thumbnail-list" *ngIf="imagenes().length > 1">
+        <button
+          class="thumbnail-button"
+          *ngFor="let imagen of imagenes(); let i = index"
+          type="button"
+          [class.selected]="indiceImagen() === i"
+          [attr.aria-label]="'Mostrar imagen ' + (i + 1)"
+          (click)="seleccionarImagen(i)"
+        >
+          <img
+            [src]="imagen"
+            [alt]="detalle.nombre + ', imagen ' + (i + 1)"
+            (error)="mostrarImagenAlternativa($event)"
+          />
+        </button>
+      </div>
+    </div>
+
+    <section class="detail-info">
+      <p class="eyebrow">CENTRO CAMPESTRE SOL DE SHIRÁN</p>
+      <h1>{{ detalle.nombre }}</h1>
+
+      <p class="description">{{ detalle.descripcion }}</p>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon" aria-hidden="true">♙</span>
+          <span>
+            <strong>Hasta {{ detalle.aforoMaximo }}</strong>
+            huéspedes
+          </span>
+        </div>
+
+        <div class="feature">
+          <span class="feature-icon" aria-hidden="true">⌂</span>
+          <span>
+            <strong>{{ detalle.numHabitaciones }}</strong>
+            {{ detalle.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
+          </span>
+        </div>
+
+        <div class="feature">
+          <span class="feature-icon" aria-hidden="true">◌</span>
+          <span>
+            <strong>{{ detalle.numBanos }}</strong>
+            {{ detalle.numBanos === 1 ? 'baño' : 'baños' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="booking-panel">
+        <p class="price-label">Tarifa por noche</p>
+        <p class="price">{{ formatearTarifa(detalle.tarifaNoche) }}</p>
+
+        <button
+          class="reserve-button"
+          type="button"
+          disabled
+          title="La reserva estará disponible en una próxima HU"
+        >
+          Reservar ahora
+          <span aria-hidden="true">▣</span>
+        </button>
+
+        <p class="reserve-note">La reserva estará disponible próximamente.</p>
+      </div>
+    </section>
+  </section>
+</main>

@@ -45,46 +45,54 @@
     </div>
 
     <div class="cabin-grid" *ngIf="!cargando() && !mensajeError() && cabanas().length > 0">
-      <article class="cabin-card" *ngFor="let cabana of cabanas()">
-        <div class="cabin-image-wrapper">
-          <img
-            class="cabin-image"
-            [src]="cabana.imagenPrincipal"
-            [alt]="'Imagen de ' + cabana.nombre"
-            loading="lazy"
-            (error)="mostrarImagenAlternativa($event)"
-          />
-          <span class="image-label">Sol de Shirán</span>
-        </div>
-
-        <div class="cabin-content">
-          <div class="cabin-title-row">
-            <h3>{{ cabana.nombre }}</h3>
-            <span class="capacity">Hasta {{ cabana.aforoMaximo }} huéspedes</span>
+      <a
+        class="cabin-card-link"
+        *ngFor="let cabana of cabanas()"
+        [routerLink]="['/catalogo', cabana.idCabana]"
+        [attr.aria-label]="'Ver detalle de ' + cabana.nombre"
+      >
+        <article class="cabin-card">
+          <div class="cabin-image-wrapper">
+            <img
+              class="cabin-image"
+              [src]="cabana.imagenPrincipal"
+              [alt]="'Imagen de ' + cabana.nombre"
+              loading="lazy"
+              (error)="mostrarImagenAlternativa($event)"
+            />
+            <span class="image-label">Sol de Shirán</span>
           </div>
 
-          <p class="cabin-description">{{ cabana.descripcion }}</p>
+          <div class="cabin-content">
+            <div class="cabin-title-row">
+              <h3>{{ cabana.nombre }}</h3>
+              <span class="capacity">Hasta {{ cabana.aforoMaximo }} huéspedes</span>
+            </div>
 
-          <div class="cabin-details">
-            <span>
-              {{ cabana.numHabitaciones }}
-              {{ cabana.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
-            </span>
-            <span class="detail-separator" aria-hidden="true">•</span>
-            <span>
-              {{ cabana.numBanos }}
-              {{ cabana.numBanos === 1 ? 'baño' : 'baños' }}
-            </span>
-          </div>
+            <p class="cabin-description">{{ cabana.descripcion }}</p>
 
-          <div class="cabin-footer">
-            <div class="price">
-              <strong>{{ formatearTarifa(cabana.tarifaNoche) }}</strong>
-              <span>por noche</span>
+            <div class="cabin-details">
+              <span>
+                {{ cabana.numHabitaciones }}
+                {{ cabana.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
+              </span>
+              <span class="detail-separator" aria-hidden="true">•</span>
+              <span>
+                {{ cabana.numBanos }}
+                {{ cabana.numBanos === 1 ? 'baño' : 'baños' }}
+              </span>
+            </div>
+
+            <div class="cabin-footer">
+              <div class="price">
+                <strong>{{ formatearTarifa(cabana.tarifaNoche) }}</strong>
+                <span>por noche</span>
+              </div>
+              <span class="view-detail">Ver detalle →</span>
             </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </a>
     </div>
   </section>
 </main>
