@@ -13,6 +13,13 @@ export interface CotizacionReservaResponse {
   mensaje: string;
 }
 
+export interface FechasOcupadasResponse {
+  idCabana: number;
+  desde: string;
+  hasta: string;
+  fechasOcupadas: string[];
+}
+
 export interface CrearReservaRequest {
   idCabana: number;
   fechaIngreso: string;

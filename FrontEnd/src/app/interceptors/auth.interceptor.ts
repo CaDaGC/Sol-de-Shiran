@@ -1,18 +1,30 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, PLATFORM_ID } from '@angular/core';
-import { HttpInterceptorFn } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn
+} from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const platformId = inject(PLATFORM_ID);
+  const authService = inject(AuthService);
 
-  if (!isPlatformBrowser(platformId)) {
-    return next(req);
-  }
+  const esLogin =
+    req.method === 'POST' &&
+    req.url.includes('/api/v1/auth/login');
 
-  const esCatalogoPublico =
-    req.method === 'GET' && req.url.includes('/api/v1/cabanas');
+  const esConsultaPublica =
+    req.method === 'GET' &&
+    (
+      req.url.includes('/api/v1/cabanas') ||
+      req.url.includes('/api/v1/reservas/cabanas/') &&
+      (
+        req.url.includes('/disponibilidad') ||
+        req.url.includes('/fechas-ocupadas')
+      )
+    );
 
-  if (esCatalogoPublico) {
+  if (esLogin || esConsultaPublica || !authService.estaAutenticado()) {
     return next(req);
   }
 
@@ -22,11 +34,22 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  const requestConToken = req.clone({
+  const requestAutenticada = req.clone({
     setHeaders: {
       Authorization: `Bearer ${token}`
     }
   });
 
-  return next(requestConToken);
+  return next(requestAutenticada).pipe(
+    catchError((error: unknown) => {
+      if (
+        error instanceof HttpErrorResponse &&
+        error.status === 401
+      ) {
+        authService.cerrarSesion();
+      }
+
+      return throwError(() => error);
+    })
+  );
 };

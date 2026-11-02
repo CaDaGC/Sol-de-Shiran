@@ -195,11 +195,6 @@
   background: #ad6427;
 }
 
-.reserve-button:disabled {
-  background: #6f7e72;
-  cursor: not-allowed;
-}
-
 .status-message,
 .error-message {
   display: flex;
@@ -225,7 +220,7 @@
   }
 }
 
-/* Modal de calendario y reserva */
+/* Modal */
 .modal-backdrop,
 .confirmation-backdrop {
   position: fixed;
@@ -314,12 +309,21 @@
   font-size: 1rem;
 }
 
-.calendar-help {
-  min-height: 34px;
-  margin: -5px 0 10px;
+.calendar-help,
+.calendar-loading,
+.calendar-warning {
+  margin: 0 0 10px;
   color: #59655c;
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   line-height: 1.4;
+}
+
+.calendar-loading {
+  color: #315b3d;
+}
+
+.calendar-warning {
+  color: #a8483c;
 }
 
 .calendar-toolbar {
@@ -434,10 +438,15 @@
   -webkit-text-fill-color: #fff !important;
 }
 
+/* Rojo indica una noche ya ocupada o un rango rechazado por el backend. */
 .calendar-day.unavailable-day {
   color: #fff !important;
   background: #bd5548;
   -webkit-text-fill-color: #fff !important;
+}
+
+.calendar-day.unavailable-day:disabled {
+  background: #bd5548;
 }
 
 .calendar-legend {
@@ -667,7 +676,7 @@
   font-weight: 400;
 }
 
-/* Modal breve de confirmación, por encima del calendario */
+/* Confirmación sobre el modal de calendario */
 .confirmation-modal {
   position: relative;
   width: min(440px, 100%);

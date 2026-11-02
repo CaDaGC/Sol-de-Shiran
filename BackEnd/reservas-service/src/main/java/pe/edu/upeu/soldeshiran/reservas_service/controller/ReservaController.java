@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.CotizacionReservaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.CrearReservaRequest;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.FechasOcupadasResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.service.ReservaService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -43,6 +44,25 @@ public class ReservaController {
                         fechaIngreso,
                         fechaSalida,
                         cantidadHuespedes
+                ));
+    }
+
+    @GetMapping("/cabanas/{idCabana}/fechas-ocupadas")
+    public ResponseEntity<FechasOcupadasResponse> consultarFechasOcupadas(
+            @PathVariable @Positive Long idCabana,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate desde,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate hasta
+    ) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(reservaService.consultarFechasOcupadas(
+                        idCabana,
+                        desde,
+                        hasta
                 ));
     }
 

@@ -6,6 +6,7 @@ import pe.edu.upeu.soldeshiran.reservas_service.client.CabanaDetalleClientRespon
 import pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.CotizacionReservaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.CrearReservaRequest;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.FechasOcupadasResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.model.EstadoReserva;
 import pe.edu.upeu.soldeshiran.reservas_service.model.Reserva;
@@ -23,18 +24,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.TreeSet;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReservaServiceImpl implements ReservaService {
 
-    private static final BigDecimal PORCENTAJE_ADELANTO = new BigDecimal("0.50");
+    private static final BigDecimal PORCENTAJE_ADELANTO =
+            new BigDecimal("0.50");
 
-    private static final List<EstadoReserva> ESTADOS_BLOQUEANTES = List.of(
-            EstadoReserva.CONFIRMADA,
-            EstadoReserva.OCUPADA
-    );
+    private static final List<EstadoReserva> ESTADOS_BLOQUEANTES =
+            List.of(
+                    EstadoReserva.CONFIRMADA,
+                    EstadoReserva.OCUPADA
+            );
 
     private final ReservaRepository reservaRepository;
     private final CatalogoClient catalogoClient;
@@ -87,6 +91,55 @@ public class ReservaServiceImpl implements ReservaService {
     }
 
     @Override
+    public FechasOcupadasResponse consultarFechasOcupadas(
+            Long idCabana,
+            LocalDate desde,
+            LocalDate hasta
+    ) {
+        validarRangoConsulta(desde, hasta);
+        obtenerCabanaActiva(idCabana);
+
+        List<Reserva> reservas = reservaRepository.buscarReservasOcupadasEnRango(
+                idCabana,
+                desde,
+                hasta,
+                ESTADOS_BLOQUEANTES,
+                EstadoReserva.PENDIENTE_PAGO,
+                LocalDateTime.now()
+        );
+
+        TreeSet<LocalDate> fechasOcupadas = new TreeSet<>();
+        LocalDate finExclusivoConsulta = hasta.plusDays(1);
+
+        for (Reserva reserva : reservas) {
+            LocalDate inicioOcupacion = reserva.getFechaIngreso().isAfter(desde)
+                    ? reserva.getFechaIngreso()
+                    : desde;
+
+            // La fecha de salida no representa una noche ocupada.
+            LocalDate finExclusivoOcupacion =
+                    reserva.getFechaSalida().isBefore(finExclusivoConsulta)
+                            ? reserva.getFechaSalida()
+                            : finExclusivoConsulta;
+
+            for (
+                    LocalDate fecha = inicioOcupacion;
+                    fecha.isBefore(finExclusivoOcupacion);
+                    fecha = fecha.plusDays(1)
+            ) {
+                fechasOcupadas.add(fecha);
+            }
+        }
+
+        return new FechasOcupadasResponse(
+                idCabana,
+                desde,
+                hasta,
+                List.copyOf(fechasOcupadas)
+        );
+    }
+
+    @Override
     @Transactional
     public ReservaResponse crearReservaTemporal(
             Long idUsuario,
@@ -133,6 +186,31 @@ public class ReservaServiceImpl implements ReservaService {
         return toResponse(guardada);
     }
 
+    private void validarRangoConsulta(LocalDate desde, LocalDate hasta) {
+        if (desde == null || hasta == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Los parámetros desde y hasta son obligatorios."
+            );
+        }
+
+        if (hasta.isBefore(desde)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La fecha hasta debe ser igual o posterior a desde."
+            );
+        }
+
+        long diasConsultados = ChronoUnit.DAYS.between(desde, hasta);
+
+        if (diasConsultados > 366) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El rango consultado no puede superar 367 días."
+            );
+        }
+    }
+
     private CabanaDetalleClientResponse obtenerCabanaActiva(Long idCabana) {
         try {
             return catalogoClient.obtenerDetalle(idCabana);
@@ -149,7 +227,10 @@ public class ReservaServiceImpl implements ReservaService {
         }
     }
 
-    private void validarFechas(LocalDate fechaIngreso, LocalDate fechaSalida) {
+    private void validarFechas(
+            LocalDate fechaIngreso,
+            LocalDate fechaSalida
+    ) {
         if (fechaIngreso == null || fechaSalida == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -186,7 +267,9 @@ public class ReservaServiceImpl implements ReservaService {
         if (cantidadHuespedes > cabana.aforoMaximo()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "La cabaña admite hasta " + cabana.aforoMaximo() + " huéspedes."
+                    "La cabaña admite hasta "
+                            + cabana.aforoMaximo()
+                            + " huéspedes."
             );
         }
     }

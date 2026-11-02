@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             ServerHttpRequest request = exchange.getRequest()
                     .mutate()
                     .headers(headers -> {
-                        // Evita que el cliente suplante su identidad con un header propio.
+                        // No se permite que el cliente suplante el ID del usuario.
                         headers.remove("X-User-Id");
                         headers.set("X-User-Id", userId.toString());
                     })
@@ -71,14 +71,28 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicRoute(String path, String method) {
-        return "OPTIONS".equals(method)
-                || path.startsWith("/api/v1/auth/login")
-                || path.startsWith("/api/v1/usuarios/register")
-                || ("GET".equals(method)
-                && path.startsWith("/api/v1/cabanas"))
-                || ("GET".equals(method)
-                && path.startsWith("/api/v1/reservas/cabanas/")
-                && path.endsWith("/disponibilidad"));
+        if ("OPTIONS".equals(method)) {
+            return true;
+        }
+
+        if (path.startsWith("/api/v1/auth/login")
+                || path.startsWith("/api/v1/usuarios/register")) {
+            return true;
+        }
+
+        if (!"GET".equals(method)) {
+            return false;
+        }
+
+        if (path.startsWith("/api/v1/cabanas")) {
+            return true;
+        }
+
+        return path.startsWith("/api/v1/reservas/cabanas/")
+                && (
+                path.endsWith("/disponibilidad")
+                        || path.endsWith("/fechas-ocupadas")
+        );
     }
 
     private boolean isAdminRoute(String path, String method) {

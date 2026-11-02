@@ -24,32 +24,60 @@ export interface AuthResponse {
 export class AuthService {
   private readonly url = `${API_CONFIG.baseUrl}/auth/login`;
   private readonly platformId = inject(PLATFORM_ID);
+  private temporizadorExpiracion?: ReturnType<typeof setTimeout>;
 
-  readonly usuarioActual = signal<UsuarioAutenticado | null>(
-    this.leerUsuarioGuardado()
-  );
+  readonly usuarioActual = signal<UsuarioAutenticado | null>(null);
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {
+    this.restaurarSesion();
+  }
 
-  login(credentials: { email: string; password: string }): Observable<AuthResponse> {
+  login(
+    credentials: { email: string; password: string }
+  ): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(this.url, credentials);
   }
 
   guardarSesion(response: AuthResponse): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
+    if (!response?.token || !this.tokenVigente(response.token)) {
+      this.cerrarSesion();
+      return;
+    }
+
     const usuario: UsuarioAutenticado = {
-      nombre: response.nombre || 'Usuario',
-      email: response.email || '',
-      rol: response.rol || 'Usuario'
+      nombre: response.nombre?.trim() || 'Usuario',
+      email: response.email?.trim() || '',
+      rol: response.rol?.trim() || 'Usuario'
     };
 
     localStorage.setItem('token', response.token);
     localStorage.setItem('usuario', JSON.stringify(usuario));
     this.usuarioActual.set(usuario);
+    this.programarExpiracion(response.token);
+  }
+
+  estaAutenticado(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+
+    const token = localStorage.getItem('token');
+
+    if (!token || !this.tokenVigente(token)) {
+      this.cerrarSesion();
+      return false;
+    }
+
+    if (!this.usuarioActual()) {
+      this.restaurarUsuario(token);
+    }
+
+    return true;
   }
 
   cerrarSesion(): void {
+    this.cancelarTemporizador();
+
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
@@ -58,36 +86,115 @@ export class AuthService {
     this.usuarioActual.set(null);
   }
 
-  estaAutenticado(): boolean {
-    return isPlatformBrowser(this.platformId) &&
-      Boolean(localStorage.getItem('token'));
-  }
+  private restaurarSesion(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
 
-  private leerUsuarioGuardado(): UsuarioAutenticado | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
-
-    const guardado = localStorage.getItem('usuario');
     const token = localStorage.getItem('token');
 
-    if (guardado) {
+    if (!token || !this.tokenVigente(token)) {
+      this.cerrarSesion();
+      return;
+    }
+
+    this.restaurarUsuario(token);
+    this.programarExpiracion(token);
+  }
+
+  private restaurarUsuario(token: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const usuarioGuardado = localStorage.getItem('usuario');
+
+    if (usuarioGuardado) {
       try {
-        const dato = JSON.parse(guardado) as Record<string, unknown>;
-        const normalizado = this.normalizarUsuario(dato);
+        const guardado = JSON.parse(usuarioGuardado) as Record<string, unknown>;
+        const normalizado = this.normalizarUsuario(guardado);
 
         if (normalizado.email || normalizado.nombre !== 'Usuario') {
-          return normalizado;
+          this.usuarioActual.set(normalizado);
+          return;
         }
       } catch {
-        // Si el dato guardado no es JSON válido, se intenta recuperar del token.
+        // Si el valor local no es JSON válido, recupera lo disponible del JWT.
       }
     }
 
-    if (token) {
-      const claims = this.leerClaims(token);
-      if (claims) return this.normalizarUsuario(claims);
+    const claims = this.leerClaims(token);
+
+    if (claims) {
+      this.usuarioActual.set(this.normalizarUsuario(claims));
+    }
+  }
+
+  private tokenVigente(token: string): boolean {
+    const claims = this.leerClaims(token);
+    const expiracion = claims?.['exp'];
+
+    // El backend emite tokens JWT con el claim exp.
+    if (typeof expiracion !== 'number') return false;
+
+    return expiracion * 1000 > Date.now();
+  }
+
+  private programarExpiracion(token: string): void {
+    this.cancelarTemporizador();
+
+    const claims = this.leerClaims(token);
+    const expiracion = claims?.['exp'];
+
+    if (typeof expiracion !== 'number') {
+      this.cerrarSesion();
+      return;
     }
 
-    return null;
+    const milisegundosRestantes = expiracion * 1000 - Date.now();
+
+    if (milisegundosRestantes <= 0) {
+      this.cerrarSesion();
+      return;
+    }
+
+    // El límite permite volver a comprobar tokens con duraciones largas.
+    const maximoTemporizador = 2_000_000_000;
+
+    this.temporizadorExpiracion = setTimeout(() => {
+      if (!this.tokenVigente(token)) {
+        this.cerrarSesion();
+        return;
+      }
+
+      this.programarExpiracion(token);
+    }, Math.min(milisegundosRestantes, maximoTemporizador));
+  }
+
+  private cancelarTemporizador(): void {
+    if (this.temporizadorExpiracion) {
+      clearTimeout(this.temporizadorExpiracion);
+      this.temporizadorExpiracion = undefined;
+    }
+  }
+
+  private leerClaims(token: string): Record<string, unknown> | null {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+
+      const base64 = payload
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+
+      const binario = atob(base64);
+      const bytes = Uint8Array.from(binario, caracter =>
+        caracter.charCodeAt(0)
+      );
+
+      return JSON.parse(
+        new TextDecoder().decode(bytes)
+      ) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
   }
 
   private normalizarUsuario(
@@ -113,29 +220,6 @@ export class AuthService {
       'Usuario';
 
     return { nombre, email, rol };
-  }
-
-  private leerClaims(token: string): Record<string, unknown> | null {
-    try {
-      const partePayload = token.split('.')[1];
-      if (!partePayload) return null;
-
-      const base64 = partePayload
-        .replace(/-/g, '+')
-        .replace(/_/g, '/')
-        .padEnd(Math.ceil(partePayload.length / 4) * 4, '=');
-
-      const binario = atob(base64);
-      const bytes = Uint8Array.from(binario, (caracter) =>
-        caracter.charCodeAt(0)
-      );
-
-      return JSON.parse(
-        new TextDecoder().decode(bytes)
-      ) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
   }
 
   private aTexto(valor: unknown): string {

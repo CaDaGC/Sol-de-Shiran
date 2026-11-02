@@ -87,20 +87,20 @@
         <div class="booking-panel">
           <p class="price-label">Tarifa por noche</p>
           <p class="price">{{ formatearTarifa(detalle.tarifaNoche) }}</p>
+
+          <!-- Este botón queda habilitado para reabrir el calendario. -->
           <button
             class="reserve-button"
             type="button"
-            [disabled]="!!reservaCreada()"
             (click)="abrirModalReserva()"
           >
-            {{ reservaCreada() ? 'Fechas bloqueadas temporalmente' : 'Reservar ahora' }}
+            Reservar ahora
           </button>
         </div>
       </section>
     </section>
   </ng-container>
 
-  <!-- Modal de calendario: solo se muestra a usuarios autenticados -->
   <div
     class="modal-backdrop"
     *ngIf="modalReservaAbierto()"
@@ -133,10 +133,36 @@
             {{ mensajeSeleccionFechas() }}
           </p>
 
+          <p
+            class="calendar-loading"
+            *ngIf="cargandoFechasOcupadas()"
+            role="status"
+          >
+            Consultando fechas ocupadas...
+          </p>
+
+          <p
+            class="calendar-warning"
+            *ngIf="mensajeFechasOcupadas()"
+            role="status"
+          >
+            {{ mensajeFechasOcupadas() }}
+          </p>
+
           <div class="calendar-toolbar">
-            <button type="button" aria-label="Mes anterior" (click)="mesAnterior()">‹</button>
+            <button
+              type="button"
+              aria-label="Mes anterior"
+              (click)="mesAnterior()"
+            >‹</button>
+
             <strong>{{ tituloMes() | titlecase }}</strong>
-            <button type="button" aria-label="Mes siguiente" (click)="mesSiguiente()">›</button>
+
+            <button
+              type="button"
+              aria-label="Mes siguiente"
+              (click)="mesSiguiente()"
+            >›</button>
           </div>
 
           <div class="calendar-grid">
@@ -156,23 +182,35 @@
               [class.past-day]="dia.pasado"
               [class.selected-day]="esDiaLimite(dia.fecha)"
               [class.in-stay]="estaEnEstadia(dia.fecha)"
-              [class.unavailable-day]="rangoNoDisponible(dia.fecha)"
-              [disabled]="dia.pasado || !dia.mesActual || !!reservaCreada()"
+              [class.unavailable-day]="
+                fechaOcupada(dia.fecha) || rangoNoDisponible(dia.fecha)
+              "
+              [disabled]="
+                dia.pasado || !dia.mesActual || !!reservaCreada()
+              "
               [attr.aria-label]="etiquetaDia(dia)"
               [attr.title]="etiquetaDia(dia)"
               (click)="seleccionarDia(dia)"
-            ><span>{{ dia.numero }}</span></button>
+            >
+              <span>{{ dia.numero }}</span>
+            </button>
           </div>
 
           <div class="calendar-legend">
-            <span><i class="legend-dot selected"></i> Seleccionada</span>
+            <span><i class="legend-dot selected"></i> Entrada o salida</span>
             <span><i class="legend-dot stay"></i> Tu estadía</span>
-            <span><i class="legend-dot unavailable"></i> No disponible</span>
+            <span><i class="legend-dot unavailable"></i> Noche ocupada</span>
           </div>
 
           <div class="selected-dates">
-            <p><strong>Entrada:</strong> {{ formatearFecha(fechaIngreso()) }}</p>
-            <p><strong>Salida:</strong> {{ formatearFecha(fechaSalida()) }}</p>
+            <p>
+              <strong>Entrada:</strong>
+              {{ formatearFecha(fechaIngreso()) }}
+            </p>
+            <p>
+              <strong>Salida:</strong>
+              {{ formatearFecha(fechaSalida()) }}
+            </p>
           </div>
         </section>
 
@@ -200,7 +238,9 @@
               <button
                 type="button"
                 aria-label="Agregar adulto"
-                [disabled]="totalHuespedes() >= detalle.aforoMaximo || !!reservaCreada()"
+                [disabled]="
+                  totalHuespedes() >= detalle.aforoMaximo || !!reservaCreada()
+                "
                 (click)="cambiarAdultos(1)"
               >+</button>
             </div>
@@ -222,7 +262,9 @@
               <button
                 type="button"
                 aria-label="Agregar niño"
-                [disabled]="totalHuespedes() >= detalle.aforoMaximo || !!reservaCreada()"
+                [disabled]="
+                  totalHuespedes() >= detalle.aforoMaximo || !!reservaCreada()
+                "
                 (click)="cambiarNinos(1)"
               >+</button>
             </div>
@@ -264,7 +306,7 @@
           </div>
 
           <p class="quote-status" *ngIf="cargandoCotizacion()">
-            Consultando disponibilidad...
+            Consultando precio y disponibilidad...
           </p>
 
           <p
@@ -280,7 +322,7 @@
           </p>
 
           <p class="hold-created" *ngIf="reservaCreada()">
-            Bloqueo temporal creado. El pago se habilitará en la siguiente HU.
+            Hay un bloqueo temporal activo. El pago se habilitará en la siguiente HU.
           </p>
         </section>
       </div>
@@ -316,7 +358,7 @@
     </section>
   </div>
 
-  <!-- Modal sencillo de confirmación, independiente del flujo de pago -->
+  <!-- La confirmación se superpone; al cerrarla, el calendario permanece abierto. -->
   <div
     class="confirmation-backdrop"
     *ngIf="confirmacionReservaAbierta()"
@@ -338,10 +380,11 @@
       >×</button>
 
       <div class="confirmation-check" aria-hidden="true">✓</div>
-      <h2 id="confirmation-title">Bloqueo temporal creado</h2>
+      <h2 id="confirmation-title">Reserva temporal creada</h2>
+
       <p>
-        Tu selección quedó bloqueada temporalmente. El pago estará disponible
-        en la siguiente HU.
+        Tienes 15 minutos para completar el pago. Si no lo haces antes de la
+        hora indicada, el bloqueo vence y las fechas se liberan.
       </p>
 
       <div class="confirmation-data">
@@ -362,7 +405,7 @@
           <strong>{{ formatearTarifa(reserva.montoAdelanto) }}</strong>
         </p>
         <p>
-          <span>Bloqueo válido hasta</span>
+          <span>Bloqueo vence</span>
           <strong>{{ formatearFechaHora(reserva.expiraEn) }}</strong>
         </p>
       </div>

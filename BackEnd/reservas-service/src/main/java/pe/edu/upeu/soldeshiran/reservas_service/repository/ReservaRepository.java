@@ -36,6 +36,30 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             @Param("ahora") LocalDateTime ahora
     );
 
+    @Query("""
+            SELECT r
+            FROM Reserva r
+            WHERE r.idCabana = :idCabana
+              AND r.fechaIngreso <= :hasta
+              AND r.fechaSalida > :desde
+              AND (
+                    r.estadoReserva IN :estadosBloqueantes
+                    OR (
+                        r.estadoReserva = :pendientePago
+                        AND r.expiraEn > :ahora
+                    )
+              )
+            ORDER BY r.fechaIngreso ASC
+            """)
+    List<Reserva> buscarReservasOcupadasEnRango(
+            @Param("idCabana") Long idCabana,
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta,
+            @Param("estadosBloqueantes") List<EstadoReserva> estadosBloqueantes,
+            @Param("pendientePago") EstadoReserva pendientePago,
+            @Param("ahora") LocalDateTime ahora
+    );
+
     @Modifying
     @Query("""
             UPDATE Reserva r
