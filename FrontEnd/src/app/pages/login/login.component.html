@@ -1,0 +1,17 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2>Sol de Shirán</h2>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Correo</label>
+        <input type="email" formControlName="email" placeholder="admin@soldeshiran.com">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" formControlName="password" placeholder="******">
+      </div>
+      <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+      <button type="submit" [disabled]="loginForm.invalid">Ingresar</button>
+    </form>
+  </div>
+</div>
