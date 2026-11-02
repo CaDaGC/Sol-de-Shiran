@@ -195,6 +195,11 @@
   background: #ad6427;
 }
 
+.reserve-button:disabled {
+  background: #6f7e72;
+  cursor: not-allowed;
+}
+
 .status-message,
 .error-message {
   display: flex;
@@ -307,6 +312,14 @@
   margin: 0 0 14px;
   color: #203d2e;
   font-size: 1rem;
+}
+
+.calendar-help {
+  min-height: 34px;
+  margin: -5px 0 10px;
+  color: #59655c;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .calendar-toolbar {

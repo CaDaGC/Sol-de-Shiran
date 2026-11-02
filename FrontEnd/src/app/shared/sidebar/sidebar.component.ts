@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth';
 
@@ -11,12 +11,10 @@ import { AuthService } from '../../services/auth';
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent {
-  readonly perfil = this.authService.usuarioActual;
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  constructor(
-    private readonly authService: AuthService,
-    private readonly router: Router
-  ) {}
+  readonly perfil = this.authService.usuarioActual;
 
   cerrarSesion(): void {
     this.authService.cerrarSesion();

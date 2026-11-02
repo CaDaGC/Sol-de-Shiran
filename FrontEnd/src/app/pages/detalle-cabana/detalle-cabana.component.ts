@@ -97,10 +97,35 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     return Boolean(
       detalle &&
       this.fechaIngreso() &&
+      this.fechaIngreso() >= this.fechaMinima &&
       this.fechaSalida() > this.fechaIngreso() &&
       this.totalHuespedes() >= 1 &&
       this.totalHuespedes() <= detalle.aforoMaximo
     );
+  });
+
+  readonly mensajeSeleccionFechas = computed(() => {
+    if (this.reservaCreada()) {
+      return 'Las fechas quedaron bloqueadas temporalmente y ya no pueden modificarse.';
+    }
+
+    if (!this.fechaIngreso()) {
+      return 'Selecciona primero la fecha de entrada. Los días pasados no están disponibles.';
+    }
+
+    if (this.fechaIngreso() < this.fechaMinima) {
+      return 'La fecha de entrada no puede estar en el pasado.';
+    }
+
+    if (!this.fechaSalida()) {
+      return 'Ahora selecciona una fecha de salida posterior a la entrada.';
+    }
+
+    if (this.fechaSalida() <= this.fechaIngreso()) {
+      return 'La fecha de salida debe ser posterior a la fecha de entrada.';
+    }
+
+    return 'Fechas válidas. Estamos comprobando la disponibilidad y los montos.';
   });
 
   readonly puedeCrearReserva = computed(() =>
@@ -136,8 +161,16 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     }
 
     const params = this.route.snapshot.queryParamMap;
-    this.fechaIngreso.set(params.get('fechaIngreso') ?? '');
-    this.fechaSalida.set(params.get('fechaSalida') ?? '');
+    const fechaIngresoParametro = params.get('fechaIngreso') ?? '';
+    const fechaSalidaParametro = params.get('fechaSalida') ?? '';
+    const fechaIngresoValida = fechaIngresoParametro >= this.fechaMinima;
+
+    this.fechaIngreso.set(fechaIngresoValida ? fechaIngresoParametro : '');
+    this.fechaSalida.set(
+      fechaIngresoValida && fechaSalidaParametro > fechaIngresoParametro
+        ? fechaSalidaParametro
+        : ''
+    );
     this.adultos.set(Math.max(1, Number(params.get('adultos') ?? 1)));
     this.ninos.set(Math.max(0, Number(params.get('ninos') ?? 0)));
 
@@ -154,6 +187,36 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cotizacionSubscription?.unsubscribe();
+  }
+
+  seleccionarImagen(indice: number): void {
+    const totalImagenes = this.imagenes().length;
+
+    if (!Number.isInteger(indice) || indice < 0 || indice >= totalImagenes) {
+      return;
+    }
+
+    this.indiceImagen.set(indice);
+  }
+
+  imagenAnterior(): void {
+    const totalImagenes = this.imagenes().length;
+
+    if (totalImagenes === 0) return;
+
+    this.indiceImagen.update(
+      indice => (indice - 1 + totalImagenes) % totalImagenes
+    );
+  }
+
+  imagenSiguiente(): void {
+    const totalImagenes = this.imagenes().length;
+
+    if (totalImagenes === 0) return;
+
+    this.indiceImagen.update(
+      indice => (indice + 1) % totalImagenes
+    );
   }
 
   private cargarDetalle(): void {
@@ -179,6 +242,8 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   }
 
   abrirModalReserva(): void {
+    if (this.reservaCreada()) return;
+
     if (!this.authService.estaAutenticado()) {
       this.irAlLoginConRetorno();
       return;
@@ -199,10 +264,16 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
 
   cerrarConfirmacionReserva(): void {
     this.confirmacionReservaAbierta.set(false);
+    this.modalReservaAbierto.set(false);
   }
 
   seleccionarDia(dia: DiaCalendario): void {
-    if (dia.pasado || !dia.mesActual || this.reservaCreada()) return;
+    if (
+      dia.pasado ||
+      dia.fecha < this.fechaMinima ||
+      !dia.mesActual ||
+      this.reservaCreada()
+    ) return;
 
     this.cotizacion.set(null);
     this.mensajeCotizacion.set('');
@@ -313,15 +384,16 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error consultando disponibilidad.', error);
-          this.mensajeCotizacion.set(
+          this.mensajeCotizacion.set(this.obtenerMensajeError(
+            error,
             'No se pudo consultar la disponibilidad. Intenta nuevamente.'
-          );
+          ));
           this.cargandoCotizacion.set(false);
         }
       });
   }
 
-  continuarAlPago(): void {
+  confirmarBloqueo(): void {
     if (!this.authService.estaAutenticado()) {
       this.irAlLoginConRetorno();
       return;
@@ -347,11 +419,10 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('No se pudo crear el bloqueo temporal.', error);
-          this.mensajeReserva.set(
-            error?.error?.detail ??
-            error?.error?.message ??
+          this.mensajeReserva.set(this.obtenerMensajeError(
+            error,
             'No se pudo bloquear temporalmente la cabaña. Vuelve a consultar las fechas.'
-          );
+          ));
           this.creandoReserva.set(false);
           this.consultarDisponibilidad();
         }
@@ -377,6 +448,30 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       month: '2-digit',
       year: 'numeric'
     }).format(new Date(anio, mes - 1, dia));
+  }
+
+  formatearFechaHora(fechaHora: string): string {
+    if (!fechaHora) return '—';
+
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(fechaHora));
+  }
+
+  etiquetaDia(dia: DiaCalendario): string {
+    const fecha = this.formatearFecha(dia.fecha);
+
+    if (dia.pasado) return `${fecha}, fecha pasada no disponible`;
+    if (!dia.mesActual) return `${fecha}, fuera del mes mostrado`;
+    if (this.rangoNoDisponible(dia.fecha)) return `${fecha}, no disponible`;
+    if (this.esDiaLimite(dia.fecha)) return `${fecha}, fecha seleccionada`;
+    if (this.estaEnEstadia(dia.fecha)) return `${fecha}, dentro de tu estancia`;
+
+    return `${fecha}, disponible`;
   }
 
   mostrarImagenAlternativa(event: Event): void {
@@ -450,5 +545,23 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     const dia = String(fecha.getDate()).padStart(2, '0');
 
     return `${anio}-${mes}-${dia}`;
+  }
+
+  private obtenerMensajeError(error: any, mensajePredeterminado: string): string {
+    if (error?.status === 0) {
+      return 'No pudimos conectarnos con el servicio de reservas. Intenta nuevamente.';
+    }
+
+    if (error?.status === 401) {
+      return 'Tu sesión venció. Inicia sesión nuevamente para continuar.';
+    }
+
+    if (error?.status === 409) {
+      return 'Las fechas dejaron de estar disponibles. Selecciona otro rango.';
+    }
+
+    return error?.error?.detail ??
+      error?.error?.message ??
+      mensajePredeterminado;
   }
 }

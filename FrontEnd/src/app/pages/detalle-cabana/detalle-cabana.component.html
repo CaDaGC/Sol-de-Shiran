@@ -90,9 +90,10 @@
           <button
             class="reserve-button"
             type="button"
+            [disabled]="!!reservaCreada()"
             (click)="abrirModalReserva()"
           >
-            Reservar ahora
+            {{ reservaCreada() ? 'Fechas bloqueadas temporalmente' : 'Reservar ahora' }}
           </button>
         </div>
       </section>
@@ -115,7 +116,7 @@
       <header class="modal-header">
         <div>
           <h2 id="reservation-title">Reservar</h2>
-          <p>Paso 1 de 2</p>
+          <p>Selecciona fechas y huéspedes</p>
         </div>
         <button
           class="modal-close"
@@ -128,6 +129,9 @@
       <div class="modal-body" *ngIf="cabana() as detalle">
         <section class="calendar-panel">
           <h3>Fecha de estancia</h3>
+          <p class="calendar-help" role="status">
+            {{ mensajeSeleccionFechas() }}
+          </p>
 
           <div class="calendar-toolbar">
             <button type="button" aria-label="Mes anterior" (click)="mesAnterior()">‹</button>
@@ -154,7 +158,8 @@
               [class.in-stay]="estaEnEstadia(dia.fecha)"
               [class.unavailable-day]="rangoNoDisponible(dia.fecha)"
               [disabled]="dia.pasado || !dia.mesActual || !!reservaCreada()"
-              [attr.aria-label]="dia.fecha"
+              [attr.aria-label]="etiquetaDia(dia)"
+              [attr.title]="etiquetaDia(dia)"
               (click)="seleccionarDia(dia)"
             ><span>{{ dia.numero }}</span></button>
           </div>
@@ -286,12 +291,12 @@
           class="continue-button"
           type="button"
           [disabled]="!puedeCrearReserva()"
-          (click)="continuarAlPago()"
+          (click)="confirmarBloqueo()"
         >
           {{
           creandoReserva()
           ? 'Creando bloqueo temporal...'
-          : 'Continuar al pago del adelanto'
+          : 'Confirmar y bloquear fechas'
           }}
           <ng-container *ngIf="cotizacion()">
             {{ formatearTarifa(cotizacion()!.montoAdelanto) }}
@@ -355,6 +360,10 @@
         <p>
           <span>Adelanto</span>
           <strong>{{ formatearTarifa(reserva.montoAdelanto) }}</strong>
+        </p>
+        <p>
+          <span>Bloqueo válido hasta</span>
+          <strong>{{ formatearFechaHora(reserva.expiraEn) }}</strong>
         </p>
       </div>
 
