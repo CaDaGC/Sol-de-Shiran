@@ -345,15 +345,11 @@
           </ng-container>
         </button>
 
-        <button
-          *ngIf="reservaCreada()"
-          class="payment-button"
-          type="button"
-          disabled
-        >
-          <span>Pagar adelanto</span>
-          <small>Disponible en la siguiente HU</small>
-        </button>
+        <app-pago-modal
+          *ngIf="reservaCreada() as reserva"
+          [reserva]="reserva"
+          [nombreCabana]="cabana()?.nombre ?? 'Cabaña'"
+        ></app-pago-modal>
       </footer>
     </section>
   </div>

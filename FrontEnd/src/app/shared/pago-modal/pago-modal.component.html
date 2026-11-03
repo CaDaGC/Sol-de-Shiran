@@ -1,0 +1,71 @@
+<button
+  class="pay-button"
+  type="button"
+  (click)="abrir()"
+>
+  Pagar adelanto {{ formatearMonto(reserva.montoAdelanto) }}
+</button>
+
+<p class="payment-message" *ngIf="mensaje() && !abierto()" role="alert">
+  {{ mensaje() }}
+</p>
+
+<div
+  class="payment-backdrop"
+  *ngIf="abierto()"
+  (click)="cerrar(); $event.stopPropagation()"
+>
+  <section
+    class="payment-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="payment-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="payment-header">
+      <div>
+        <h2 id="payment-title">Pagar reserva</h2>
+        <p>Paso 2 de 2 · {{ nombreCabana }}</p>
+      </div>
+
+      <button
+        class="close-button"
+        type="button"
+        aria-label="Cerrar pago"
+        (click)="cerrar()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="payment-summary">
+      <span>Adelanto de la reserva</span>
+      <strong>{{ formatearMonto(reserva.montoAdelanto) }}</strong>
+      <small>La reserva temporal vence: {{ reserva.expiraEn | date:'short' }}</small>
+    </div>
+
+    <p class="brick-loading" *ngIf="cargandoBrick()" role="status">
+      Cargando formulario seguro de Mercado Pago…
+    </p>
+
+    <div id="paymentBrick_container"></div>
+
+    <p class="payment-message" *ngIf="mensaje()" role="status">
+      {{ mensaje() }}
+    </p>
+
+    <div class="payment-result" *ngIf="resultado() as pago">
+      <p><strong>Estado:</strong> {{ pago.estado }}</p>
+      <p><strong>Transacción:</strong> {{ pago.idTransaccion }}</p>
+      <p *ngIf="pago.idExternoPasarela">
+        <strong>Operación Mercado Pago:</strong>
+        {{ pago.idExternoPasarela }}
+      </p>
+    </div>
+
+    <p class="secure-note">
+      El formulario es proporcionado por Mercado Pago. Los datos de tarjeta no
+      se envían a tu aplicación.
+    </p>
+  </section>
+</div>

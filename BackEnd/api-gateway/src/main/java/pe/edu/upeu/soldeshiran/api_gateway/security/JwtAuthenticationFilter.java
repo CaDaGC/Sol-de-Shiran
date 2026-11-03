@@ -80,6 +80,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return true;
         }
 
+        if ("POST".equals(method) && path.equals("/api/v1/pagos/webhook")) {
+            return true;
+        }
+
         if (!"GET".equals(method)) {
             return false;
         }
