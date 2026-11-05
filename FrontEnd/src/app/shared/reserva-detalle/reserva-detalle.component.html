@@ -46,6 +46,44 @@
             <div class="wide balance"><dt>Saldo pendiente</dt><dd>{{ reserva.saldoPendiente | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
           </dl>
         </section>
+        @if (exitoPago()) {
+          <p class="payment-success" role="status">{{ exitoPago() }}</p>
+        }
+        @if (reserva.estadoReserva === 'CONFIRMADA' && !exitoPago()) {
+          <section aria-labelledby="check-in-title">
+            <h3 id="check-in-title">Pago restante y check-in</h3>
+            <p class="payment-help">Registra el pago recibido para iniciar la estancia. El importe corresponde al saldo pendiente. El ingreso debe estar dentro de las fechas de la reserva.</p>
+            @if (consultandoPago()) {
+              <p role="status">Consultando registro de pago…</p>
+            } @else if (errorConsultaPago()) {
+              <button type="button" class="secondary-button" (click)="consultarPago()">Reintentar consulta de pago</button>
+            } @else {
+              <form #pagoForm="ngForm" (ngSubmit)="registrarPago()">
+                <fieldset [disabled]="guardando() || registroExistente()">
+                  <label for="metodo-restante">Método de pago</label>
+                  <select id="metodo-restante" name="metodoPago" [(ngModel)]="metodoPago" required>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="YAPE_BILLETERA">Yape / Billetera</option>
+                  </select>
+                  @if (metodoPago !== 'EFECTIVO') {
+                    <label for="operacion-restante">Número de operación</label>
+                    <input id="operacion-restante" name="numeroOperacion" [(ngModel)]="numeroOperacion"
+                      required pattern=".*\S.*" maxlength="100" autocomplete="off" aria-describedby="operacion-ayuda">
+                    <small id="operacion-ayuda">Ingresa la referencia del comprobante de pago recibido.</small>
+                  }
+                </fieldset>
+                @if (registroExistente()) {
+                  <p class="payment-help">El pago ya está registrado con este método. Falta completar el check-in. Reintenta sin volver a cobrar; el método se conserva para evitar modificar o duplicar el pago.</p>
+                }
+                <button class="primary-button" type="submit" [disabled]="guardando() || pagoForm.invalid">
+                  {{ guardando() ? 'Completando check-in…' : registroExistente() ? 'Reintentar check-in' : 'Registrar pago y realizar check-in' }}
+                </button>
+              </form>
+            }
+            @if (errorPago()) { <p class="payment-error" role="alert">{{ errorPago() }}</p> }
+          </section>
+        }
       }
     </div>
     <footer><button type="button" class="secondary-button" (click)="cerrarModal()">Cerrar</button></footer>

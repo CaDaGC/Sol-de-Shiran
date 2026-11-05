@@ -120,6 +120,7 @@ describe('Integración del panel de reservas', () => {
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
     fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     expect(fixture.nativeElement.querySelector('dialog').textContent).toContain('Cargando detalle');
     http.expectOne(req => req.url.endsWith('/reservas/1')).flush({
       ...reserva, nombreUsuario: 'Nombre actualizado', tarifaNocheAplicada: 100,
@@ -141,6 +142,7 @@ describe('Integración del panel de reservas', () => {
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
     fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     const pendiente = http.expectOne(req => req.url.endsWith('/reservas/1'));
     fixture.nativeElement.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
@@ -149,6 +151,7 @@ describe('Integración del panel de reservas', () => {
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #2"]').click();
     fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith('/reservas/2/restante')).flush(null);
     http.expectOne(req => req.url.endsWith('/reservas/2')).flush({
       ...reserva, idReserva: 2, tarifaNocheAplicada: 100, expiraEn: '2026-11-05T12:15:00', fechaCreacion: null
     });
@@ -161,6 +164,7 @@ describe('Integración del panel de reservas', () => {
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
     fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     http.expectOne(req => req.url.endsWith('/reservas/1'))
       .flush({}, { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();

@@ -61,6 +61,38 @@ class OrdersFlowTests {
         verify(repo).save(argThat(saved -> "ORDTST123".equals(saved.getIdExternoPasarela())));
         server.verify();
     }
+    @Test void conflictoTransitorioReintentaLaMismaOrdenSinOtraTransaccion() {
+        server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
+            .andExpect(header("X-Idempotency-Key", "orden-7"))
+            .andRespond(withStatus(org.springframework.http.HttpStatus.CONFLICT));
+        server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
+            .andExpect(header("X-Idempotency-Key", "orden-7"))
+            .andExpect(jsonPath("$.total_amount").value("100.00"))
+            .andRespond(withSuccess("{\"id\":\"ORDTST123\",\"checkout_url\":\"https://www.mercadopago.com.pe/checkout/test\"}",MediaType.APPLICATION_JSON));
+        assertEquals("ORDTST123",service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("buyer@example.com")).orderId());
+        verify(repo,times(2)).saveAndFlush(any()); server.verify();
+    }
+    @Test void reintentoTras409PersistenteRecuperaCuerpoYClaveSinCrearOtraTransaccion() {
+        final String[] original = { null };
+        for (int i=0; i<2; i++) server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
+            .andExpect(header("X-Idempotency-Key", "orden-7"))
+            .andRespond(withStatus(org.springframework.http.HttpStatus.CONFLICT));
+        server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
+            .andExpect(header("X-Idempotency-Key", "orden-7"))
+            .andExpect(request -> content().json(original[0]).match(request))
+            .andRespond(withSuccess("{\"id\":\"ORDTST123\",\"checkout_url\":\"https://www.mercadopago.com.pe/checkout/test\"}",MediaType.APPLICATION_JSON));
+        assertThrows(ResponseStatusException.class, () -> service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("buyer@example.com")));
+        // Captura el registro durable con el cuerpo original para simular una nueva solicitud HTTP.
+        var guardados=org.mockito.ArgumentCaptor.forClass(TransaccionPago.class);
+        verify(repo,times(2)).saveAndFlush(guardados.capture());
+        TransaccionPago incierto=guardados.getValue();
+        assertEquals(EstadoTransaccion.PENDIENTE,incierto.getEstadoTransaccion());
+        assertNotNull(incierto.getSolicitudCheckout());
+        original[0] = incierto.getSolicitudCheckout();
+        when(repo.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(3L,EstadoTransaccion.PENDIENTE)).thenReturn(Optional.of(incierto));
+        service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("changed@example.com"));
+        verify(repo,times(2)).saveAndFlush(any()); server.verify();
+    }
     String order(String status, String detail, String amount) {
         return "{\"id\":\"ORDTST123\",\"external_reference\":\"7\",\"currency\":\"PEN\",\"total_amount\":\""+amount+"\",\"total_paid_amount\":\"100.00\",\"status\":\""+status+"\",\"status_detail\":\""+detail+"\"}";
     }

@@ -33,6 +33,9 @@ public class Reserva {
     @Column(name = "id_reserva")
     private Long idReserva;
 
+    @Column(name="referencia_pago_restante", unique=true, length=100)
+    private String referenciaPagoRestante;
+
     @Column(name = "id_cabana", nullable = false)
     private Long idCabana;
 

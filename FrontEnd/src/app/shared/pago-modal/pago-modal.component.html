@@ -1,4 +1,4 @@
-<button class="pay-button" type="button" (click)="abrir()">{{ textoBoton || 'Pagar adelanto ' + formatearMonto(reserva.montoAdelanto) }}</button>
+<button class="pay-button" type="button" (click)="abrir()">{{ estadoPago() === 'APROBADA' ? 'Ver confirmación de pago' : (textoBoton || 'Pagar adelanto ' + formatearMonto(reserva.montoAdelanto)) }}</button>
 <p class="payment-message" *ngIf="mensaje() && !abierto()" role="alert">{{ mensaje() }}</p>
 <div class="payment-backdrop" *ngIf="abierto()" (click)="cerrar(); $event.stopPropagation()">
   <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title" (click)="$event.stopPropagation()">
@@ -6,6 +6,15 @@
       <div><h2 id="payment-title">Pagar reserva</h2><p>Paso 2 de 2 · {{ nombreCabana }}</p></div>
       <button class="close-button" type="button" aria-label="Cerrar pago" [disabled]="enviandoPago()" (click)="cerrar()">×</button>
     </header>
+    @if (estadoPago()) {
+      <app-pago-estado [estado]="estadoPago()" [mensaje]="mensaje()" [monto]="montoVerificado() ?? reserva.montoAdelanto"
+        [idReserva]="reserva.idReserva" [transaccion]="transaccionRetorno"></app-pago-estado>
+      @if (estadoPago() !== 'APROBADA') {
+        <button class="pay-button" type="button" [disabled]="enviandoPago()" (click)="verificarRetorno()">{{ enviandoPago() ? 'Verificando…' : 'Actualizar estado' }}</button>
+      } @else {
+        <button class="pay-button" type="button" (click)="cerrar()">Listo, continuar</button>
+      }
+    } @else {
     <div class="payment-summary">
       <span>Adelanto de la reserva</span><strong>{{ formatearMonto(reserva.montoAdelanto) }}</strong>
       <small>La reserva temporal vence: {{ reserva.expiraEn | date:'short' }}</small>
@@ -16,5 +25,6 @@
     </button>
     <p class="payment-message" *ngIf="mensaje()" role="alert">{{ mensaje() }}</p>
     <p class="secure-note">La reserva se confirma después de verificar el pago con Mercado Pago.</p>
+    }
   </section>
 </div>

@@ -22,6 +22,7 @@ import {
 import { AuthService } from '../../services/auth';
 import { CabanaService } from '../../services/cabana.service';
 import { ReservasService } from '../../services/reservas.service';
+import { CheckoutRetornoService } from '../../services/checkout-retorno.service';
 import { PagoModalComponent } from '../../shared/pago-modal/pago-modal.component';
 
 interface DiaCalendario {
@@ -112,7 +113,9 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
 
   readonly mensajeSeleccionFechas = computed(() => {
     if (this.reservaCreada()) {
-      return 'Hay un bloqueo temporal activo para estas fechas.';
+      return this.reservaCreada()?.estadoReserva === 'CONFIRMADA'
+        ? 'Tu reserva está confirmada para estas fechas.'
+        : 'Hay un bloqueo temporal activo para estas fechas.';
     }
 
     if (!this.fechaIngreso()) {
@@ -143,6 +146,12 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     )
   );
 
+  readonly transaccionRetorno = signal(0);
+  private readonly retornoCheckout = inject(CheckoutRetornoService);
+  pagoConfirmado(): void {
+    if (this.temporizadorReserva) clearTimeout(this.temporizadorReserva);
+    this.reservaCreada.update(r => r ? { ...r, estadoReserva: 'CONFIRMADA' } : r);
+  }
   private readonly platformId = inject(PLATFORM_ID);
   private cotizacionSubscription?: Subscription;
   private fechasOcupadasSubscription?: Subscription;
@@ -189,7 +198,16 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.modalReservaAbierto.set(abrirReserva);
+    const idTransaccion = Number(params.get('transaccion'));
+    const contexto = this.retornoCheckout.obtener(idTransaccion);
+    if (contexto && contexto.reserva.idCabana === this.idCabana) {
+      this.reservaCreada.set(contexto.reserva);
+      this.cotizacion.set(contexto.cotizacion ?? null);
+      this.fechaIngreso.set(contexto.reserva.fechaIngreso); this.fechaSalida.set(contexto.reserva.fechaSalida);
+      this.adultos.set(contexto.adultos); this.ninos.set(contexto.ninos); this.indiceImagen.set(contexto.imagen);
+      this.transaccionRetorno.set(idTransaccion); this.modalReservaAbierto.set(true);
+      window.scrollTo(0, contexto.scroll);
+    } else this.modalReservaAbierto.set(abrirReserva);
     this.cargarDetalle();
   }
 
@@ -237,7 +255,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         if (this.modalReservaAbierto()) {
           this.consultarFechasOcupadas();
 
-          if (this.puedeCotizar()) {
+          if (this.puedeCotizar() && !this.reservaCreada()) {
             this.consultarDisponibilidad();
           }
         }

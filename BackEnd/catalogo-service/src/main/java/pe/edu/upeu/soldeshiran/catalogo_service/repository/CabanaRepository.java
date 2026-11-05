@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CabanaRepository extends JpaRepository<Cabana, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Cabana c WHERE c.idCabana = :id")
+    Optional<Cabana> bloquearPorId(@Param("id") Long id);
+
 
     @Query("""
             SELECT new pe.edu.upeu.soldeshiran.catalogo_service.dto.CabanaResumenResponse(c.idCabana, c.nombre, c.imagenPrincipal)

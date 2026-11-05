@@ -11,6 +11,10 @@ import java.util.List;
         path = "/api/v1/cabanas"
 )
 public interface CatalogoClient {
+    @org.springframework.web.bind.annotation.PostMapping("/interno/{idCabana}/ocupacion/{idReserva}")
+    void ocupar(@PathVariable Long idCabana, @PathVariable Long idReserva,
+        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Service-Token") String token);
+
 
     @GetMapping("/resumen")
     List<CabanaResumenCliente> consultarResumen(@RequestParam("ids") List<Long> ids);

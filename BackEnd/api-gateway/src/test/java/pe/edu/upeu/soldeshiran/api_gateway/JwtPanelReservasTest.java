@@ -41,7 +41,8 @@ class JwtPanelReservasTest {
     @Test
     void listadoYResumenesRequierenGuardian() {
         for (String path : List.of("/api/v1/reservas", "/api/v1/reservas/1",
-                "/api/v1/cabanas/resumen", "/api/v1/usuarios/resumen")) {
+                "/api/v1/cabanas/resumen", "/api/v1/usuarios/resumen",
+                "/api/v1/pagos/reservas/1/restante")) {
             JwtUtil jwt = mock(JwtUtil.class);
             when(jwt.isValid("token")).thenReturn(true);
             when(jwt.getRol("token")).thenReturn("CLIENTE");
@@ -66,6 +67,32 @@ class JwtPanelReservasTest {
             filtro.filter(guardian, chain).block();
             verify(chain).filter(any());
         }
+    }
+
+    @Test
+    void registrarSaldoRequiereGuardianYNoConfiaEnElRolEnviadoPorElCliente() {
+        JwtUtil jwt = mock(JwtUtil.class);
+        when(jwt.isValid("token")).thenReturn(true);
+        when(jwt.getUserId("token")).thenReturn(5L);
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+        when(chain.filter(any())).thenAnswer(invocation -> {
+            org.springframework.web.server.ServerWebExchange exchange = invocation.getArgument(0);
+            assertThat(exchange.getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("GUARDIAN");
+            return Mono.empty();
+        });
+        for (String rol : List.of("CLIENTE", "ADMIN", "GUARDIAN")) {
+            when(jwt.getRol("token")).thenReturn(rol);
+            var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/pagos/reservas/1/restante")
+                    .header("Authorization", "Bearer token")
+                    .header("X-User-Role", rol.equals("GUARDIAN") ? "ADMIN" : "GUARDIAN"));
+            new JwtAuthenticationFilter(jwt).filter(exchange, chain).block();
+            if (!rol.equals("GUARDIAN")) {
+                assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            } else {
+                assertThat(exchange.getResponse().getStatusCode()).isNull();
+            }
+        }
+        verify(chain).filter(any());
     }
 
     @Test
