@@ -13,6 +13,7 @@ import pe.edu.upeu.soldeshiran.reservas_service.client.PanelReservasClient;
 import pe.edu.upeu.soldeshiran.reservas_service.client.PanelReservasClient.CabanaResumen;
 import pe.edu.upeu.soldeshiran.reservas_service.client.PanelReservasClient.UsuarioResumen;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaPanelResponse;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaDetalleResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservasPaginaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.model.Reserva;
 import pe.edu.upeu.soldeshiran.reservas_service.repository.ReservaRepository;
@@ -27,6 +28,31 @@ import java.util.stream.Collectors;
 public class ReservaConsultaService {
     private final ReservaRepository reservaRepository;
     private final PanelReservasClient panelClient;
+
+    public ReservaDetalleResponse consultarDetalle(String authorization, Long idReserva) {
+        if (idReserva == null || idReserva <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ID de reserva debe ser positivo.");
+        }
+        Reserva reserva = reservaRepository.findById(idReserva)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada."));
+        try {
+            var usuario = panelClient.consultarUsuarios(authorization, null, List.of(reserva.getIdUsuario()))
+                    .stream().filter(u -> u.id().equals(reserva.getIdUsuario())).findFirst().orElse(null);
+            var cabana = panelClient.consultarCabanas(authorization, List.of(reserva.getIdCabana()))
+                    .stream().filter(c -> c.idCabana().equals(reserva.getIdCabana())).findFirst().orElse(null);
+            return new ReservaDetalleResponse(
+                    reserva.getIdReserva(), reserva.getIdUsuario(),
+                    usuario == null ? null : usuario.nombre(), usuario == null ? null : usuario.email(),
+                    reserva.getIdCabana(), cabana == null ? null : cabana.nombre(),
+                    reserva.getFechaIngreso(), reserva.getFechaSalida(), reserva.getCantidadHuespedes(),
+                    reserva.getTarifaNocheAplicada(), reserva.getMontoTotal(), reserva.getMontoAdelanto(),
+                    reserva.getSaldoPendiente(), reserva.getEstadoReserva(), reserva.getExpiraEn(),
+                    reserva.getFechaCreacion());
+        } catch (FeignException exception) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudieron consultar los datos del detalle de reserva. Intenta nuevamente.", exception);
+        }
+    }
 
     public ReservasPaginaResponse consultar(String authorization, String buscar, Long idCabana,
                                            int page, int size) {

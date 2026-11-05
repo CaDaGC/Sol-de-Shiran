@@ -12,6 +12,7 @@ import pe.edu.upeu.soldeshiran.reservas_service.service.ReservaService;
 import pe.edu.upeu.soldeshiran.reservas_service.service.ReservaConsultaService;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservasPaginaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaFiltroRequest;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaDetalleResponse;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,6 +30,13 @@ public class ReservaController {
 
     private final ReservaService reservaService;
     private final ReservaConsultaService reservaConsultaService;
+
+    @GetMapping("/{idReserva}")
+    public ReservaDetalleResponse consultarDetalle(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long idReserva) {
+        return reservaConsultaService.consultarDetalle(authorization, idReserva);
+    }
 
     @GetMapping
     public ReservasPaginaResponse consultarReservas(

@@ -103,6 +103,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isPanelReservasRoute(String path, String method) {
         return "GET".equals(method) && (path.equals("/api/v1/reservas")
+                || path.matches("/api/v1/reservas/[^/]+")
                 || path.equals("/api/v1/usuarios/resumen")
                 || path.equals("/api/v1/cabanas/resumen"));
     }
