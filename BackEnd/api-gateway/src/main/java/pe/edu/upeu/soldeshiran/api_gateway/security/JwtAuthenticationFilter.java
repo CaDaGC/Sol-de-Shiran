@@ -46,8 +46,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            if (isAdminRoute(path, method)
-                    && !"ADMIN".equals(jwtUtil.getRol(token))) {
+            boolean panelReservas = isPanelReservasRoute(path, method);
+            if ((panelReservas && !"GUARDIAN".equals(jwtUtil.getRol(token)))
+                    || (!panelReservas && isAdminRoute(path, method)
+                    && !"ADMIN".equals(jwtUtil.getRol(token)))) {
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }
@@ -89,7 +91,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         if (path.startsWith("/api/v1/cabanas")) {
-            return true;
+            return !path.equals("/api/v1/cabanas/resumen");
         }
 
         return path.startsWith("/api/v1/reservas/cabanas/")
@@ -97,6 +99,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 path.endsWith("/disponibilidad")
                         || path.endsWith("/fechas-ocupadas")
         );
+    }
+
+    private boolean isPanelReservasRoute(String path, String method) {
+        return "GET".equals(method) && (path.equals("/api/v1/reservas")
+                || path.equals("/api/v1/usuarios/resumen")
+                || path.equals("/api/v1/cabanas/resumen"));
     }
 
     private boolean isAdminRoute(String path, String method) {

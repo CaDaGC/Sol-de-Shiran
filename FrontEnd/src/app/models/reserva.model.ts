@@ -41,3 +41,27 @@ export interface ReservaResponse {
   estadoReserva: string;
   expiraEn: string;
 }
+
+export interface ReservaPanelResponse {
+  idReserva: number;
+  idUsuario: number;
+  nombreUsuario: string | null;
+  emailUsuario: string | null;
+  idCabana: number;
+  nombreCabana: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  cantidadHuespedes: number;
+  montoTotal: number;
+  montoAdelanto: number;
+  saldoPendiente: number;
+  estadoReserva: string;
+}
+
+export interface ReservasPaginaResponse {
+  content: ReservaPanelResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}

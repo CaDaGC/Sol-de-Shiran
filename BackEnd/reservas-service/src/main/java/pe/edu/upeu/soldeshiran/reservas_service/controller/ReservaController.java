@@ -9,6 +9,9 @@ import pe.edu.upeu.soldeshiran.reservas_service.dto.CrearReservaRequest;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.FechasOcupadasResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaResponse;
 import pe.edu.upeu.soldeshiran.reservas_service.service.ReservaService;
+import pe.edu.upeu.soldeshiran.reservas_service.service.ReservaConsultaService;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservasPaginaResponse;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaFiltroRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,6 +28,15 @@ import java.time.LocalDate;
 public class ReservaController {
 
     private final ReservaService reservaService;
+    private final ReservaConsultaService reservaConsultaService;
+
+    @GetMapping
+    public ReservasPaginaResponse consultarReservas(
+            @RequestHeader("Authorization") String authorization,
+            @Valid @ModelAttribute ReservaFiltroRequest filtro) {
+        return reservaConsultaService.consultar(authorization, filtro.buscar(), filtro.idCabana(),
+                filtro.page(), filtro.size());
+    }
 
     @GetMapping("/cabanas/{idCabana}/disponibilidad")
     public ResponseEntity<CotizacionReservaResponse> consultarDisponibilidad(
