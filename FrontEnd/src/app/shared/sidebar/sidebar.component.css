@@ -7,50 +7,66 @@
   inset: 0 auto 0 0;
   z-index: 20;
   display: flex;
-  width: 250px;
+  width: var(--sidebar-width, 250px);
   flex-direction: column;
-  padding: 28px 18px 16px;
+  padding: 24px 18px 20px;
   color: #edf1e9;
   background: #203d2e;
+  transition: width 200ms ease, padding 200ms ease;
 }
+
+.sidebar-toggle {
+  position: absolute;
+  top: 22px;
+  right: -14px;
+  z-index: 1;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #d7dfd0;
+  border-radius: 50%;
+  color: #203d2e;
+  background: #f7f7f2;
+  line-height: 1;
+  cursor: pointer;
+}
+.sidebar-toggle svg { display: block; }
+.sidebar-toggle .point-right { transform: rotate(180deg); }
+.brand-symbol { display: none; position: relative; width: 44px; height: 44px; overflow: hidden; }
+.brand-symbol img { position: absolute; width: 100px; max-width: none; height: auto; left: 0; top: -11px; }
+.is-collapsed { padding: 24px 12px 20px; }
+.is-collapsed .brand { padding: 0 0 38px; }
+.is-collapsed .brand-logo,
+.is-collapsed .nav-heading,
+.is-collapsed .sidebar-note,
+.is-collapsed .side-nav a > span:not(.nav-icon),
+.is-collapsed .account-heading,
+.is-collapsed .account-data,
+.is-collapsed .logout-label { display: none; }
+.is-collapsed .brand-symbol { display: block; }
+.is-collapsed .side-nav a { justify-content: center; padding: 12px 0; }
+.is-collapsed .account-panel { display: flex; flex-direction: column-reverse; align-items: center; gap: 12px; margin-top: auto; padding: 16px 0 0; }
+.is-collapsed .account-actions { margin: 0; }
+.is-collapsed .logout-button { width: 38px; height: 36px; justify-content: center; font-size: 1.2rem; }
+.is-collapsed .avatar { width: 38px; height: 38px; flex-basis: 38px; font-size: .95rem; }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 8px 30px;
+  justify-content: center;
+  padding: 0 8px 22px;
   color: inherit;
   text-decoration: none;
 }
 
-.brand-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  place-items: center;
-  border-radius: 12px;
-  color: #203d2e;
-  background: #d9b77a;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.brand-text strong,
-.brand-text small {
+.brand-logo {
   display: block;
-}
-
-.brand-text strong {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.05rem;
-}
-
-.brand-text small {
-  margin-top: 4px;
-  color: #c5d0c5;
-  font-size: 0.75rem;
+  width: 100%;
+  max-width: 178px;
+  height: auto;
+  object-fit: contain;
 }
 
 .nav-heading {
@@ -73,7 +89,7 @@
   padding: 12px 13px;
   border-radius: 9px;
   color: #e4e9e2;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   text-decoration: none;
   transition: background 160ms ease, color 160ms ease;
 }
@@ -136,7 +152,7 @@
   border-radius: 6px;
   color: #edf1e9;
   background: transparent;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.74rem;
   cursor: pointer;
 }
@@ -195,6 +211,14 @@
 }
 
 @media (max-width: 700px) {
+  .sidebar-toggle { right: 16px; top: 16px; }
+  .is-collapsed .brand { padding-bottom: 12px; }
+  .is-collapsed .side-nav { justify-content: center; }
+  .is-collapsed .side-nav a { flex: 0 0 48px; }
+  .is-collapsed .account-panel { flex-direction: row; justify-content: center; margin-top: 12px; padding-top: 12px; }
+  .brand-logo {
+    max-width: 130px;
+  }
   .sidebar {
     position: relative;
     inset: auto;
@@ -235,4 +259,8 @@
   .account-heading {
     margin-right: auto;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
 }

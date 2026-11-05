@@ -1,1 +1,87 @@
-/* You can add global styles to this file, and also import other style files */
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+}
+:root {
+  --font-body: 'Manrope', Arial, sans-serif;
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --color-forest: #203d2e;
+  --color-green: #315b3d;
+  --color-cream: #f7f7f2;
+  --color-muted: #657268;
+  --color-line: #e3e8de;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  color: #26352d;
+  background: var(--color-cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+}
+button {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+:is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid #c87932;
+  outline-offset: 3px;
+}
+body app-root :is(.btn-submit, .reserve-button, .continue-button, .primary-button, .retry-button) {
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-forest);
+  border-radius: 9px;
+  color: #fff;
+  background: var(--color-forest);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+body
+  app-root
+  :is(.btn-submit, .reserve-button, .continue-button, .primary-button, .retry-button):hover:not(
+    :disabled
+  ) {
+  background: var(--color-green);
+  border-color: var(--color-green);
+}
+body app-root :is(.btn-submit, .reserve-button, .continue-button, .primary-button):disabled {
+  opacity: 0.5;
+}
+body app-root :is(.secondary-button, .reset-button, .back-button) {
+  border-radius: 9px;
+  font-family: var(--font-body);
+  font-weight: 600;
+}

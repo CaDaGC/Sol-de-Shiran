@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, catchError, finalize, of, switchMap, timer } from 'rxjs';
-import { ESTADOS_RESERVA, ReservasPaginaResponse } from '../../models/reserva.model';
+import { ESTADOS_RESERVA, ReservaPanelResponse, ReservasPaginaResponse } from '../../models/reserva.model';
 import { ReservaDetalleComponent } from '../../shared/reserva-detalle/reserva-detalle.component';
 import { Cabana } from '../../models/cabana.model';
 import { ReservasService } from '../../services/reservas.service';
@@ -32,8 +32,20 @@ export class PanelReservasComponent {
   readonly idCabana = signal<number | null>(null);
   readonly pagina = signal(0);
   readonly idDetalle = signal<number | null>(null);
+  readonly idSeleccionada = signal<number | null>(null);
   readonly tamanoPagina = 20;
   readonly reservas = computed(() => this.resultado()?.content ?? []);
+  readonly seleccionada = computed(() => this.reservas().find(r => r.idReserva === this.idSeleccionada())
+    ?? this.reservas()[0] ?? null);
+
+  noches(reserva: ReservaPanelResponse): number {
+    return Math.round((Date.parse(reserva.fechaSalida + 'T00:00:00Z')
+      - Date.parse(reserva.fechaIngreso + 'T00:00:00Z')) / 86400000);
+  }
+
+  pagado(reserva: ReservaPanelResponse): number {
+    return Math.round((reserva.montoTotal - reserva.saldoPendiente) * 100) / 100;
+  }
 
   readonly hayFiltros = computed(() => !!this.buscar().trim() || this.idCabana() !== null);
 

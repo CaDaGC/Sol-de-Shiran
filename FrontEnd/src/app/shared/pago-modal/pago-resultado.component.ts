@@ -6,11 +6,20 @@ import { PagosService } from '../../services/pagos.service';
 
 @Component({
   selector: 'app-pago-resultado', standalone: true, imports: [CommonModule, RouterLink],
-  template: `<main style="max-width:640px;margin:4rem auto;padding:2rem">
+  template: `<main class="result-page">
+    <img src="/images/logo-sol-shiran.png" alt="Complejo Turístico Sol de Shirán" width="1698" height="926"
+      class="result-logo">
     <h1>Estado de tu pago</h1><p role="status">{{ mensaje() }}</p>
-    <button type="button" [disabled]="cargando()" (click)="consultar()">{{ cargando() ? 'Consultando…' : 'Actualizar estado' }}</button>
+    <button type="button" class="primary-button" [disabled]="cargando()" (click)="consultar()">{{ cargando() ? 'Consultando…' : 'Actualizar estado' }}</button>
     <p><a routerLink="/catalogo">Volver al catálogo</a></p>
-  </main>`
+  </main>`,
+  styles: `
+    .result-page { width: min(620px, calc(100% - 32px)); margin: 48px auto; padding: 32px; border: 1px solid var(--color-line); border-radius: 18px; background: #fff; text-align: center; }
+    .result-logo { display: block; width: min(280px, 100%); height: auto; margin: 0 auto 28px; padding: 20px; border-radius: 12px; background: var(--color-forest); }
+    h1 { color: var(--color-forest); font-size: 2rem; }
+    p { color: var(--color-muted); line-height: 1.7; }
+    a { color: var(--color-green); font-size: .85rem; }
+  `
 })
 export class PagoResultadoComponent implements OnInit {
   readonly mensaje = signal('Consultando el estado de la operación…');

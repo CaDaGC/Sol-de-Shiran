@@ -66,8 +66,22 @@ describe('Integración del panel de reservas', () => {
     request.flush(pagina([reserva, { ...reserva, idReserva: 2 }]));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('2 reservas');
-    expect(fixture.nativeElement.querySelectorAll('[data-status="CONFIRMADA"]').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.reservation-list [data-status="CONFIRMADA"]').length).toBe(2);
     expect(fixture.nativeElement.textContent).toContain('Familiar');
+  });
+
+  it('seleccionar una reserva actualiza noches e importes sin otra petición', () => {
+    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, nombreCabana: 'Jardín',
+      fechaSalida: '2026-12-05', montoTotal: 900, saldoPendiente: 150 }]));
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva #2"]').click();
+    fixture.detectChanges();
+    const detalle = fixture.nativeElement.querySelector('.detail-card');
+    expect(detalle.textContent).toContain('Jardín');
+    expect(detalle.textContent).toContain('4 noches');
+    expect(detalle.querySelector('.amount-grid > div:nth-child(2)').textContent).toContain('750.00');
+    expect(detalle.querySelector('.balance').textContent).toContain('150.00');
+    http.expectNone(req => req.url.includes('/reservas'));
   });
 
   it('cancela respuestas anteriores y combina búsqueda y cabaña en el servidor', async () => {
@@ -131,6 +145,8 @@ describe('Integración del panel de reservas', () => {
     fixture.nativeElement.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
     expect(pendiente.cancelled).toBe(true);
+    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva #2"]').click();
+    fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #2"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/2')).flush({

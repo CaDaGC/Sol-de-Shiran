@@ -2,46 +2,46 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f4f6f8;
-  font-family: Arial, sans-serif;
+  min-height: 100dvh;
+  padding: 28px 16px;
+  background-color: var(--color-cream);
+  font-family: var(--font-body);
 }
 
 .login-card {
   background: white;
-  padding: 40px;
-  border-radius: 10px;
+  padding: 32px;
+  border-radius: 18px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  width: 380px;
+  width: min(440px, 100%);
   border-top: 5px solid #1b4d3e; /* Verde corporativo institucional */
 }
 
 .login-header {
   text-align: center;
   margin-bottom: 30px;
+  padding: 22px 18px;
+  border-radius: 12px;
+  background: var(--color-forest);
 }
 
-.logo-badge {
-  display: inline-block;
-  background-color: #1b4d3e;
-  color: white;
-  font-weight: bold;
-  font-size: 13px;
-  padding: 6px 12px;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  letter-spacing: 1px;
+.login-logo {
+  display: block;
+  width: min(240px, 100%);
+  height: auto;
+  margin: 0 auto 24px;
+  object-fit: contain;
 }
 
 .login-header h2 {
   margin: 0 0 5px 0;
-  color: #2c3e50;
-  font-size: 22px;
+  color: #fff;
+  font-size: 26px;
 }
 
 .login-header p {
   margin: 0;
-  color: #7f8c8d;
+  color: #d6dfd2;
   font-size: 13px;
 }
 
@@ -106,7 +106,7 @@
 .back-to-catalog {
   display: inline-block;
   margin-bottom: 18px;
-  color: #315b3d;
+  color: #d9b77a;
   font-size: 13px;
   text-decoration: none;
 }
