@@ -31,6 +31,9 @@ public class TransaccionPago {
     @Column(name = "solicitud_checkout", columnDefinition = "TEXT")
     private String solicitudCheckout;
 
+    @Column(name = "clave_idempotencia_checkout", unique = true, length = 36)
+    private String claveIdempotenciaCheckout;
+
     @Column(name = "numero_operacion_fisica", length = 50)
     private String numeroOperacionFisica;
 

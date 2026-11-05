@@ -63,9 +63,8 @@ public class PagoServiceImpl implements PagoService {
             if (anterior.getIdExternoPasarela() == null) {
                 if (anterior.getSolicitudCheckout() != null) {
                     try {
-                        Map<String, Object> original = objectMapper.readValue(anterior.getSolicitudCheckout(),
-                                new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
-                        return enviarOrden(anterior, original);
+                        objectMapper.readTree(anterior.getSolicitudCheckout());
+                        return enviarOrden(anterior, anterior.getSolicitudCheckout());
                     } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
                         throw new ResponseStatusException(HttpStatus.CONFLICT, "No se pudo recuperar la solicitud original. Consulta el estado antes de volver a pagar.");
                     }
@@ -107,17 +106,23 @@ public class PagoServiceImpl implements PagoService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo preparar el checkout.", e);
         }
         transaccionRepository.saveAndFlush(tx);
-        return enviarOrden(tx, body);
+        return enviarOrden(tx, tx.getSolicitudCheckout());
     }
 
-    private PreferenciaResponse enviarOrden(TransaccionPago tx, Map<String, Object> body) {
+    private PreferenciaResponse enviarOrden(TransaccionPago tx, String body) {
         JsonNode order;
         try {
-            order = crearOrdenConReintento(tx.getIdTransaccion(), body);
+            order = crearOrdenConReintento(tx, body);
         } catch (RestClientResponseException e) {
             tx.setEstadoTransaccion(e.getStatusCode().is4xxClientError() && e.getStatusCode().value() != 409
                     ? EstadoTransaccion.RECHAZADA : EstadoTransaccion.PENDIENTE);
             transaccionRepository.save(tx);
+            if (esClaveYaUtilizada(e)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Mercado Pago informa que la clave de este intento ya fue utilizada. "
+                                + "Verifica la orden anterior antes de iniciar otro pago; "
+                                + "no se ha creado un nuevo intento.", e);
+            }
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Mercado Pago respondió HTTP " + e.getStatusCode().value() + ": "
                             + detalleRespuestaProveedor(e.getResponseBodyAsString()), e);
@@ -165,16 +170,29 @@ public class PagoServiceImpl implements PagoService {
         actualizarOrden(tx, order);
     }
 
-    private JsonNode crearOrdenConReintento(Long idTransaccion, Map<String, Object> body) {
+    private JsonNode crearOrdenConReintento(TransaccionPago tx, String body) {
+        String clave = tx.getClaveIdempotenciaCheckout() == null
+                ? "orden-" + tx.getIdTransaccion() : tx.getClaveIdempotenciaCheckout();
         // Un conflicto transitorio se recupera con el MISMO cuerpo y clave; nunca se crea otra transacción.
         for (int intento = 0; ; intento++) {
             try {
                 return mercadoPago.post().uri("/v1/orders")
-                        .header("X-Idempotency-Key", "orden-" + idTransaccion)
+                        .header("X-Idempotency-Key", clave)
                         .body(body).retrieve().body(JsonNode.class);
             } catch (RestClientResponseException e) {
-                if (e.getStatusCode().value() != 409 || intento >= 1) throw e;
+                if (e.getStatusCode().value() != 409 || esClaveYaUtilizada(e) || intento >= 1) throw e;
             }
+        }
+    }
+
+    private boolean esClaveYaUtilizada(RestClientResponseException error) {
+        if (error.getStatusCode().value() != 409) return false;
+        try {
+            JsonNode detalle = objectMapper.readTree(error.getResponseBodyAsString());
+            return detalle != null && detalle.findValues("code").stream()
+                    .anyMatch(code -> "idempotency_key_already_used".equals(code.asText()));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return false;
         }
     }
 
@@ -260,6 +278,7 @@ public class PagoServiceImpl implements PagoService {
         tx.setMonto(reserva.montoAdelanto());
         tx.setMoneda("PEN");
         tx.setMetodoPago("MERCADO_PAGO_ORDERS");
+        tx.setClaveIdempotenciaCheckout(UUID.randomUUID().toString());
         tx.setEstadoTransaccion(EstadoTransaccion.PENDIENTE);
         return tx;
     }
