@@ -10,7 +10,8 @@ import {
   CrearReservaRequest,
   FechasOcupadasResponse,
   ReservaResponse,
-  ReservasPaginaResponse
+  ReservasPaginaResponse,
+  ReservaDetalleResponse
 } from '../models/reserva.model';
 
 @Injectable({
@@ -20,6 +21,11 @@ export class ReservasService {
   private readonly url = `${API_CONFIG.baseUrl}/reservas`;
 
   constructor(private readonly http: HttpClient) {}
+
+  consultarDetalle(idReserva: number): Observable<ReservaDetalleResponse> {
+    return this.http.get<ReservaDetalleResponse>(`${this.url}/${idReserva}`)
+      .pipe(timeout({ first: 15000 }));
+  }
 
   listarReservas(buscar: string, idCabana: number | null, page: number, size: number): Observable<ReservasPaginaResponse> {
     let params = new HttpParams().set('page', page).set('size', size);

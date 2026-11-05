@@ -65,3 +65,18 @@ export interface ReservasPaginaResponse {
   totalElements: number;
   totalPages: number;
 }
+
+export interface ReservaDetalleResponse extends ReservaPanelResponse {
+  tarifaNocheAplicada: number;
+  expiraEn: string;
+  fechaCreacion: string | null;
+}
+
+export const ESTADOS_RESERVA: Record<string, string> = {
+  PENDIENTE_PAGO: 'Pendiente de pago',
+  CONFIRMADA: 'Confirmada',
+  OCUPADA: 'En estadía',
+  FINALIZADA: 'Finalizada',
+  CANCELADA: 'Cancelada',
+  EXPIRADA: 'Expirada'
+};

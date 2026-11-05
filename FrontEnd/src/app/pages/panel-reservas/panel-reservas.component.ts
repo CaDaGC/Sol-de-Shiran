@@ -4,7 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, catchError, finalize, of, switchMap, timer } from 'rxjs';
-import { ReservasPaginaResponse } from '../../models/reserva.model';
+import { ESTADOS_RESERVA, ReservasPaginaResponse } from '../../models/reserva.model';
+import { ReservaDetalleComponent } from '../../shared/reserva-detalle/reserva-detalle.component';
 import { Cabana } from '../../models/cabana.model';
 import { ReservasService } from '../../services/reservas.service';
 import { CabanaService } from '../../services/cabana.service';
@@ -12,7 +13,7 @@ import { CabanaService } from '../../services/cabana.service';
 @Component({
   selector: 'app-panel-reservas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReservaDetalleComponent],
   templateUrl: './panel-reservas.component.html',
   styleUrl: './panel-reservas.component.css'
 })
@@ -30,6 +31,7 @@ export class PanelReservasComponent {
   readonly buscar = signal('');
   readonly idCabana = signal<number | null>(null);
   readonly pagina = signal(0);
+  readonly idDetalle = signal<number | null>(null);
   readonly tamanoPagina = 20;
   readonly reservas = computed(() => this.resultado()?.content ?? []);
 
@@ -70,14 +72,7 @@ export class PanelReservasComponent {
     ).subscribe(resultado => this.resultado.set(resultado));
   }
 
-  readonly estados: Record<string, string> = {
-    PENDIENTE_PAGO: 'Pendiente de pago',
-    CONFIRMADA: 'Confirmada',
-    OCUPADA: 'En estadía',
-    FINALIZADA: 'Finalizada',
-    CANCELADA: 'Cancelada',
-    EXPIRADA: 'Expirada'
-  };
+  readonly estados = ESTADOS_RESERVA;
 
   limpiarFiltros(): void {
     this.buscar.set('');

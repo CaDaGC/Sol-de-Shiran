@@ -18,7 +18,8 @@ import static org.mockito.Mockito.*;
 class JwtPanelReservasTest {
     @Test
     void listadoYResumenesRequierenGuardian() {
-        for (String path : List.of("/api/v1/reservas", "/api/v1/cabanas/resumen", "/api/v1/usuarios/resumen")) {
+        for (String path : List.of("/api/v1/reservas", "/api/v1/reservas/1",
+                "/api/v1/cabanas/resumen", "/api/v1/usuarios/resumen")) {
             JwtUtil jwt = mock(JwtUtil.class);
             when(jwt.isValid("token")).thenReturn(true);
             when(jwt.getRol("token")).thenReturn("CLIENTE");

@@ -59,6 +59,7 @@
             <th scope="col">Personas</th>
             <th scope="col" class="amount">Total / saldo</th>
             <th scope="col">Estado</th>
+            <th scope="col">Acción</th>
           </tr>
         </thead>
         <tbody>
@@ -82,6 +83,9 @@
               <td><span class="status" [attr.data-status]="reserva.estadoReserva">
                 {{ estados[reserva.estadoReserva] || reserva.estadoReserva }}
               </span></td>
+              <td><button type="button" class="manage-button"
+                [attr.aria-label]="'Administrar reserva #' + reserva.idReserva"
+                (click)="idDetalle.set(reserva.idReserva)">Administrar</button></td>
             </tr>
           }
         </tbody>
@@ -118,3 +122,6 @@
     }
   </section>
 </section>
+@if (idDetalle(); as id) {
+  <app-reserva-detalle [idReserva]="id" (cerrar)="idDetalle.set(null)"></app-reserva-detalle>
+}

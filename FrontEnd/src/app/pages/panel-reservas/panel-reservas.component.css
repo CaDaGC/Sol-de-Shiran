@@ -5,6 +5,16 @@
   background: #f7f7f2;
   font-family: Arial, Helvetica, sans-serif;
 }
+.manage-button {
+  padding: 9px 12px;
+  border: 1px solid #315b3d;
+  border-radius: 7px;
+  color: #315b3d;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 600;
+}
+.manage-button:hover { background: #edf3eb; }
 .field-error { margin: 8px 0 0; color: #943d32; font-size: .8rem; line-height: 1.5; }
 .field-error:empty { display: none; }
 .pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; border-top: 1px solid #eceee7; font-size: .8rem; }
