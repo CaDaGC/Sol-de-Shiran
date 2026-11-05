@@ -120,6 +120,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoResponse consultarEstado(Long usuario, Long idTransaccion) {
+        // Validar que la transacción exista y pertenezca al usuario
         TransaccionPago tx = transaccionRepository.findById(idTransaccion)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe la transacción."));
         ReservaPagoResponse reserva = reservaClient.obtenerReserva(tx.getIdReserva(), internalToken);
