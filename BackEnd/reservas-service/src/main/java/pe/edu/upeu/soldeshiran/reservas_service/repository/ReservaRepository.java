@@ -13,6 +13,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpecificationExecutor<Reserva> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM Reserva r WHERE r.idReserva = :id")
+    java.util.Optional<Reserva> bloquearPorId(@Param("id") Long id);
+
 
     @Query("""
             SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END

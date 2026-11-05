@@ -123,5 +123,5 @@
   </section>
 </section>
 @if (idDetalle(); as id) {
-  <app-reserva-detalle [idReserva]="id" (cerrar)="idDetalle.set(null)"></app-reserva-detalle>
+  <app-reserva-detalle [idReserva]="id" (cerrar)="idDetalle.set(null)" (actualizado)="cargar()"></app-reserva-detalle>
 }

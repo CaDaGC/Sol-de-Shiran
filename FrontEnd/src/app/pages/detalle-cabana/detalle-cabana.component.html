@@ -322,7 +322,7 @@
           </p>
 
           <p class="hold-created" *ngIf="reservaCreada()">
-            Hay un bloqueo temporal activo. El pago se habilitará en la siguiente HU.
+            {{ reservaCreada()?.estadoReserva === 'CONFIRMADA' ? 'Tu adelanto está pagado y la reserva confirmada.' : 'Tus fechas están bloqueadas temporalmente. Completa el adelanto para confirmar la reserva.' }}
           </p>
         </section>
       </div>
@@ -349,6 +349,9 @@
           *ngIf="reservaCreada() as reserva"
           [reserva]="reserva"
           [nombreCabana]="cabana()?.nombre ?? 'Cabaña'"
+          [transaccionRetorno]="transaccionRetorno()"
+          [contexto]="{ adultos: adultos(), ninos: ninos(), imagen: indiceImagen(), cotizacion: cotizacion() }"
+          (confirmado)="pagoConfirmado()"
         ></app-pago-modal>
       </footer>
     </section>

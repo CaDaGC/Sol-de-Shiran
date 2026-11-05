@@ -61,6 +61,15 @@ public class PagoServiceImpl implements PagoService {
         if (pendiente.isPresent()) {
             TransaccionPago anterior = pendiente.get();
             if (anterior.getIdExternoPasarela() == null) {
+                if (anterior.getSolicitudCheckout() != null) {
+                    try {
+                        Map<String, Object> original = objectMapper.readValue(anterior.getSolicitudCheckout(),
+                                new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                        return enviarOrden(anterior, original);
+                    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "No se pudo recuperar la solicitud original. Consulta el estado antes de volver a pagar.");
+                    }
+                }
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Hay un intento de resultado incierto. Verifica su estado antes de iniciar otro pago.");
             }
@@ -92,13 +101,21 @@ public class PagoServiceImpl implements PagoService {
                 "external_code", "reserva-" + idReserva)));
         body.put("config", Map.of("online", Map.of("success_url", retorno,
                 "failure_url", retorno, "pending_url", retorno)));
+        try {
+            tx.setSolicitudCheckout(objectMapper.writeValueAsString(body));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo preparar el checkout.", e);
+        }
+        transaccionRepository.saveAndFlush(tx);
+        return enviarOrden(tx, body);
+    }
+
+    private PreferenciaResponse enviarOrden(TransaccionPago tx, Map<String, Object> body) {
         JsonNode order;
         try {
-            order = mercadoPago.post().uri("/v1/orders")
-                    .header("X-Idempotency-Key", "orden-" + tx.getIdTransaccion())
-                    .body(body).retrieve().body(JsonNode.class);
+            order = crearOrdenConReintento(tx.getIdTransaccion(), body);
         } catch (RestClientResponseException e) {
-            tx.setEstadoTransaccion(e.getStatusCode().is4xxClientError()
+            tx.setEstadoTransaccion(e.getStatusCode().is4xxClientError() && e.getStatusCode().value() != 409
                     ? EstadoTransaccion.RECHAZADA : EstadoTransaccion.PENDIENTE);
             transaccionRepository.save(tx);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
@@ -120,6 +137,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoResponse consultarEstado(Long usuario, Long idTransaccion) {
+        // Validar que la transacción exista y pertenezca al usuario
         TransaccionPago tx = transaccionRepository.findById(idTransaccion)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe la transacción."));
         ReservaPagoResponse reserva = reservaClient.obtenerReserva(tx.getIdReserva(), internalToken);
@@ -145,6 +163,19 @@ public class PagoServiceImpl implements PagoService {
                     }
                 });
         actualizarOrden(tx, order);
+    }
+
+    private JsonNode crearOrdenConReintento(Long idTransaccion, Map<String, Object> body) {
+        // Un conflicto transitorio se recupera con el MISMO cuerpo y clave; nunca se crea otra transacción.
+        for (int intento = 0; ; intento++) {
+            try {
+                return mercadoPago.post().uri("/v1/orders")
+                        .header("X-Idempotency-Key", "orden-" + idTransaccion)
+                        .body(body).retrieve().body(JsonNode.class);
+            } catch (RestClientResponseException e) {
+                if (e.getStatusCode().value() != 409 || intento >= 1) throw e;
+            }
+        }
     }
 
     private JsonNode obtenerOrden(String id) {

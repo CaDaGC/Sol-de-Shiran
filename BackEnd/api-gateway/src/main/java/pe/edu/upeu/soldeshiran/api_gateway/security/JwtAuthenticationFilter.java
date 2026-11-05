@@ -25,6 +25,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
         String method = exchange.getRequest().getMethod().name();
 
+        if (path.contains("/interno/")) {
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
         if (isPublicRoute(path, method)) {
             return chain.filter(exchange);
         }
@@ -62,6 +66,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         // No se permite que el cliente suplante el ID del usuario.
                         headers.remove("X-User-Id");
                         headers.set("X-User-Id", userId.toString());
+                        headers.set("X-User-Role", jwtUtil.getRol(token));
                     })
                     .build();
 
@@ -102,7 +107,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPanelReservasRoute(String path, String method) {
-        return "GET".equals(method) && (path.equals("/api/v1/reservas")
+        return (("POST".equals(method) || "GET".equals(method))
+                && path.matches("/api/v1/pagos/reservas/[0-9]+/restante"))
+                || "GET".equals(method) && (path.equals("/api/v1/reservas")
                 || path.matches("/api/v1/reservas/[^/]+")
                 || path.equals("/api/v1/usuarios/resumen")
                 || path.equals("/api/v1/cabanas/resumen"));

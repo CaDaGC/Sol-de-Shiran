@@ -44,6 +44,11 @@ public class Cabana {
     @Column(nullable = false, length = 20)
     private EstadoCabana estado = EstadoCabana.ACTIVA;
 
+    @Column(name="id_reserva_ocupante")
+    private Long idReservaOcupante;
+
+    public String getEstadoOcupacion() { return idReservaOcupante == null ? "DISPONIBLE" : "OCUPADA"; }
+
     @Column(name = "imagen_principal", nullable = false, length = 255)
     private String imagenPrincipal;
 

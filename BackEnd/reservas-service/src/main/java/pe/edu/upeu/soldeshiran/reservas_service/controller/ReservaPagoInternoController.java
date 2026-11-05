@@ -42,6 +42,17 @@ public class ReservaPagoInternoController {
         service.confirmar(idReserva, request);
     }
 
+    @GetMapping("/{idReserva}/saldo-check-in")
+    public pe.edu.upeu.soldeshiran.reservas_service.dto.SaldoCheckInResponse saldoCheckIn(@PathVariable Long idReserva,
+        @RequestHeader("X-Internal-Service-Token") String token) {
+        validarToken(token); return service.saldoCheckIn(idReserva);
+    }
+    @PostMapping("/{idReserva}/check-in")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void checkIn(@PathVariable Long idReserva, @RequestHeader("X-Internal-Service-Token") String token,
+        @Valid @RequestBody pe.edu.upeu.soldeshiran.reservas_service.dto.CheckInRequest request) {
+        validarToken(token); service.checkIn(idReserva,request);
+    }
     private void validarToken(String recibido) {
         boolean valido = recibido != null
                 && MessageDigest.isEqual(

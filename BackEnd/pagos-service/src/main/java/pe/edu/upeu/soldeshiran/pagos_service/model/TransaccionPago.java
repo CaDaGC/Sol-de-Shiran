@@ -28,6 +28,9 @@ public class TransaccionPago {
     @Column(name = "id_externo_pasarela", unique = true, length = 100)
     private String idExternoPasarela;
 
+    @Column(name = "solicitud_checkout", columnDefinition = "TEXT")
+    private String solicitudCheckout;
+
     @Column(name = "numero_operacion_fisica", length = 50)
     private String numeroOperacionFisica;
 
