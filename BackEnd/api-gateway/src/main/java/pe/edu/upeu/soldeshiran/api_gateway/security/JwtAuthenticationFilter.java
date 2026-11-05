@@ -46,6 +46,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         try {
+            if (path.equals("/api/v1/reservas/mis-reservas")
+                    && !"CLIENTE".equals(jwtUtil.getRol(token))) {
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
             boolean panelReservas = isPanelReservasRoute(path, method);
             if ((panelReservas && !"GUARDIAN".equals(jwtUtil.getRol(token)))
                     || (!panelReservas && isAdminRoute(path, method)
@@ -103,7 +108,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isPanelReservasRoute(String path, String method) {
         return "GET".equals(method) && (path.equals("/api/v1/reservas")
-                || path.matches("/api/v1/reservas/[^/]+")
+                || (path.matches("/api/v1/reservas/[^/]+") && !path.equals("/api/v1/reservas/mis-reservas"))
                 || path.equals("/api/v1/usuarios/resumen")
                 || path.equals("/api/v1/cabanas/resumen"));
     }

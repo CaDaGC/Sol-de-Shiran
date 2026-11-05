@@ -42,6 +42,23 @@ export interface ReservaResponse {
   expiraEn: string;
 }
 
+export type GrupoReservasCliente = 'TODAS' | 'PENDIENTES' | 'CONFIRMADAS' | 'PASADAS';
+
+export interface MiReservaResponse extends ReservaResponse {
+  nombreCabana: string | null;
+  imagenPrincipal: string | null;
+  grupo: GrupoReservasCliente;
+  pagoDisponible: boolean;
+}
+
+export interface MisReservasPaginaResponse {
+  content: MiReservaResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface ReservaPanelResponse {
   idReserva: number;
   idUsuario: number;

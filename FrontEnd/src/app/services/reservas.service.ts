@@ -11,7 +11,9 @@ import {
   FechasOcupadasResponse,
   ReservaResponse,
   ReservasPaginaResponse,
-  ReservaDetalleResponse
+  ReservaDetalleResponse,
+  GrupoReservasCliente,
+  MisReservasPaginaResponse
 } from '../models/reserva.model';
 
 @Injectable({
@@ -21,6 +23,12 @@ export class ReservasService {
   private readonly url = `${API_CONFIG.baseUrl}/reservas`;
 
   constructor(private readonly http: HttpClient) {}
+
+  consultarMisReservas(grupo: GrupoReservasCliente, page: number): Observable<MisReservasPaginaResponse> {
+    const params = new HttpParams().set('grupo', grupo).set('page', page).set('size', 20);
+    return this.http.get<MisReservasPaginaResponse>(`${this.url}/mis-reservas`, { params })
+      .pipe(timeout({ first: 15000 }));
+  }
 
   consultarDetalle(idReserva: number): Observable<ReservaDetalleResponse> {
     return this.http.get<ReservaDetalleResponse>(`${this.url}/${idReserva}`)

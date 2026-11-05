@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface CabanaRepository extends JpaRepository<Cabana, Long> {
 
     @Query("""
-            SELECT new pe.edu.upeu.soldeshiran.catalogo_service.dto.CabanaResumenResponse(c.idCabana, c.nombre)
+            SELECT new pe.edu.upeu.soldeshiran.catalogo_service.dto.CabanaResumenResponse(c.idCabana, c.nombre, c.imagenPrincipal)
             FROM Cabana c WHERE c.idCabana IN :ids
             """)
     List<CabanaResumenResponse> resumirPorIds(@Param("ids") List<Long> ids);

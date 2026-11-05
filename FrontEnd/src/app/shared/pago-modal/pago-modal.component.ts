@@ -13,6 +13,7 @@ import { PagosService } from '../../services/pagos.service';
 export class PagoModalComponent {
   @Input({ required: true }) reserva!: ReservaResponse;
   @Input() nombreCabana = 'Cabaña';
+  @Input() textoBoton = '';
   readonly abierto = signal(false);
   readonly enviandoPago = signal(false);
   readonly mensaje = signal('');

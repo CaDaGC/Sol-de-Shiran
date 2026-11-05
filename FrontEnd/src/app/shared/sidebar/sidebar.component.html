@@ -20,6 +20,11 @@
   <p class="nav-heading">NAVEGACIÓN</p>
 
   <nav id="sidebar-navigation" class="side-nav" aria-label="Navegación principal">
+    @if (perfil()?.rol === 'CLIENTE') {
+      <a routerLink="/mis-reservas" routerLinkActive="active" aria-label="Mis reservas" [attr.title]="contraido() ? 'Mis reservas' : null">
+        <span class="nav-icon" aria-hidden="true">▤</span><span>Mis reservas</span>
+      </a>
+    }
     @if (perfil()?.rol === 'GUARDIAN') {
       <a routerLink="/guardian/reservas" routerLinkActive="active" aria-label="Reservas" [attr.title]="contraido() ? 'Reservas' : null">
         <span class="nav-icon" aria-hidden="true">▤</span>
@@ -27,6 +32,7 @@
       </a>
     }
     <a
+      *ngIf="perfil()?.rol !== 'GUARDIAN'"
       routerLink="/catalogo"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"

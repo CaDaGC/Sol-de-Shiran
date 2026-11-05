@@ -5,6 +5,7 @@ import { DetalleCabanaComponent } from './pages/detalle-cabana/detalle-cabana.co
 import { CatalogoComponent } from './pages/catalogo/catalogo.component';
 import { LoginComponent } from './pages/login/login.component';
 import { guardianGuard } from './guards/guardian.guard';
+import { clienteGuard } from './guards/cliente.guard';
 
 export const routes: Routes = [
   { path: 'pago/resultado', component: PagoResultadoComponent },
@@ -16,6 +17,12 @@ export const routes: Routes = [
     path: '',
     component: BusinessLayoutComponent,
     children: [
+      {
+        path: 'mis-reservas',
+        canActivate: [clienteGuard],
+        loadComponent: () => import('./pages/mis-reservas/mis-reservas.component')
+          .then(module => module.MisReservasComponent)
+      },
       {
         path: 'guardian/reservas',
         canActivate: [guardianGuard],

@@ -1,6 +1,7 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
+  { path: 'mis-reservas', renderMode: RenderMode.Client },
   {
     path: 'guardian/reservas',
     renderMode: RenderMode.Client

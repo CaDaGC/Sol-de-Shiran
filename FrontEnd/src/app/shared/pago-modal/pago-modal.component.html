@@ -1,4 +1,4 @@
-<button class="pay-button" type="button" (click)="abrir()">Pagar adelanto {{ formatearMonto(reserva.montoAdelanto) }}</button>
+<button class="pay-button" type="button" (click)="abrir()">{{ textoBoton || 'Pagar adelanto ' + formatearMonto(reserva.montoAdelanto) }}</button>
 <p class="payment-message" *ngIf="mensaje() && !abierto()" role="alert">{{ mensaje() }}</p>
 <div class="payment-backdrop" *ngIf="abierto()" (click)="cerrar(); $event.stopPropagation()">
   <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-title" (click)="$event.stopPropagation()">

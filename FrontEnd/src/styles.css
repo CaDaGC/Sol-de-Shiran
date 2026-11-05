@@ -21,6 +21,8 @@
   --color-muted: #657268;
   --color-line: #e3e8de;
 }
+app-mis-reservas .reservation-card .pay-button { min-height: 40px; border-radius: 9px; background: var(--color-forest); font-size: .77rem; }
+app-mis-reservas .reservation-card .pay-button:hover { background: var(--color-green); }
 *,
 *::before,
 *::after {
