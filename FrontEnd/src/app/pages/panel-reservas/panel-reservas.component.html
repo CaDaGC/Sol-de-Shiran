@@ -7,120 +7,223 @@
     </div>
     <span class="area-label"><span aria-hidden="true">●</span> Gestión de estancias</span>
   </header>
-
-  <section class="filters" aria-labelledby="filters-title">
-    <div class="section-heading">
-      <h2 id="filters-title">Buscar reservas</h2>
-      <button type="button" class="clear-button" (click)="limpiarFiltros()" [disabled]="!hayFiltros()">
-        Limpiar filtros
-      </button>
+  <section class="filters" aria-label="Buscar reservas">
+    <div class="search-field">
+      <label class="sr-only" for="buscar-reserva">Usuario o correo electrónico</label>
+      <span aria-hidden="true">⌕</span
+      ><input
+        id="buscar-reserva"
+        type="search"
+        maxlength="100"
+        autocomplete="off"
+        placeholder="Buscar por nombre o correo"
+        [ngModel]="buscar()"
+        (ngModelChange)="actualizarBusqueda($event)"
+      />
     </div>
-    <div class="filter-fields">
-      <div class="field">
-        <label for="buscar-reserva">Usuario o correo electrónico</label>
-        <input id="buscar-reserva" type="search" maxlength="100" autocomplete="off"
-          placeholder="Buscar por nombre o correo" [ngModel]="buscar()" (ngModelChange)="actualizarBusqueda($event)">
-      </div>
-      <div class="field">
-        <label for="filtrar-cabana">Cabaña</label>
-        <select id="filtrar-cabana" [disabled]="cargandoCabanas() || !!errorCabanas()"
-          [ngModel]="idCabana()" (ngModelChange)="filtrarCabana($event)" aria-describedby="error-cabanas">
-          <option [ngValue]="null">Todas las cabañas</option>
-          @for (cabana of cabanas(); track cabana.idCabana) {
-            <option [ngValue]="cabana.idCabana">{{ cabana.nombre }}</option>
-          }
-        </select>
-        <p id="error-cabanas" class="field-error" role="status">{{ errorCabanas() }}</p>
-      </div>
+    <div>
+      <label class="sr-only" for="filtrar-cabana">Cabaña</label>
+      <select
+        id="filtrar-cabana"
+        [disabled]="cargandoCabanas() || !!errorCabanas()"
+        [ngModel]="idCabana()"
+        (ngModelChange)="filtrarCabana($event)"
+        aria-describedby="error-cabanas"
+      >
+        <option [ngValue]="null">Todas las cabañas</option>
+        @for (cabana of cabanas(); track cabana.idCabana) {
+          <option [ngValue]="cabana.idCabana">{{ cabana.nombre }}</option>
+        }
+      </select>
     </div>
+    <button
+      type="button"
+      class="clear-button"
+      (click)="limpiarFiltros()"
+      [disabled]="!hayFiltros()"
+    >
+      Limpiar filtros
+    </button>
+    <p id="error-cabanas" class="field-error" role="status">{{ errorCabanas() }}</p>
   </section>
-
-  <section class="reservations" aria-labelledby="reservations-title" [attr.aria-busy]="cargando()">
-    <div class="section-heading table-heading">
-      <div>
-        <h2 id="reservations-title">Registro de reservas</h2>
-        <p>Información de huéspedes, estancias y pagos.</p>
-      </div>
-      @if (resultado(); as datos) {
-        <span class="record-count" role="status" aria-live="polite">
-          {{ datos.totalElements }} {{ datos.totalElements === 1 ? 'reserva' : 'reservas' }}
-        </span>
-      }
-    </div>
-    <div class="table-scroll" role="region" aria-label="Tabla de reservas" tabindex="0">
-      <table>
-        <caption class="sr-only">Reservas filtradas por usuario, correo electrónico y cabaña</caption>
-        <thead>
-          <tr>
-            <th scope="col">Reserva</th>
-            <th scope="col">Huésped</th>
-            <th scope="col">Cabaña</th>
-            <th scope="col">Estancia</th>
-            <th scope="col">Personas</th>
-            <th scope="col" class="amount">Total / saldo</th>
-            <th scope="col">Estado</th>
-            <th scope="col">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (reserva of reservas(); track reserva.idReserva) {
-            <tr>
-              <th scope="row" class="reservation-id">#{{ reserva.idReserva }}</th>
-              <td>
-                <strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong>
-                <span class="secondary email">{{ reserva.emailUsuario || 'Sin correo disponible' }}</span>
-              </td>
-              <td>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</td>
-              <td class="stay">
-                <span>{{ reserva.fechaIngreso | date:'dd/MM/yyyy' }}</span>
-                <span class="secondary">al {{ reserva.fechaSalida | date:'dd/MM/yyyy' }}</span>
-              </td>
-              <td>{{ reserva.cantidadHuespedes }}</td>
-              <td class="amount">
-                <strong>{{ reserva.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</strong>
-                <span class="secondary">Saldo {{ reserva.saldoPendiente | currency:'PEN':'S/ ':'1.2-2' }}</span>
-              </td>
-              <td><span class="status" [attr.data-status]="reserva.estadoReserva">
-                {{ estados[reserva.estadoReserva] || reserva.estadoReserva }}
-              </span></td>
-              <td><button type="button" class="manage-button"
-                [attr.aria-label]="'Administrar reserva #' + reserva.idReserva"
-                (click)="idDetalle.set(reserva.idReserva)">Administrar</button></td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    @if (cargando()) {
-      <div class="empty-state" role="status"><p>Cargando reservas…</p></div>
-    } @else if (error()) {
-      <div class="empty-state" role="alert">
-        <h3>No se pudo cargar el registro</h3>
-        <p>{{ error() }}</p>
-        <button type="button" class="reset-button" (click)="cargar()">Reintentar</button>
-      </div>
-    } @else if (reservas().length === 0) {
-      <div class="empty-state">
-        <span class="empty-icon" aria-hidden="true">▤</span>
-        <h3>{{ hayFiltros() ? 'No se encontraron coincidencias' : 'No hay reservas para mostrar' }}</h3>
-        <p>{{ hayFiltros() ? 'Prueba con otro nombre, correo o cabaña.' : 'Las reservas se mostrarán en este registro.' }}</p>
-        @if (hayFiltros()) {
-          <button type="button" class="reset-button" (click)="limpiarFiltros()">Ver todas las reservas</button>
+  <div class="reservation-workspace" [attr.aria-busy]="cargando()">
+    <section class="reservation-register" aria-labelledby="reservations-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="reservations-title">Registro de reservas</h2>
+          <p>Información de huéspedes, estancias y pagos.</p>
+        </div>
+        @if (resultado(); as datos) {
+          <span class="record-count" role="status"
+            >{{ datos.totalElements }}
+            {{ datos.totalElements === 1 ? 'reserva' : 'reservas' }}</span
+          >
         }
       </div>
-    }
-    @if (resultado(); as datos) {
-      @if (datos.totalPages > 1) {
-        <nav class="pagination" aria-label="Páginas de reservas">
-          <button type="button" class="reset-button" [disabled]="pagina() === 0 || cargando()"
-            (click)="cambiarPagina(pagina() - 1)">Anterior</button>
-          <span>Página {{ datos.page + 1 }} de {{ datos.totalPages }}</span>
-          <button type="button" class="reset-button" [disabled]="pagina() + 1 >= datos.totalPages || cargando()"
-            (click)="cambiarPagina(pagina() + 1)">Siguiente</button>
-        </nav>
+      @if (cargando()) {
+        <div class="empty-state" role="status">Cargando reservas…</div>
+      } @else if (error()) {
+        <div class="empty-state" role="alert">
+          <h3>No se pudo cargar el registro</h3>
+          <p>{{ error() }}</p>
+          <button type="button" class="reset-button" (click)="cargar()">Reintentar</button>
+        </div>
+      } @else {
+        <ul class="reservation-list" aria-label="Reservas">
+          @for (reserva of reservas(); track reserva.idReserva) {
+            <li>
+              <button
+                type="button"
+                class="reservation-row"
+                [class.selected]="seleccionada()?.idReserva === reserva.idReserva"
+                [attr.aria-pressed]="seleccionada()?.idReserva === reserva.idReserva"
+                [attr.aria-label]="'Seleccionar reserva #' + reserva.idReserva"
+                (click)="idSeleccionada.set(reserva.idReserva)"
+              >
+                <span class="reservation-id">#{{ reserva.idReserva }}</span>
+                <span class="row-guest"
+                  ><strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong>
+                  <span class="secondary">{{
+                    reserva.nombreCabana || 'Cabaña #' + reserva.idCabana
+                  }}</span>
+                  <span class="secondary"
+                    >{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} –
+                    {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</span
+                  ></span
+                >
+                <span class="row-summary"
+                  ><strong>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</strong>
+                  <span class="status" [attr.data-status]="reserva.estadoReserva">{{
+                    estados[reserva.estadoReserva] || reserva.estadoReserva
+                  }}</span></span
+                >
+              </button>
+            </li>
+          } @empty {
+            <li class="empty-state">
+              <h3>
+                {{
+                  hayFiltros() ? 'No se encontraron coincidencias' : 'No hay reservas para mostrar'
+                }}
+              </h3>
+              <p>
+                {{
+                  hayFiltros()
+                    ? 'Prueba con otro nombre, correo o cabaña.'
+                    : 'Las reservas se mostrarán en este registro.'
+                }}
+              </p>
+              @if (hayFiltros()) {
+                <button type="button" class="reset-button" (click)="limpiarFiltros()">
+                  Ver todas las reservas
+                </button>
+              }
+            </li>
+          }
+        </ul>
       }
+      @if (resultado(); as datos) {
+        @if (datos.totalPages > 1) {
+          <nav class="pagination" aria-label="Páginas de reservas">
+            <button
+              type="button"
+              class="reset-button"
+              [disabled]="pagina() === 0 || cargando()"
+              (click)="cambiarPagina(pagina() - 1)"
+            >
+              Anterior
+            </button>
+            <span>Página {{ datos.page + 1 }} de {{ datos.totalPages }}</span>
+            <button
+              type="button"
+              class="reset-button"
+              [disabled]="pagina() + 1 >= datos.totalPages || cargando()"
+              (click)="cambiarPagina(pagina() + 1)"
+            >
+              Siguiente
+            </button>
+          </nav>
+        }
+      }
+    </section>
+    @if (seleccionada(); as reserva) {
+      <aside class="detail-card" aria-labelledby="selected-title" aria-live="polite">
+        <div class="detail-top">
+          <p class="eyebrow">DETALLE DE LA RESERVA</p>
+          <span class="status" [attr.data-status]="reserva.estadoReserva">{{
+            estados[reserva.estadoReserva] || reserva.estadoReserva
+          }}</span>
+        </div>
+        <h2 id="selected-title">{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h2>
+        <p class="detail-subtitle">
+          Reserva #{{ reserva.idReserva }} · {{ reserva.cantidadHuespedes }}
+          {{ reserva.cantidadHuespedes === 1 ? 'persona' : 'personas' }}
+        </p>
+        <div class="stay-strip">
+          <div>
+            <span>LLEGADA</span><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</strong>
+          </div>
+          <div class="nights">
+            <span aria-hidden="true">→</span
+            ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
+          </div>
+          <div>
+            <span>SALIDA</span><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</strong>
+          </div>
+        </div>
+        <div class="guest-profile">
+          <span class="guest-avatar" aria-hidden="true">{{
+            (reserva.nombreUsuario || 'U').charAt(0)
+          }}</span>
+          <div>
+            <strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong
+            ><span>{{ reserva.emailUsuario || 'Sin correo disponible' }}</span>
+          </div>
+        </div>
+        <dl class="amount-grid">
+          <div>
+            <dt>Total</dt>
+            <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>Pagado</dt>
+            <dd>{{ pagado(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+          <div class="balance">
+            <dt>Saldo</dt>
+            <dd>{{ reserva.saldoPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+        </dl>
+        <div
+          class="payment-progress"
+          role="progressbar"
+          aria-label="Importe pagado"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="reserva.montoTotal"
+          [attr.aria-valuenow]="pagado(reserva)"
+        >
+          <span
+            [style.width.%]="
+              reserva.montoTotal > 0 ? (pagado(reserva) / reserva.montoTotal) * 100 : 0
+            "
+          ></span>
+        </div>
+        <button
+          type="button"
+          class="primary-button manage-button"
+          [attr.aria-label]="'Administrar reserva #' + reserva.idReserva"
+          (click)="idDetalle.set(reserva.idReserva)"
+        >
+          Administrar reserva <span aria-hidden="true">→</span>
+        </button>
+      </aside>
+    } @else {
+      <aside class="detail-card detail-placeholder">
+        <h2>Detalle de la reserva</h2>
+        <p>Selecciona una reserva para consultar su estancia e importes.</p>
+      </aside>
     }
-  </section>
+  </div>
 </section>
 @if (idDetalle(); as id) {
   <app-reserva-detalle [idReserva]="id" (cerrar)="idDetalle.set(null)"></app-reserva-detalle>

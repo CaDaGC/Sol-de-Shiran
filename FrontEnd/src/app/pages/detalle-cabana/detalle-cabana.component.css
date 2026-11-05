@@ -3,7 +3,7 @@
   min-height: 100vh;
   color: #25372c;
   background: #f7f7f2;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
 
 .detail-page {
@@ -118,7 +118,7 @@
 .detail-info h1 {
   margin: 0 0 16px;
   color: #203d2e;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-heading);
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 500;
 }
@@ -181,7 +181,7 @@
   border-radius: 7px;
   color: #fff;
   background: #c87932;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.35;
@@ -266,7 +266,7 @@
 .modal-header h2 {
   margin: 0;
   color: #203d2e;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-heading);
   font-size: 1.45rem;
 }
 
@@ -371,7 +371,7 @@
   border-radius: 6px;
   color: #26382c !important;
   background: #f0f3ed;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.88rem !important;
   font-weight: 700;
   line-height: 1;
@@ -384,7 +384,7 @@
 .calendar-day span {
   display: block;
   color: #26382c !important;
-  font-family: Arial, Helvetica, sans-serif !important;
+  font-family: var(--font-body) !important;
   font-size: 0.88rem !important;
   font-weight: 700 !important;
   line-height: 1 !important;
@@ -580,7 +580,7 @@
   display: inline-block;
   min-width: 22px;
   color: #26382c !important;
-  font-family: Arial, Helvetica, sans-serif !important;
+  font-family: var(--font-body) !important;
   font-size: 1rem !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
@@ -709,7 +709,7 @@
 .confirmation-modal h2 {
   margin: 0;
   color: #203d2e;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-heading);
   font-size: 1.35rem;
 }
 

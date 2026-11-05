@@ -1,5 +1,5 @@
 :host {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
   color: #26352d;
 }
 dialog {
@@ -47,9 +47,7 @@ h2 {
   margin: 0;
   color: #203d2e;
   font:
-    500 1.8rem Georgia,
-    'Times New Roman',
-    serif;
+    500 1.8rem var(--font-heading);
 }
 h3 {
   margin: 0;

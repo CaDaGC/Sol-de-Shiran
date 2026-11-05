@@ -17,6 +17,28 @@ import static org.mockito.Mockito.*;
 
 class JwtPanelReservasTest {
     @Test
+    void clienteConsultaSusReservasSinSuplantarElIdDelToken() {
+        JwtUtil jwt = mock(JwtUtil.class);
+        when(jwt.isValid("token")).thenReturn(true);
+        when(jwt.getRol("token")).thenReturn("CLIENTE");
+        when(jwt.getUserId("token")).thenReturn(5L);
+        GatewayFilterChain chain = exchange -> {
+            assertThat(exchange.getRequest().getHeaders().getFirst("X-User-Id")).isEqualTo("5");
+            return Mono.empty();
+        };
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/reservas/mis-reservas")
+                .header("Authorization", "Bearer token").header("X-User-Id", "999"));
+        new JwtAuthenticationFilter(jwt).filter(exchange, chain).block();
+        for (String rol : List.of("GUARDIAN", "ADMIN")) {
+            when(jwt.getRol("token")).thenReturn(rol);
+            var denegado = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/reservas/mis-reservas")
+                    .header("Authorization", "Bearer token"));
+            new JwtAuthenticationFilter(jwt).filter(denegado, chain).block();
+            assertThat(denegado.getResponse().getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @Test
     void listadoYResumenesRequierenGuardian() {
         for (String path : List.of("/api/v1/reservas", "/api/v1/reservas/1",
                 "/api/v1/cabanas/resumen", "/api/v1/usuarios/resumen")) {
