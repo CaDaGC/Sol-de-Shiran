@@ -60,7 +60,7 @@ export class LoginComponent {
           returnUrl.startsWith('/') &&
           !returnUrl.startsWith('//')
             ? returnUrl
-            : '/catalogo';
+            : response.rol === 'GUARDIAN' ? '/guardian/reservas' : '/catalogo';
 
         void this.router.navigateByUrl(destino);
       },

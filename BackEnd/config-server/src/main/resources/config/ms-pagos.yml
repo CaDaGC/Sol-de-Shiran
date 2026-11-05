@@ -1,0 +1,36 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3307/db_pagos?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:mysql123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+mercadopago:
+  frontend-url: ${MP_FRONTEND_URL:http://localhost:4200}
+  access-token: ${MP_ACCESS_TOKEN}
+  webhook-secret: ${MP_WEBHOOK_SECRET}
+  webhook-url: ${MP_WEBHOOK_URL:https://endocrine-timid-amends.ngrok-free.dev/api/v1/pagos/webhook}
+
+servicios:
+  interno:
+    token: ${INTERNAL_SERVICE_TOKEN:sol-de-shiran-local-internal-token-change-me}
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8762/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}

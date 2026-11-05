@@ -20,6 +20,10 @@ reservas:
   tiempo-expiracion-minutos: 15
   limpieza-cada-ms: 60000
 
+servicios:
+  interno:
+    token: ${INTERNAL_SERVICE_TOKEN:sol-de-shiran-local-internal-token-change-me}
+
 eureka:
   client:
     register-with-eureka: true

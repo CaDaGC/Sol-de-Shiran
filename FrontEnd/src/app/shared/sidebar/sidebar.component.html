@@ -14,6 +14,12 @@
   <p class="nav-heading">NAVEGACIÓN</p>
 
   <nav class="side-nav" aria-label="Navegación principal">
+    @if (perfil()?.rol === 'GUARDIAN') {
+      <a routerLink="/guardian/reservas" routerLinkActive="active">
+        <span class="nav-icon" aria-hidden="true">▤</span>
+        <span>Reservas</span>
+      </a>
+    }
     <a
       routerLink="/catalogo"
       routerLinkActive="active"
