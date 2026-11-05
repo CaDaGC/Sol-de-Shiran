@@ -1,3 +1,3 @@
 export const MERCADO_PAGO_CONFIG = {
-  publicKey: 'APP_USR-da748064-5acd-4d5c-a696-2c98ce6a3d9f'
+  publicKey: 'APP_USR-19f276e0-f944-44d0-bba1-4e35fe683f8e'
 };

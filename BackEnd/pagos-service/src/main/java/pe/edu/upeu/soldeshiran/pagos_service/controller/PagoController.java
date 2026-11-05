@@ -23,7 +23,7 @@ public class PagoController {
         return pagoService.procesarPagoBrick(idUsuario, idReserva, request);
     }
 
-    @PostMapping("/reservas/{idReserva}/preferencia")
+    @PostMapping({"/reservas/{idReserva}/orden", "/reservas/{idReserva}/preferencia"})
     @ResponseStatus(HttpStatus.CREATED)
     public PreferenciaResponse crearPreferencia(
             @RequestHeader("X-User-Id") @Positive Long idUsuario,
@@ -32,4 +32,8 @@ public class PagoController {
     ) {
         return pagoService.crearPreferencia(idUsuario, idReserva, request);
     }
-}
+    @GetMapping("/transacciones/{idTransaccion}")
+    public PagoResponse consultarEstado(@RequestHeader("X-User-Id") Long idUsuario,
+            @PathVariable Long idTransaccion) {
+        return pagoService.consultarEstado(idUsuario, idTransaccion);
+    }}

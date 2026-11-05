@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 
 public record PreferenciaResponse(
         Long idTransaccion,
-        String preferenceId,
-        String sandboxInitPoint,
+        String orderId,
+        String checkoutUrl,
         BigDecimal monto,
         String moneda
 ) {

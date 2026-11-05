@@ -58,6 +58,15 @@ public class WebhookController {
                 return Map.of("mensaje", "Notificación recibida sin ID de pago.");
             }
 
+            JsonNode evento = objectMapper.readTree(payload);
+            String tipo = evento.path("type").asText("");
+            if (!"order".equals(tipo)) {
+                return Map.of("mensaje", "Evento ajeno a Orders ignorado.");
+            }
+            String idBody = evento.path("data").path("id").asText("");
+            if (!id.equalsIgnoreCase(idBody)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ID firmado no coincide con el evento.");
+            }
             guardarLog(id, payload, "RECIBIDO");
             pagoService.procesarNotificacion(id);
             return Map.of("mensaje", "Notificación procesada.");
@@ -66,7 +75,7 @@ public class WebhookController {
         } catch (Exception e) {
             guardarLog(id, payload, "ERROR_PROCESAMIENTO");
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+                    HttpStatus.SERVICE_UNAVAILABLE,
                     "No se pudo procesar el webhook."
             );
         }
@@ -93,7 +102,7 @@ public class WebhookController {
         }
 
         try {
-            String manifiesto = "id:" + dataId
+            String manifiesto = "id:" + dataId.toLowerCase(java.util.Locale.ROOT)
                     + ";request-id:" + requestId
                     + ";ts:" + ts + ";";
 
@@ -125,3 +134,4 @@ public class WebhookController {
         logRepository.save(log);
     }
 }
+

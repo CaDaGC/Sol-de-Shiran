@@ -5,10 +5,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record CrearPagoBrickRequest(
-        String token,
+        @NotBlank String token,
         @NotBlank String paymentMethodId,
         @Min(1) Integer installments,
         String issuerId,
-        @NotBlank @Email String payerEmail
+        @NotBlank @Email String payerEmail,
+        @NotBlank String identificationType,
+        @NotBlank String identificationNumber
 ) {
 }

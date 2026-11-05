@@ -15,5 +15,6 @@ public interface PagoService {
             CrearPreferenciaRequest request
     );
 
-    void procesarNotificacion(String paymentId);
+    PagoResponse consultarEstado(Long idUsuario, Long idTransaccion);
+    void procesarNotificacion(String orderId);
 }

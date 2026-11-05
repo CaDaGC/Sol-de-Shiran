@@ -1,29 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, timeout } from 'rxjs';
+import { timeout } from 'rxjs';
 import { API_CONFIG } from '../core/api.config';
-import {
-  CrearPagoBrickRequest,
-  PagoResponse
-} from '../models/pago.model';
+import { OrdenCheckoutResponse, PagoResponse } from '../models/pago.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PagosService {
   private readonly url = `${API_CONFIG.baseUrl}/pagos`;
-
   constructor(private readonly http: HttpClient) {}
-
-  procesarPagoBrick(
-    idReserva: number,
-    request: CrearPagoBrickRequest
-  ): Observable<PagoResponse> {
-    return this.http
-      .post<PagoResponse>(
-        `${this.url}/reservas/${idReserva}/brick`,
-        request
-      )
+  crearOrden(idReserva: number, payerEmail: string) {
+    return this.http.post<OrdenCheckoutResponse>(`${this.url}/reservas/${idReserva}/orden`, { payerEmail })
+      .pipe(timeout({ first: 30000 }));
+  }
+  consultarEstado(idTransaccion: number) {
+    return this.http.get<PagoResponse>(`${this.url}/transacciones/${idTransaccion}`)
       .pipe(timeout({ first: 30000 }));
   }
 }
