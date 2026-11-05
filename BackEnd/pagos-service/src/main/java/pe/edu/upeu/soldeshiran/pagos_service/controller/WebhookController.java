@@ -60,8 +60,8 @@ public class WebhookController {
 
             JsonNode evento = objectMapper.readTree(payload);
             String tipo = evento.path("type").asText("");
-            if (!"order".equals(tipo)) {
-                return Map.of("mensaje", "Evento ajeno a Orders ignorado.");
+            if (!"payment".equals(tipo)) {
+                return Map.of("mensaje", "Evento ajeno a pagos ignorado.");
             }
             String idBody = evento.path("data").path("id").asText("");
             if (!id.equalsIgnoreCase(idBody)) {
