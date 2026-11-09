@@ -1,54 +1,72 @@
 package pe.edu.upeu.soldeshiran.usuario_service.controller;
 
-import pe.edu.upeu.soldeshiran.usuario_service.dto.PasswordUpdateRequest;
-import pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioRequest;
-import pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioResponse;
-import pe.edu.upeu.soldeshiran.usuario_service.service.UsuarioService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import pe.edu.upeu.soldeshiran.usuario_service.dto.*;
+import pe.edu.upeu.soldeshiran.usuario_service.security.Actor;
+import pe.edu.upeu.soldeshiran.usuario_service.service.GestionUsuarioService;
 
 @RestController
 @RequestMapping("/api/v1/usuarios")
 @RequiredArgsConstructor
 public class UsuarioController {
+  private final GestionUsuarioService gestion;
 
-    private final UsuarioService usuarioService;
+  @PostMapping("/register")
+  @ResponseStatus(HttpStatus.CREATED)
+  public UsuarioResponse register(@RequestBody UsuarioRequest r) {
+    return gestion.crear(r, null, true);
+  }
 
-    @PostMapping("/register")
-    public UsuarioResponse register(@RequestBody UsuarioRequest request) {
-        return usuarioService.register(request);
-    }
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  public UsuarioResponse crear(@RequestBody UsuarioRequest r, HttpServletRequest q) {
+    return gestion.crear(r, Actor.desde(q), false);
+  }
 
-    @PostMapping("/admin")
-    public UsuarioResponse createAdmin(@RequestBody UsuarioRequest request) {
-        return usuarioService.createAdmin(request);
-    }
+  @PostMapping("/admin")
+  @ResponseStatus(HttpStatus.CREATED)
+  public UsuarioResponse admin(@RequestBody UsuarioRequest r, HttpServletRequest q) {
+    Actor a = Actor.desde(q);
+    a.exigir("ADMIN");
+    r.setRol("ADMIN");
+    return gestion.crear(r, a, false);
+  }
 
-    @GetMapping("/email/{email}")
-    public UsuarioResponse findByEmail(@PathVariable String email) {
-        return usuarioService.findByEmail(email);
-    }
+  @GetMapping
+  public List<UsuarioResponse> listar(HttpServletRequest q) {
+    return gestion.listar(Actor.desde(q));
+  }
 
-    @GetMapping("/{id}")
-    public UsuarioResponse findById(@PathVariable Long id) {
-        return usuarioService.findById(id);
-    }
+  @GetMapping("/{id}")
+  public UsuarioResponse obtener(@PathVariable Long id, HttpServletRequest q) {
+    return gestion.obtener(id, Actor.desde(q));
+  }
 
-    @GetMapping
-    public List<UsuarioResponse> findAll() {
-        return usuarioService.findAll();
-    }
+  @GetMapping("/me")
+  public UsuarioResponse perfil(HttpServletRequest q) {
+    Actor a = Actor.desde(q);
+    return gestion.obtener(a.id(), a);
+  }
 
-    @PutMapping("/{id}")
-    public UsuarioResponse update(@PathVariable Long id, @RequestBody UsuarioRequest request) {
-        return usuarioService.update(id, request);
-    }
+  @PutMapping("/{id}")
+  public UsuarioResponse editar(
+      @PathVariable Long id, @RequestBody UsuarioRequest r, HttpServletRequest q) {
+    return gestion.editar(id, r, Actor.desde(q));
+  }
 
-    @PutMapping("/{id}/password")
-    public UsuarioResponse updatePassword(@PathVariable Long id, @RequestBody PasswordUpdateRequest request) {
-        return usuarioService.updatePassword(id, request.getPassword());
-    }
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void eliminar(@PathVariable Long id, HttpServletRequest q) {
+    gestion.eliminar(id, Actor.desde(q));
+  }
 
+  @PutMapping("/{id}/password")
+  public UsuarioResponse password(
+      @PathVariable Long id, @RequestBody PasswordUpdateRequest r, HttpServletRequest q) {
+    return gestion.password(id, r.getPassword(), r.getPasswordActual(), Actor.desde(q));
+  }
 }

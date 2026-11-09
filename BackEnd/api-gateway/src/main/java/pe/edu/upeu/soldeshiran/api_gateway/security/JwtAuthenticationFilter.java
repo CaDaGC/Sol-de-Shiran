@@ -25,6 +25,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
         String method = exchange.getRequest().getMethod().name();
 
+        if (path.contains("/interno/") || path.startsWith("/internal/")) {
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
         if (isPublicRoute(path, method)) {
             return chain.filter(exchange);
         }
@@ -46,8 +50,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            if (isAdminRoute(path, method)
-                    && !"ADMIN".equals(jwtUtil.getRol(token))) {
+            String rol = jwtUtil.getRol(token);
+            if (path.equals("/api/v1/reservas/mis-reservas")
+                    && !java.util.List.of("USUARIO", "CLIENTE").contains(rol)) {
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
+            boolean panelReservas = isPanelReservasRoute(path, method);
+            if (panelReservas && !java.util.List.of("ADMIN", "DUENO", "TRABAJADOR", "GUARDIAN").contains(rol)) {
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }
@@ -60,6 +70,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         // No se permite que el cliente suplante el ID del usuario.
                         headers.remove("X-User-Id");
                         headers.set("X-User-Id", userId.toString());
+                        headers.set("X-User-Role", rol);
                     })
                     .build();
 
@@ -75,30 +86,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return true;
         }
 
-        if (path.startsWith("/api/v1/auth/login")
-                || path.startsWith("/api/v1/usuarios/register")) {
-            return true;
+        if ("POST".equals(method)) {
+            return path.equals("/api/v1/auth/login")
+                    || path.equals("/api/v1/usuarios/register")
+                    || path.equals("/api/v1/pagos/webhook");
         }
-
-        if (!"GET".equals(method)) {
-            return false;
-        }
-
-        if (path.startsWith("/api/v1/cabanas")) {
-            return true;
-        }
-
-        return path.startsWith("/api/v1/reservas/cabanas/")
-                && (
-                path.endsWith("/disponibilidad")
-                        || path.endsWith("/fechas-ocupadas")
-        );
+        return "GET".equals(method)
+                && (path.equals("/api/v1/cabanas")
+                || path.matches("/api/v1/cabanas/[0-9]+")
+                || path.matches("/api/v1/reservas/cabanas/[0-9]+/(disponibilidad|fechas-ocupadas)"));
     }
 
-    private boolean isAdminRoute(String path, String method) {
-        return path.startsWith("/api/v1/usuarios")
-                || (path.startsWith("/api/v1/reservas")
-                && ("PUT".equals(method) || "DELETE".equals(method)));
+    private boolean isPanelReservasRoute(String path, String method) {
+        return path.matches("/api/v1/pagos/reservas/[0-9]+/restante")
+                || path.equals("/api/v1/reservas/panel")
+                || path.startsWith("/api/v1/reservas/panel/");
     }
 
     @Override

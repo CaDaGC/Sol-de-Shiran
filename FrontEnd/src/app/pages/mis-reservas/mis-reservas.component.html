@@ -1,0 +1,252 @@
+<section class="my-reservations" aria-labelledby="my-title">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">SOL DE SHIRÁN · TU CUENTA</p>
+      <h1 id="my-title">Mis reservas</h1>
+      <p class="subtitle">Tus próximas escapadas y los recuerdos de tus estancias.</p>
+    </div>
+    <a class="explore-button" routerLink="/catalogo">⌂ <span>Explorar cabañas</span></a>
+  </header>
+  <nav class="filters" aria-label="Filtrar mis reservas">
+    @for (filtro of filtros; track filtro.valor) {
+      <button
+        type="button"
+        [class.active]="grupo() === filtro.valor"
+        [attr.aria-pressed]="grupo() === filtro.valor"
+        (click)="filtrar(filtro.valor)"
+      >
+        {{ filtro.etiqueta }}
+      </button>
+    }
+  </nav>
+  <div [attr.aria-busy]="cargando()">
+    @if (cargando()) {
+      <p class="message" role="status">Cargando tus reservas…</p>
+    } @else if (error()) {
+      <div class="message" role="alert">
+        <h2>No pudimos cargar tus reservas</h2>
+        <p>{{ error() }}</p>
+        <button type="button" class="primary-button" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (datos()?.content?.length === 0) {
+      <div class="message">
+        <h2>
+          {{
+            grupo() === 'TODAS'
+              ? 'Tu próxima escapada te espera'
+              : 'No hay reservas en esta sección'
+          }}
+        </h2>
+        <p>Explora nuestras cabañas y encuentra tu espacio para descansar.</p>
+        <a routerLink="/catalogo" class="explore-button">Ver cabañas</a>
+      </div>
+    } @else {
+      <div class="reservation-cards">
+        @for (reserva of activas(); track reserva.idReserva) {
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: reserva }"></ng-container>
+        }
+      </div>
+      @if (pasadas().length > 0) {
+        <h2 class="history-heading">Historial</h2>
+        <div class="reservation-cards">
+          @for (reserva of pasadas(); track reserva.idReserva) {
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: reserva }"></ng-container>
+          }
+        </div>
+      }
+    }
+  </div>
+  @if (datos(); as pagina) {
+    @if (pagina.totalPages > 1) {
+      <nav class="pagination" aria-label="Páginas de mis reservas">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="pagina.page === 0"
+          (click)="cambiarPagina(pagina.page - 1)"
+        >
+          Anterior
+        </button>
+        <span>Página {{ pagina.page + 1 }} de {{ pagina.totalPages }}</span>
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="pagina.page + 1 >= pagina.totalPages"
+          (click)="cambiarPagina(pagina.page + 1)"
+        >
+          Siguiente
+        </button>
+      </nav>
+    }
+  }
+</section>
+<ng-template #card let-reserva>
+  <article class="reservation-card" [attr.aria-label]="'Reserva #' + reserva.idReserva">
+    <div class="thumbnail">
+      <span aria-hidden="true">⌂</span>
+      @if (reserva.imagenPrincipal) {
+        <img
+          [src]="reserva.imagenPrincipal"
+          [alt]="reserva.nombreCabana || 'Cabaña'"
+          loading="lazy"
+          (error)="ocultarImagen($event)"
+        />
+      }
+    </div>
+    <div class="card-content">
+      <div class="card-heading">
+        <div>
+          <h2>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h2>
+          <p>
+            Reserva #{{ reserva.idReserva }} · {{ reserva.cantidadHuespedes }}
+            {{ reserva.cantidadHuespedes === 1 ? 'huésped' : 'huéspedes' }}
+          </p>
+        </div>
+        <span class="status" [attr.data-status]="reserva.estadoReserva">{{
+          estados[reserva.estadoReserva] || reserva.estadoReserva
+        }}</span>
+      </div>
+      <div class="card-information">
+        <div class="stay-strip">
+          <div>
+            <small>LLEGADA</small><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</strong>
+          </div>
+          <div class="nights">
+            <span aria-hidden="true">→</span
+            ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
+          </div>
+          <div>
+            <small>SALIDA</small><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</strong>
+          </div>
+        </div>
+        <dl class="amounts">
+          <div>
+            <dt>Total</dt>
+            <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+          @if (reserva.estadoReserva === 'PENDIENTE_PAGO') {
+            <div>
+              <dt>Adelanto</dt>
+              <dd>{{ reserva.montoAdelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+          } @else if (
+            reserva.estadoReserva === 'CONFIRMADA' ||
+            reserva.estadoReserva === 'OCUPADA' ||
+            reserva.estadoReserva === 'FINALIZADA'
+          ) {
+            <div>
+              <dt>Pagado</dt>
+              <dd>{{ pagado(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Saldo</dt>
+              <dd class="balance">
+                {{ reserva.saldoPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}
+              </dd>
+            </div>
+          }
+        </dl>
+      </div>
+      <div class="card-footer">
+        @if (reserva.pagoDisponible) {
+          <p class="payment-hint">
+            Completa el adelanto antes de que venza tu reserva:
+            {{ reserva.expiraEn | date: 'dd/MM/yyyy, HH:mm' }}.
+          </p>
+        }
+        <div class="card-actions">
+          @if (reserva.pagoDisponible) {
+            <app-pago-modal
+              [reserva]="reserva"
+              [nombreCabana]="reserva.nombreCabana || 'Cabaña'"
+              textoBoton="Continuar pago"
+            ></app-pago-modal>
+          }
+          <button
+            type="button"
+            class="secondary-button"
+            [attr.aria-label]="'Ver detalle de reserva #' + reserva.idReserva"
+            (click)="verDetalle(reserva)"
+          >
+            Ver detalle
+          </button>
+        </div>
+      </div>
+    </div>
+  </article>
+</ng-template>
+<dialog
+  #detalleDialog
+  aria-labelledby="my-detail-title"
+  (cancel)="$event.preventDefault(); cerrarDetalle()"
+  (click)="cerrarDesdeFondo($event)"
+>
+  <header class="dialog-header">
+    <h2 id="my-detail-title">Reserva #{{ detalle()?.idReserva }}</h2>
+    <button
+      type="button"
+      class="close-button"
+      aria-label="Cerrar detalle"
+      autofocus
+      (click)="cerrarDetalle()"
+    >
+      ×
+    </button>
+  </header>
+  @if (detalle(); as reserva) {
+    <div class="dialog-body">
+      <span class="status" [attr.data-status]="reserva.estadoReserva">{{
+        estados[reserva.estadoReserva] || reserva.estadoReserva
+      }}</span>
+      <h3>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h3>
+      <dl class="detail-grid">
+        <div>
+          <dt>Llegada</dt>
+          <dd>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt>Salida</dt>
+          <dd>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt>Noches</dt>
+          <dd>{{ noches(reserva) }}</dd>
+        </div>
+        <div>
+          <dt>Huéspedes</dt>
+          <dd>{{ reserva.cantidadHuespedes }}</dd>
+        </div>
+        <div>
+          <dt>Tarifa por noche</dt>
+          <dd>{{ reserva.tarifaNocheAplicada | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Total</dt>
+          <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+        </div>
+        @if (
+          reserva.estadoReserva === 'CONFIRMADA' ||
+          reserva.estadoReserva === 'OCUPADA' ||
+          reserva.estadoReserva === 'FINALIZADA'
+        ) {
+          <div>
+            <dt>Pagado</dt>
+            <dd>{{ pagado(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>Saldo pendiente</dt>
+            <dd>{{ reserva.saldoPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+        } @else if (reserva.estadoReserva === 'PENDIENTE_PAGO') {
+          <div>
+            <dt>Adelanto requerido</dt>
+            <dd>{{ reserva.montoAdelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  }
+  <footer class="dialog-footer">
+    <button type="button" class="secondary-button" (click)="cerrarDetalle()">Cerrar</button>
+  </footer>
+</dialog>

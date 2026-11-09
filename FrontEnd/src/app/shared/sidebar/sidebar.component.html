@@ -1,29 +1,52 @@
-<aside class="sidebar">
+<aside class="sidebar" [class.is-collapsed]="contraido()">
+  <button type="button" class="sidebar-toggle" (click)="alternar.emit()"
+    [attr.aria-label]="contraido() ? 'Expandir menú' : 'Contraer menú'"
+    [attr.aria-expanded]="!contraido()" aria-controls="sidebar-navigation"
+    [attr.title]="contraido() ? 'Expandir menú' : 'Contraer menú'">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      [class.point-right]="contraido()">
+      <path d="M14.5 7 9.5 12 14.5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </button>
   <a
     class="brand"
     routerLink="/catalogo"
     aria-label="Ir al catálogo de Sol de Shirán"
   >
-    <span class="brand-mark">S</span>
-    <span class="brand-text">
-      <strong>Sol de Shirán</strong>
-      <small>Centro campestre</small>
-    </span>
+    <img class="brand-logo" src="/images/logo-sol-shiran.png" alt="Complejo Turístico Sol de Shirán" width="1698" height="926">
+    <span class="brand-symbol" aria-hidden="true"><img src="/images/logo-sol-shiran.png" alt="" width="1698" height="926"></span>
   </a>
 
   <p class="nav-heading">NAVEGACIÓN</p>
 
-  <nav class="side-nav" aria-label="Navegación principal">
+  <nav id="sidebar-navigation" class="side-nav" aria-label="Navegación principal">
+    @if (['CLIENTE', 'USUARIO'].includes(perfil()?.rol ?? '')) {
+      <a routerLink="/mis-reservas" routerLinkActive="active" aria-label="Mis reservas" [attr.title]="contraido() ? 'Mis reservas' : null">
+        <span class="nav-icon" aria-hidden="true">▤</span><span>Mis reservas</span>
+      </a>
+    }
+    @if (['ADMIN', 'DUENO', 'TRABAJADOR', 'GUARDIAN'].includes(perfil()?.rol ?? '')) {
+      <a routerLink="/guardian/reservas" routerLinkActive="active" aria-label="Reservas" [attr.title]="contraido() ? 'Reservas' : null">
+        <span class="nav-icon" aria-hidden="true">▤</span>
+        <span>Reservas</span>
+      </a>
+    }
     <a
+      *ngIf="perfil()?.rol !== 'GUARDIAN'"
       routerLink="/catalogo"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
+      aria-label="Catálogo" [attr.title]="contraido() ? 'Catálogo' : null"
     >
       <span class="nav-icon" aria-hidden="true">⌂</span>
       <span>Catálogo</span>
     </a>
 
-    <a *ngIf="!perfil()" routerLink="/login" routerLinkActive="active">
+    <a *ngIf="perfil()" routerLink="/gestion" routerLinkActive="active" aria-label="Gestión y cuenta" [attr.title]="contraido() ? 'Gestión y cuenta' : null">
+      <span class="nav-icon" aria-hidden="true">⚙</span><span>Gestión y cuenta</span>
+    </a>
+
+    <a *ngIf="!perfil()" routerLink="/login" routerLinkActive="active" aria-label="Iniciar sesión" [attr.title]="contraido() ? 'Iniciar sesión' : null">
       <span class="nav-icon" aria-hidden="true">↗</span>
       <span>Iniciar sesión</span>
     </a>
@@ -37,13 +60,13 @@
   <section class="account-panel" *ngIf="perfil() as usuario">
     <div class="account-actions">
       <span class="account-heading">Cuenta</span>
-      <button type="button" class="logout-button" (click)="cerrarSesion()">
+      <button type="button" class="logout-button" (click)="cerrarSesion()" aria-label="Cerrar sesión" [attr.title]="contraido() ? 'Cerrar sesión' : null">
         <span aria-hidden="true">↪</span>
-        Cerrar sesión
+        <span class="logout-label">Cerrar sesión</span>
       </button>
     </div>
 
-    <div class="account-profile">
+    <div class="account-profile" [attr.title]="contraido() ? usuario.nombre + ' · ' + usuario.rol : null" [attr.aria-label]="usuario.nombre + ' · ' + usuario.rol">
       <div class="avatar" aria-hidden="true">
         {{ usuario.nombre.charAt(0).toUpperCase() }}
       </div>

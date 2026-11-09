@@ -41,3 +41,59 @@ export interface ReservaResponse {
   estadoReserva: string;
   expiraEn: string;
 }
+
+export type GrupoReservasCliente = 'TODAS' | 'PENDIENTES' | 'CONFIRMADAS' | 'PASADAS';
+
+export interface MiReservaResponse extends ReservaResponse {
+  nombreCabana: string | null;
+  imagenPrincipal: string | null;
+  grupo: GrupoReservasCliente;
+  pagoDisponible: boolean;
+}
+
+export interface MisReservasPaginaResponse {
+  content: MiReservaResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ReservaPanelResponse {
+  idReserva: number;
+  idUsuario: number;
+  nombreUsuario: string | null;
+  emailUsuario: string | null;
+  idCabana: number;
+  nombreCabana: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  cantidadHuespedes: number;
+  montoTotal: number;
+  montoAdelanto: number;
+  saldoPendiente: number;
+  estadoReserva: string;
+}
+
+export interface ReservasPaginaResponse {
+  content: ReservaPanelResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ReservaDetalleResponse extends ReservaPanelResponse {
+  tarifaNocheAplicada: number;
+  expiraEn: string;
+  fechaCreacion: string | null;
+}
+
+export const ESTADOS_RESERVA: Record<string, string> = {
+  PENDIENTE_PAGO: 'Pendiente de pago',
+  CONFIRMADA: 'Confirmada',
+  OCUPADA: 'En estadía',
+  FINALIZADA: 'Finalizada',
+  CANCELADA: 'Cancelada',
+  EXPIRADA: 'Expirada'
+};

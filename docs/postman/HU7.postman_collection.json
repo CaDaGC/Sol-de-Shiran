@@ -1,0 +1,251 @@
+{
+  "info": {
+    "name": "HU7 Pago restante y check-in",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Usar una reserva CONFIRMADA vigente hoy. Para tarjeta/Yape, completar numeroOperacion. Cambiar claveIdempotencia al probar otra reserva. El pago representa un comprobante ya recibido; no ejecuta cobros en pasarela."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8061/api/v1"
+    },
+    {
+      "key": "trabajadorToken",
+      "value": ""
+    },
+    {
+      "key": "clienteToken",
+      "value": ""
+    },
+    {
+      "key": "idReserva",
+      "value": ""
+    },
+    {
+      "key": "metodoPago",
+      "value": "EFECTIVO"
+    },
+    {
+      "key": "numeroOperacion",
+      "value": ""
+    },
+    {
+      "key": "claveIdempotencia",
+      "value": "3fd43295-6a74-47f7-b695-88d325d69716"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Cliente no puede registrar check-in",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/reservas/{{idReserva}}/restante",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"metodoPago\": \"EFECTIVO\", \"claveIdempotencia\": \"{{$guid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Rechaza cliente\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Tarjeta exige número de operación",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/reservas/{{idReserva}}/restante",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"metodoPago\": \"TARJETA\", \"numeroOperacion\": \"   \", \"claveIdempotencia\": \"{{$guid}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Referencia obligatoria\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Registrar saldo y check-in",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/reservas/{{idReserva}}/restante",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"metodoPago\": \"{{metodoPago}}\", \"numeroOperacion\": \"{{numeroOperacion}}\", \"claveIdempotencia\": \"{{claveIdempotencia}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Check-in completado\", () => { pm.response.to.have.status(200); const p=pm.response.json(); pm.expect(p.completado).to.eql(true); pm.collectionVariables.set('idPago',String(p.id)); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Reintento no duplica pago",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/reservas/{{idReserva}}/restante",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"metodoPago\": \"{{metodoPago}}\", \"numeroOperacion\": \"{{numeroOperacion}}\", \"claveIdempotencia\": \"{{claveIdempotencia}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Mismo pago\", () => { pm.response.to.have.status(200); pm.expect(String(pm.response.json().id)).to.eql(pm.collectionVariables.get('idPago')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Reserva totalmente pagada y en estadía",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/panel/{{idReserva}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Saldo cero y ocupada\", () => { pm.response.to.have.status(200); const r=pm.response.json(); pm.expect(r.saldoPendiente).to.eql(0); pm.expect(r.estadoReserva).to.eql('OCUPADA'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Recuperar registro al reabrir modal",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/pagos/reservas/{{idReserva}}/restante"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Pago recuperable\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().completado).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Rutas internas no se exponen en gateway",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/interno/{{idReserva}}/saldo-check-in"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Ruta privada\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,257 @@
+<main class="gestion">
+  <header>
+    <p class="eyebrow">SOL DE SHIRÁN</p>
+    <h1>Gestión y cuenta</h1>
+    <p *ngIf="perfil()">{{ perfil().nombre }} · {{ rol() }}</p>
+  </header>
+  <nav aria-label="Secciones de gestión">
+    <button *ngIf="es('ADMIN', 'DUENO', 'TRABAJADOR')" (click)="tab = 'cabanas'">Cabañas</button>
+    <ng-container *ngFor="let seccion of seccionesCuentas">
+      <button
+        *ngIf="es('ADMIN') || (es('DUENO') && seccion.rol === 'TRABAJADOR')"
+        [attr.aria-pressed]="tab === 'cuentas' && seccionCuenta.rol === seccion.rol"
+        (click)="abrirCuentas(seccion)"
+      >{{ seccion.titulo }}</button>
+    </ng-container>
+    <button *ngIf="es('ADMIN', 'DUENO')" (click)="tab = 'bloqueos'">Bloquear fechas</button>
+    <button (click)="tab = 'perfil'">Mi perfil</button>
+  </nav>
+  <p class="success" role="status" *ngIf="mensaje()">{{ mensaje() }}</p>
+  <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
+  <section *ngIf="tab === 'cabanas' && es('ADMIN', 'DUENO', 'TRABAJADOR')">
+    <h2>Cabañas {{ es('ADMIN') ? 'del centro' : 'asignadas a tu cuenta' }}</h2>
+    <form *ngIf="es('ADMIN', 'DUENO')" (ngSubmit)="guardarCabana()" #cf="ngForm">
+      <h3>{{ cabana.idCabana ? 'Editar cabaña' : 'Nueva cabaña' }}</h3>
+      <div class="grid">
+        <label
+          >Nombre<input name="nombre" [(ngModel)]="cabana.nombre" required maxlength="100"
+        /></label>
+        <label
+          >Capacidad<input
+            name="aforo"
+            type="number"
+            [(ngModel)]="cabana.aforoMaximo"
+            min="1"
+            required
+        /></label>
+        <label
+          >Habitaciones<input
+            name="habitaciones"
+            type="number"
+            [(ngModel)]="cabana.numHabitaciones"
+            min="1"
+            required
+        /></label>
+        <label
+          >Baños<input name="banos" type="number" [(ngModel)]="cabana.numBanos" min="1" required
+        /></label>
+        <label
+          >Tarifa por noche (S/)<input
+            name="tarifa"
+            type="number"
+            step="0.01"
+            min="0.01"
+            [(ngModel)]="cabana.tarifaNoche"
+            required
+        /></label>
+        <label *ngIf="es('ADMIN')"
+          >Dueño<select name="dueno" [(ngModel)]="cabana.duenoId">
+            <option [ngValue]="null">Administración del centro</option>
+            <option *ngFor="let dueno of duenosActivos()" [ngValue]="dueno.id">
+              {{ dueno.nombre }} · {{ dueno.email }}
+            </option>
+          </select></label
+        >
+      </div>
+      <label
+        >Descripción<textarea
+          name="descripcion"
+          [(ngModel)]="cabana.descripcion"
+          required
+        ></textarea>
+      </label>
+      <label
+        >Imagen principal (URL https o ruta /assets/…)<input
+          name="imagen"
+          [(ngModel)]="cabana.imagenPrincipal"
+          required
+          maxlength="255"
+      /></label>
+      <label
+        >Fotos adicionales (una URL por línea)<textarea
+          name="imagenes"
+          [(ngModel)]="imagenes"
+        ></textarea>
+      </label>
+      <button class="primary" [disabled]="cf.invalid || ocupado()">Guardar cabaña</button
+      ><button type="button" (click)="nueva()">Limpiar formulario</button>
+    </form>
+    <div class="cards">
+      <article *ngFor="let c of cabanas()">
+        <img [src]="c.imagenPrincipal" [alt]="c.nombre" />
+        <h3>{{ c.nombre }}</h3>
+        <p>{{ c.estado }} · Hasta {{ c.aforoMaximo }} huéspedes</p>
+        <p>S/ {{ c.tarifaNoche | number: '1.2-2' }} por noche</p>
+        <p>
+          Dueño: {{ c.duenoId ? nombreCuenta(c.duenoId) : 'Administración' }} · Trabajadores:
+          {{ nombresTrabajadores(c.trabajadores ?? []) || 'Sin asignar' }}
+        </p>
+        <div *ngIf="es('ADMIN', 'DUENO')">
+          <button (click)="editarCabana(c)">Editar</button
+          ><button [disabled]="ocupado()" (click)="abrirAsignacion(c)">Asignar trabajadores</button
+          ><button *ngIf="c.estado !== 'INACTIVA'" class="danger" (click)="desactivarCabana(c)">
+            Desactivar</button
+          ><button *ngIf="c.estado === 'INACTIVA'" (click)="activar(c)">Activar</button>
+        </div>
+        <ng-container *ngIf="asignacion as seleccion">
+          <fieldset class="asignaciones" *ngIf="seleccion.cabanaId === c.idCabana">
+            <legend>Trabajadores de {{ c.nombre }}</legend>
+            <label class="opcion-trabajador" *ngFor="let trabajador of trabajadoresDe(c)">
+              <input
+                #opcion type="checkbox" [checked]="seleccion.ids.has(trabajador.id)"
+                [disabled]="ocupado() || (!trabajador.activo && !seleccion.ids.has(trabajador.id))"
+                (change)="cambiarAsignacion(trabajador.id, opcion.checked)"
+              />
+              <span>{{ trabajador.nombre }} · {{ trabajador.email }}{{ trabajador.activo ? '' : ' (inactivo)' }}</span>
+            </label>
+            <p *ngIf="!trabajadoresDe(c).length">No hay trabajadores disponibles para esta cabaña.</p>
+            <button class="primary" [disabled]="ocupado()" (click)="guardarAsignacion()">Guardar asignación</button>
+            <button [disabled]="ocupado()" (click)="asignacion = null">Cancelar</button>
+          </fieldset>
+        </ng-container>
+      </article>
+    </div>
+    <p *ngIf="!cabanas().length">No hay cabañas para tu cuenta.</p>
+  </section>
+  <section *ngIf="tab === 'cuentas' && es('ADMIN', 'DUENO')">
+    <h2>{{ seccionCuenta.titulo }}</h2>
+    <form (ngSubmit)="guardarUsuario()" #uf="ngForm">
+      <h3>{{ usuario.id ? 'Editar' : 'Agregar' }} {{ seccionCuenta.singular }}</h3>
+      <div class="grid">
+        <label>Nombre<input name="unombre" [(ngModel)]="usuario.nombre" required /></label>
+        <label>Correo<input name="uemail" type="email" [(ngModel)]="usuario.email" required /></label>
+        <label *ngIf="!usuario.id">
+          Contraseña inicial
+          <input name="upass" type="password" [(ngModel)]="usuario.password"
+            minlength="8" required autocomplete="new-password" />
+        </label>
+        <label *ngIf="es('ADMIN') && usuario.id && usuario.id !== perfil()?.id">
+          Rol
+          <select name="urol" [(ngModel)]="usuario.rol">
+            <option *ngFor="let seccion of seccionesCuentas" [ngValue]="seccion.rol">
+              {{ seccion.titulo }}
+            </option>
+          </select>
+        </label>
+        <label *ngIf="es('ADMIN') && usuario.rol === 'TRABAJADOR'">
+          Dueño del trabajador
+          <select name="ujefe" [(ngModel)]="usuario.duenoId">
+            <option [ngValue]="null">Administración del centro</option>
+            <option *ngFor="let dueno of duenosActivos()" [ngValue]="dueno.id">
+              {{ dueno.nombre }} · {{ dueno.email }}
+            </option>
+          </select>
+        </label>
+      </div>
+      <button class="primary" [disabled]="uf.invalid || ocupado()">Guardar {{ seccionCuenta.singular }}</button>
+      <button type="button" [disabled]="ocupado()" (click)="usuario = nuevoUsuario()">
+        {{ usuario.id ? 'Cancelar edición' : 'Limpiar' }}
+      </button>
+    </form>
+    <div class="table">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre / correo</th>
+            <th *ngIf="seccionCuenta.rol === 'TRABAJADOR' && es('ADMIN')">Dueño</th>
+            <th *ngIf="seccionCuenta.rol === 'TRABAJADOR' || seccionCuenta.rol === 'DUENO'">Cabañas</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cuenta of cuentasDe(seccionCuenta.rol)">
+            <td>{{ cuenta.id }}</td>
+            <td>{{ cuenta.nombre }}<br />{{ cuenta.email }}</td>
+            <td *ngIf="seccionCuenta.rol === 'TRABAJADOR' && es('ADMIN')">
+              {{ cuenta.duenoId ? nombreCuenta(cuenta.duenoId) : 'Administración' }}
+            </td>
+            <td *ngIf="seccionCuenta.rol === 'TRABAJADOR' || seccionCuenta.rol === 'DUENO'">
+              {{ cabanasDe(cuenta) || 'Sin asignar' }}
+            </td>
+            <td>{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</td>
+            <td>
+              <button [disabled]="ocupado()" (click)="editarUsuario(cuenta)">Editar</button>
+              <button *ngIf="cuenta.id !== perfil()?.id && (seccionCuenta.rol !== 'ADMIN' || cuenta.activo)"
+                class="danger" [disabled]="ocupado()" (click)="eliminarUsuario(cuenta)">
+                {{ seccionCuenta.rol === 'ADMIN' ? 'Desactivar' : 'Eliminar' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p *ngIf="!cuentasDe(seccionCuenta.rol).length">Todavía no hay cuentas en esta sección.</p>
+  </section>
+  <section *ngIf="tab === 'bloqueos' && es('ADMIN', 'DUENO')">
+    <h2>Bloquear disponibilidad</h2>
+    <form (ngSubmit)="bloquear()" #bf="ngForm">
+      <div class="grid">
+        <label
+          >Cabaña<select
+            name="bcab"
+            [(ngModel)]="bloqueo.idCabana"
+            required
+            (ngModelChange)="consultarBloqueos()"
+          >
+            <option [ngValue]="0">Seleccionar</option>
+            <option *ngFor="let c of cabanas()" [ngValue]="c.idCabana">{{ c.nombre }}</option>
+          </select></label
+        ><label>Desde<input name="bdesde" type="date" [(ngModel)]="bloqueo.desde" required /></label
+        ><label
+          >Hasta (inclusive)<input
+            name="bhasta"
+            type="date"
+            [(ngModel)]="bloqueo.hasta"
+            required /></label
+        ><label
+          >Motivo<input name="bmotivo" [(ngModel)]="bloqueo.motivo" required maxlength="200"
+        /></label>
+      </div>
+      <button class="primary" [disabled]="bf.invalid || !bloqueo.idCabana">Bloquear fechas</button>
+    </form>
+    <article *ngFor="let b of bloqueos()">
+      {{ b.desde }} a {{ b.hasta }} · {{ b.motivo }}
+      <button (click)="desbloquear(b)">Retirar bloqueo</button>
+    </article>
+  </section>
+  <section *ngIf="tab === 'perfil' && perfil()">
+    <h2>Mi perfil</h2>
+    <form (ngSubmit)="guardarPerfil()">
+      <label>Nombre<input name="mnombre" [(ngModel)]="perfil().nombre" required /></label
+      ><label
+        >Correo<input name="memail" type="email" [(ngModel)]="perfil().email" required /></label
+      ><button class="primary">Guardar perfil</button>
+    </form>
+    <form (ngSubmit)="cambiarPassword()">
+      <h3>Cambiar contraseña</h3>
+      <label
+        >Contraseña actual<input
+          name="actual"
+          type="password"
+          [(ngModel)]="passwordActual"
+          required
+          autocomplete="current-password" /></label
+      ><label
+        >Nueva contraseña<input
+          name="nueva"
+          type="password"
+          [(ngModel)]="passwordNueva"
+          required
+          minlength="8"
+          autocomplete="new-password" /></label
+      ><button class="primary">Cambiar contraseña</button>
+    </form>
+  </section>
+</main>

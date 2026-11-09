@@ -1,5 +1,5 @@
-<div class="business-layout">
-  <app-sidebar></app-sidebar>
+<div class="business-layout" [class.sidebar-collapsed]="contraido()">
+  <app-sidebar [contraido]="contraido()" (alternar)="alternarSidebar()"></app-sidebar>
 
   <main class="business-content">
     <router-outlet></router-outlet>

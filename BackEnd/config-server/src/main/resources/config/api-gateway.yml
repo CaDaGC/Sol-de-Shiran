@@ -48,6 +48,11 @@ spring:
           predicates:
             - Path=/api/v1/reservas,/api/v1/reservas/**
 
+        - id: ms-pagos
+          uri: lb://MS-PAGOS
+          predicates:
+            - Path=/api/v1/pagos,/api/v1/pagos/**
+
 management:
   tracing:
     sampling:

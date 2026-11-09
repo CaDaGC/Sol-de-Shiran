@@ -1,0 +1,91 @@
+<dialog #dialog aria-labelledby="detalle-title" (cancel)="$event.preventDefault(); cerrarModal()"
+  (click)="cerrarDesdeFondo($event)">
+  <div class="detail-modal">
+    <header>
+      <div>
+        <p class="eyebrow">ADMINISTRAR RESERVA</p>
+        <h2 id="detalle-title">Reserva #{{ idReserva() }}</h2>
+      </div>
+      <button type="button" class="close-button" aria-label="Cerrar detalle de reserva" autofocus
+        (click)="cerrarModal()">×</button>
+    </header>
+    <div class="detail-body" [attr.aria-busy]="cargando()">
+      @if (cargando()) {
+        <p class="message" role="status">Cargando detalle de la reserva…</p>
+      } @else if (error()) {
+        <div class="message" role="alert">
+          <p>{{ error() }}</p>
+          <button type="button" class="secondary-button" (click)="cargarDetalle()">Reintentar</button>
+        </div>
+      } @else if (detalle(); as reserva) {
+        <section aria-labelledby="estancia-title">
+          <div class="section-heading">
+            <h3 id="estancia-title">Información de la estancia</h3>
+            <span class="status">{{ estados[reserva.estadoReserva] || reserva.estadoReserva }}</span>
+          </div>
+          <dl>
+            <div class="wide"><dt>Cabaña</dt><dd>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</dd></div>
+            <div><dt>Ingreso</dt><dd>{{ reserva.fechaIngreso | date:'dd/MM/yyyy' }}</dd></div>
+            <div><dt>Salida</dt><dd>{{ reserva.fechaSalida | date:'dd/MM/yyyy' }}</dd></div>
+            <div><dt>Huéspedes</dt><dd>{{ reserva.cantidadHuespedes }}</dd></div>
+            <div><dt>Tarifa por noche</dt><dd>{{ reserva.tarifaNocheAplicada | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
+          </dl>
+        </section>
+        <section aria-labelledby="contacto-title">
+          <h3 id="contacto-title">Datos de contacto</h3>
+          <dl>
+            <div><dt>Nombre</dt><dd>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</dd></div>
+            <div><dt>Correo electrónico</dt><dd>{{ reserva.emailUsuario || 'Sin correo disponible' }}</dd></div>
+          </dl>
+        </section>
+        <section class="payment-summary" aria-labelledby="montos-title">
+          <h3 id="montos-title">Resumen de importes</h3>
+          <dl>
+            <div><dt>Monto total</dt><dd>{{ reserva.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
+            <div><dt>Adelanto de la reserva</dt><dd>{{ reserva.montoAdelanto | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
+            <div class="wide balance"><dt>Saldo pendiente</dt><dd>{{ reserva.saldoPendiente | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
+          </dl>
+        </section>
+        @if (exitoPago()) {
+          <p class="payment-success" role="status">{{ exitoPago() }}</p>
+        }
+        @if (reserva.estadoReserva === 'CONFIRMADA' && !exitoPago()) {
+          <section aria-labelledby="check-in-title">
+            <h3 id="check-in-title">Pago restante y check-in</h3>
+            <p class="payment-help">Registra el pago recibido para iniciar la estancia. El importe corresponde al saldo pendiente. El ingreso debe estar dentro de las fechas de la reserva.</p>
+            @if (consultandoPago()) {
+              <p role="status">Consultando registro de pago…</p>
+            } @else if (errorConsultaPago()) {
+              <button type="button" class="secondary-button" (click)="consultarPago()">Reintentar consulta de pago</button>
+            } @else {
+              <form #pagoForm="ngForm" (ngSubmit)="registrarPago()">
+                <fieldset [disabled]="guardando() || registroExistente()">
+                  <label for="metodo-restante">Método de pago</label>
+                  <select id="metodo-restante" name="metodoPago" [(ngModel)]="metodoPago" required>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="YAPE_BILLETERA">Yape / Billetera</option>
+                  </select>
+                  @if (metodoPago !== 'EFECTIVO') {
+                    <label for="operacion-restante">Número de operación</label>
+                    <input id="operacion-restante" name="numeroOperacion" [(ngModel)]="numeroOperacion"
+                      required pattern=".*\S.*" maxlength="100" autocomplete="off" aria-describedby="operacion-ayuda">
+                    <small id="operacion-ayuda">Ingresa la referencia del comprobante de pago recibido.</small>
+                  }
+                </fieldset>
+                @if (registroExistente()) {
+                  <p class="payment-help">El pago ya está registrado con este método. Falta completar el check-in. Reintenta sin volver a cobrar; el método se conserva para evitar modificar o duplicar el pago.</p>
+                }
+                <button class="primary-button" type="submit" [disabled]="guardando() || pagoForm.invalid">
+                  {{ guardando() ? 'Completando check-in…' : registroExistente() ? 'Reintentar check-in' : 'Registrar pago y realizar check-in' }}
+                </button>
+              </form>
+            }
+            @if (errorPago()) { <p class="payment-error" role="alert">{{ errorPago() }}</p> }
+          </section>
+        }
+      }
+    </div>
+    <footer><button type="button" class="secondary-button" (click)="cerrarModal()">Cerrar</button></footer>
+  </div>
+</dialog>

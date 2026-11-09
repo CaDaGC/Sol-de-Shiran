@@ -21,3 +21,6 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+servicios:
+  interno:
+    token: ${INTERNAL_SERVICE_TOKEN:sol-de-shiran-local-internal-token-change-me}

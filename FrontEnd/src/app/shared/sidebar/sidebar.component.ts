@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../services/auth';
 
@@ -11,6 +11,8 @@ import { AuthService } from '../../services/auth';
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent {
+  readonly contraido = input(false);
+  readonly alternar = output<void>();
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 

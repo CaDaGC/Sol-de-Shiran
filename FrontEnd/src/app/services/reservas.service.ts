@@ -9,7 +9,11 @@ import {
   CotizacionReservaResponse,
   CrearReservaRequest,
   FechasOcupadasResponse,
-  ReservaResponse
+  ReservaResponse,
+  ReservasPaginaResponse,
+  ReservaDetalleResponse,
+  GrupoReservasCliente,
+  MisReservasPaginaResponse
 } from '../models/reserva.model';
 
 @Injectable({
@@ -19,6 +23,25 @@ export class ReservasService {
   private readonly url = `${API_CONFIG.baseUrl}/reservas`;
 
   constructor(private readonly http: HttpClient) {}
+
+  consultarMisReservas(grupo: GrupoReservasCliente, page: number): Observable<MisReservasPaginaResponse> {
+    const params = new HttpParams().set('grupo', grupo).set('page', page).set('size', 20);
+    return this.http.get<MisReservasPaginaResponse>(`${this.url}/mis-reservas`, { params })
+      .pipe(timeout({ first: 15000 }));
+  }
+
+  consultarDetalle(idReserva: number): Observable<ReservaDetalleResponse> {
+    return this.http.get<ReservaDetalleResponse>(`${this.url}/panel/${idReserva}`)
+      .pipe(timeout({ first: 15000 }));
+  }
+
+  listarReservas(buscar: string, idCabana: number | null, page: number, size: number): Observable<ReservasPaginaResponse> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (buscar.trim()) params = params.set('buscar', buscar.trim());
+    if (idCabana !== null) params = params.set('idCabana', idCabana);
+    return this.http.get<ReservasPaginaResponse>(`${this.url}/panel`, { params })
+      .pipe(timeout({ first: 15000 }));
+  }
 
   consultarDisponibilidad(
     idCabana: number,
