@@ -17,7 +17,6 @@ import pe.edu.upeu.soldeshiran.reservas_service.service.GestionReservaService;
 
 class GestionReservaTest {
   ReservaRepository repo;
-  PagoPresencialRepository pagos;
   GestionReservaService service;
   CatalogoClient catalogo;
   Reserva r;
@@ -26,9 +25,8 @@ class GestionReservaTest {
   @BeforeEach
   void setup() {
     repo = mock(ReservaRepository.class);
-    pagos = mock(PagoPresencialRepository.class);
     catalogo = mock(CatalogoClient.class);
-    service = new GestionReservaService(repo, pagos, mock(BloqueoFechaRepository.class), catalogo);
+    service = new GestionReservaService(repo, mock(BloqueoFechaRepository.class), catalogo);
     r = new Reserva();
     r.setIdReserva(1L);
     r.setIdCabana(1L);
@@ -41,64 +39,6 @@ class GestionReservaTest {
     r.setFechaSalida(LocalDate.now().plusDays(2));
     when(repo.bloquearPorId(1L)).thenReturn(Optional.of(r));
     when(repo.findById(1L)).thenReturn(Optional.of(r));
-  }
-
-  GestionReservaService.PagoRequest pago(String monto) {
-    return new GestionReservaService.PagoRequest(
-        new BigDecimal(monto), "EFECTIVO", null, "operacion-1");
-  }
-
-  @Test
-  void clienteNoRegistraPagos() {
-    assertEquals(
-        403,
-        assertThrows(
-                ResponseStatusException.class,
-                () -> service.pagar(1L, pago("100"), new Actor(5L, "USUARIO")))
-            .getStatusCode()
-            .value());
-    verify(pagos, never()).saveAndFlush(any());
-  }
-
-  @Test
-  void pagoAdelantoConfirma() {
-    service.pagar(1L, pago("100"), admin);
-    assertEquals(EstadoReserva.CONFIRMADA, r.getEstadoReserva());
-    assertEquals(new BigDecimal("100"), r.getSaldoPendiente());
-    verify(pagos).saveAndFlush(any());
-  }
-
-  @Test
-  void noSeAceptaSobrepago() {
-    assertThrows(ResponseStatusException.class, () -> service.pagar(1L, pago("201"), admin));
-    verify(pagos, never()).saveAndFlush(any());
-  }
-
-  @Test
-  void pagoRepetidoNoDuplica() {
-    PagoPresencial p = new PagoPresencial();
-    p.setReservaId(1L);
-    p.setMonto(new BigDecimal("100"));
-    p.setMedio("EFECTIVO");
-    when(pagos.findByClaveOperacion("operacion-1")).thenReturn(Optional.of(p));
-    service.pagar(1L, pago("100"), admin);
-    verify(pagos, never()).saveAndFlush(any());
-  }
-
-  @Test
-  void claveRepetidaConOtroMontoSeRechaza() {
-    PagoPresencial p = new PagoPresencial();
-    p.setReservaId(1L);
-    p.setMonto(new BigDecimal("90"));
-    p.setMedio("EFECTIVO");
-    when(pagos.findByClaveOperacion("operacion-1")).thenReturn(Optional.of(p));
-    assertThrows(ResponseStatusException.class, () -> service.pagar(1L, pago("100"), admin));
-  }
-
-  @Test
-  void reservaVencidaNoCobra() {
-    r.setExpiraEn(LocalDateTime.now().minusMinutes(1));
-    assertThrows(ResponseStatusException.class, () -> service.pagar(1L, pago("100"), admin));
   }
 
   @Test

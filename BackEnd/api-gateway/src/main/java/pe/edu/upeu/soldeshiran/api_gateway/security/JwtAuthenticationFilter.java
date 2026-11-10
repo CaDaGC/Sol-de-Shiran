@@ -117,13 +117,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if ("TRABAJADOR".equals(rol)) {
             return cuenta || path.equals("/api/v1/reservas/panel")
                     || path.startsWith("/api/v1/reservas/panel/")
-                    || path.matches("/api/v1/reservas/[0-9]+(/pagos|/check-in|/check-out)")
+                    || path.matches("/api/v1/reservas/[0-9]+(/check-in|/check-out)")
                     || path.matches("/api/v1/pagos/reservas/[0-9]+/restante");
         }
         if ("CLIENTE".equals(rol)) {
             return cuenta || isCatalogo(path, method)
                     || path.equals("/api/v1/reservas")
-                    || path.matches("/api/v1/reservas/[0-9]+(/pagos)?")
+                    || path.matches("/api/v1/reservas/[0-9]+")
                     || path.matches("/api/v1/pagos/reservas/[0-9]+/(brick|orden|preferencia)")
                     || path.matches("/api/v1/pagos/transacciones/[0-9]+");
         }

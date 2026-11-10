@@ -101,17 +101,8 @@ Para trabajador creado por ADMIN, incluir `"rol":"TRABAJADOR","duenoId":ID_DEL_D
 
 - `GET /reservas`: ADMIN todas; DUENO/TRABAJADOR según alcance más sus propias reservas; USUARIO solo propias.
 - Filtros opcionales: `?idCabana=1&desde=2026-12-01&hasta=2026-12-31`.
-- `GET /reservas/{id}` y `GET /reservas/{id}/pagos`: detalle autorizado.
-- `POST /reservas/{id}/pagos`:
-
-```json
-{"monto":125.00,"medio":"EFECTIVO","referencia":null,"claveOperacion":"cobro-reserva-1-adelanto-001"}
-```
-
-Medios: EFECTIVO, TARJETA, YAPE y PLIN. Referencia obligatoria salvo efectivo. Registrar solo pagos realmente recibidos. El endpoint es un registro presencial, no cobra tarjetas ni verifica transferencias con un proveedor externo.
-
-Mantener la misma claveOperacion al reintentar el mismo cobro. La misma clave con los mismos datos no duplica el registro; si cambia monto/medio/referencia, responde conflicto. Una nueva clave representa un cobro distinto.
-No se aceptan sobrepagos ni pagos de reservas vencidas/canceladas/finalizadas. El adelanto suficiente confirma la reserva; el saldo restante debe quedar en cero antes de check-in.
+- `GET /reservas/{id}`: detalle autorizado.
+- El adelanto en línea, el saldo del check-in y el cobro por daños se registran en Pagos.
 
 - `POST /reservas/{id}/check-in` con `{}`: reserva confirmada, saldo cero y fecha actual dentro de la estancia. Cambia a OCUPADA.
 - `POST /reservas/{id}/check-out` con `{}`: solo OCUPADA, cambia a FINALIZADA.

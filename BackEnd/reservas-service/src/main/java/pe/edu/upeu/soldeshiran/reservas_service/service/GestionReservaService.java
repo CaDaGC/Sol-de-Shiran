@@ -22,7 +22,6 @@ import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
 @RequiredArgsConstructor
 public class GestionReservaService {
   private final ReservaRepository reservas;
-  private final PagoPresencialRepository pagos;
   private final BloqueoFechaRepository bloqueos;
   private final pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient catalogo;
 
@@ -34,12 +33,6 @@ public class GestionReservaService {
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
   private String key;
-
-  public record PagoRequest(
-      @NotNull @DecimalMin("0.01") @Digits(integer = 8, fraction = 2) BigDecimal monto,
-      @NotBlank String medio,
-      @Size(max = 100) String referencia,
-      @NotBlank @Size(max = 80) String claveOperacion) {}
 
   public record BloqueoRequest(
       @NotNull @Positive Long idCabana,
@@ -115,56 +108,6 @@ public class GestionReservaService {
   public void exigirAccesoOperativo(Long id, Actor actor) {
     exigirOperativo(actor);
     find(id, false);
-  }
-
-  public List<PagoPresencial> pagos(Long id, Actor a) {
-    obtener(id, a);
-    return pagos.findByReservaId(id);
-  }
-
-  public Reserva pagar(Long id, PagoRequest p, Actor a) {
-    Reserva r = find(id, true);
-    exigirOperativo(a);
-    var anterior = pagos.findByClaveOperacion(p.claveOperacion());
-    if (anterior.isPresent()) {
-      PagoPresencial x = anterior.get();
-      if (!Objects.equals(x.getReservaId(), id)
-          || x.getMonto().compareTo(p.monto()) != 0
-          || !Objects.equals(x.getMedio(), p.medio())
-          || !Objects.equals(x.getReferencia(), p.referencia()))
-        conflicto("Clave de operación utilizada con otros datos");
-      return r;
-    }
-    if (Boolean.TRUE.equals(r.getAdelantoEnLinea()))
-      conflicto("Usa el pago en línea para el adelanto y el panel de reservas para el saldo.");
-
-    if (!List.of("EFECTIVO", "TARJETA", "YAPE", "PLIN").contains(p.medio()))
-      malo("Medio de pago inválido");
-    if (!p.medio().equals("EFECTIVO") && (p.referencia() == null || p.referencia().isBlank()))
-      malo("Referencia obligatoria");
-    if (!List.of(EstadoReserva.PENDIENTE_PAGO, EstadoReserva.CONFIRMADA)
-        .contains(r.getEstadoReserva())) conflicto("Estado no admite pagos");
-    if (r.getEstadoReserva() == EstadoReserva.PENDIENTE_PAGO
-        && !r.getExpiraEn().isAfter(LocalDateTime.now())) conflicto("Reserva temporal vencida");
-    // Existing confirmed reservations already have their advance paid.
-    BigDecimal pagado = r.getTotalPagado() == null ? BigDecimal.ZERO : r.getTotalPagado();
-    if (r.getEstadoReserva() == EstadoReserva.CONFIRMADA
-        && pagado.compareTo(r.getMontoAdelanto()) < 0) pagado = r.getMontoAdelanto();
-    if (p.monto().compareTo(r.getMontoTotal().subtract(pagado)) > 0)
-      malo("El monto supera el saldo real");
-    PagoPresencial registro = new PagoPresencial();
-    registro.setReservaId(id);
-    registro.setRegistradoPor(a.id());
-    registro.setMonto(p.monto());
-    registro.setMedio(p.medio());
-    registro.setReferencia(p.referencia());
-    registro.setClaveOperacion(p.claveOperacion());
-    pagos.saveAndFlush(registro);
-    pagado = pagado.add(p.monto());
-    r.setTotalPagado(pagado);
-    r.setSaldoPendiente(r.getMontoTotal().subtract(pagado));
-    if (pagado.compareTo(r.getMontoAdelanto()) >= 0) r.setEstadoReserva(EstadoReserva.CONFIRMADA);
-    return r;
   }
 
   public Reserva checkin(Long id, Actor a) {

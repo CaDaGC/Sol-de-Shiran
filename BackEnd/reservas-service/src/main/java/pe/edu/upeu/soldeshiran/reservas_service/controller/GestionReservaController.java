@@ -41,19 +41,6 @@ public class GestionReservaController {
     gestion.exigirAccesoOperativo(id, Actor.desde(request));
   }
 
-  @GetMapping("/{id}/pagos")
-  public List<PagoPresencial> pagos(@PathVariable Long id, HttpServletRequest q) {
-    return gestion.pagos(id, Actor.desde(q));
-  }
-
-  @PostMapping("/{id}/pagos")
-  public Reserva pagar(
-      @PathVariable Long id,
-      @Valid @RequestBody GestionReservaService.PagoRequest r,
-      HttpServletRequest q) {
-    return gestion.pagar(id, r, Actor.desde(q));
-  }
-
   @PostMapping("/{id}/check-in")
   public Reserva checkin(@PathVariable Long id, HttpServletRequest q) {
     return gestion.checkin(id, Actor.desde(q));

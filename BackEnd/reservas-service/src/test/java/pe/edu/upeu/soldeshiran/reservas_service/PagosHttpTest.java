@@ -69,12 +69,10 @@ class PagosHttpTest {
 
   @Autowired MockMvc mvc;
   @Autowired ReservaRepository reservas;
-  @Autowired PagoPresencialRepository pagos;
   long id;
 
   @BeforeEach
   void setup() {
-    pagos.deleteAll();
     reservas.deleteAll();
     Reserva r = new Reserva();
     r.setIdCabana(1L);
@@ -100,70 +98,9 @@ class PagosHttpTest {
   }
 
   @Test
-  void anonimoNoCobra() throws Exception {
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("100", "a")))
-        .andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  void clienteNoCobraSuPropiaReserva() throws Exception {
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .header("Authorization", token(2))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("100", "a")))
-        .andExpect(status().isForbidden());
-  }
-
-  @Test
-  void pagoConfirmadoYRepetidoTieneUnSoloRegistro() throws Exception {
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .header("Authorization", token(1))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("100", "misma")))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.estadoReserva").value("CONFIRMADA"));
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .header("Authorization", token(1))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("100", "misma")))
-        .andExpect(status().isOk());
-    org.junit.jupiter.api.Assertions.assertEquals(1, pagos.count());
-  }
-
-  @Test
-  void sobrepagoNoEsPersistido() throws Exception {
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .header("Authorization", token(1))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("201", "a")))
-        .andExpect(status().isBadRequest());
-    org.junit.jupiter.api.Assertions.assertEquals(0, pagos.count());
-  }
-
-  @Test
   void checkinConSaldoEsConflicto() throws Exception {
     mvc.perform(post("/api/v1/reservas/" + id + "/check-in").header("Authorization", token(1)))
         .andExpect(status().isConflict());
-  }
-
-  @Test
-  void puedePagarTotalYRegistrarCheckin() throws Exception {
-    mvc.perform(
-            post("/api/v1/reservas/" + id + "/pagos")
-                .header("Authorization", token(1))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(pago("200", "a")))
-        .andExpect(status().isOk());
-    mvc.perform(post("/api/v1/reservas/" + id + "/check-in").header("Authorization", token(1)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.estadoReserva").value("OCUPADA"));
   }
 
   @Test
@@ -220,14 +157,11 @@ class PagosHttpTest {
   }
 
   @Test
-  void adelantoEnLineaBloqueaCobroPresencialYActualizaSaldoAlConfirmar() throws Exception {
+  void adelantoEnLineaActualizaSaldoAlConfirmar() throws Exception {
     String interno = "/api/v1/reservas/interno/" + id;
     mvc.perform(post(interno + "/iniciar-adelanto").param("idUsuario", "2")
             .header("X-Internal-Service-Token", "test-internal-token"))
         .andExpect(status().isNoContent());
-    mvc.perform(post("/api/v1/reservas/" + id + "/pagos").header("Authorization", token(1))
-            .contentType(MediaType.APPLICATION_JSON).content(pago("100", "otro-canal")))
-        .andExpect(status().isConflict());
     mvc.perform(post(interno + "/confirmar-pago")
             .header("X-Internal-Service-Token", "test-internal-token")
             .contentType(MediaType.APPLICATION_JSON)
