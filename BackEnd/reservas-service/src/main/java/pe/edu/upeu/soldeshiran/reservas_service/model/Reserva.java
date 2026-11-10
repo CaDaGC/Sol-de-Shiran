@@ -29,6 +29,9 @@ public class Reserva {
 
   @Version private Long version;
 
+  @Embedded
+  private RegistroCheckout checkout;
+
   @Column(columnDefinition = "boolean default false")
   private Boolean adelantoEnLinea = false;
 

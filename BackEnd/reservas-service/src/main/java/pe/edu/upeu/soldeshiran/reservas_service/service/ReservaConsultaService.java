@@ -55,7 +55,7 @@ public class ReservaConsultaService {
                     reserva.getFechaIngreso(), reserva.getFechaSalida(), reserva.getCantidadHuespedes(),
                     reserva.getTarifaNocheAplicada(), reserva.getMontoTotal(), reserva.getMontoAdelanto(),
                     reserva.getSaldoPendiente(), reserva.getEstadoReserva(), reserva.getExpiraEn(),
-                    reserva.getFechaCreacion());
+                    reserva.getFechaCreacion(), reserva.getCheckout());
         } catch (FeignException | org.springframework.web.client.RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "No se pudieron consultar los datos del detalle de reserva. Intenta nuevamente.", exception);

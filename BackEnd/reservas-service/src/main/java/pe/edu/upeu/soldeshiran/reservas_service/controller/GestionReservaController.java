@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.CheckoutRequest;
 import pe.edu.upeu.soldeshiran.reservas_service.model.*;
 import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
 import pe.edu.upeu.soldeshiran.reservas_service.service.GestionReservaService;
@@ -59,8 +60,11 @@ public class GestionReservaController {
   }
 
   @PostMapping("/{id}/check-out")
-  public Reserva checkout(@PathVariable Long id, HttpServletRequest q) {
-    return gestion.checkout(id, Actor.desde(q));
+  public Reserva checkout(
+      @PathVariable Long id,
+      @Valid @RequestBody(required = false) CheckoutRequest request,
+      HttpServletRequest q) {
+    return gestion.checkout(id, request, Actor.desde(q));
   }
 
   @DeleteMapping("/{id}")

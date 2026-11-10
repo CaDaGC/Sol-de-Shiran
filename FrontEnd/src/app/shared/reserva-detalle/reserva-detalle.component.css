@@ -168,11 +168,15 @@ dd {
 }
 fieldset { border: 0; padding: 0; margin: 18px 0; display: grid; gap: 10px; min-width: 0; }
 label { font-size: .85rem; font-weight: 600; }
-input, select { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #9aaa9e; border-radius: 7px; font: inherit; background: white; }
-input:focus-visible, select:focus-visible { outline: 3px solid #c87932; outline-offset: 2px; }
+input, select, textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #9aaa9e; border-radius: 7px; font: inherit; background: white; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #c87932; outline-offset: 2px; }
 .payment-help, small { color: #657268; font-size: .8rem; line-height: 1.6; }
 .primary-button { width: 100%; padding: 13px 16px; border: 0; border-radius: 7px; color: white; background: #315b3d; font-weight: 600; }
 .primary-button:hover { background: #24472e; }
 button:disabled { opacity: .55; cursor: wait; }
 .payment-error { color: #9d2e24; font-size: .85rem; line-height: 1.6; }
 .payment-success { padding: 16px; border-radius: 8px; color: #24472e; background: #edf3eb; line-height: 1.6; }
+
+.checkout-checkbox { display: flex; align-items: center; gap: 8px; }
+.checkout-checkbox input { width: auto; margin: 0; }
+textarea { resize: vertical; }

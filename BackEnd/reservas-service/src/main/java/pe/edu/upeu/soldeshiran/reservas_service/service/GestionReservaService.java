@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.CheckoutRequest;
 import pe.edu.upeu.soldeshiran.reservas_service.model.*;
 import pe.edu.upeu.soldeshiran.reservas_service.repository.*;
 import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
@@ -212,12 +214,32 @@ public class GestionReservaService {
     return r;
   }
 
-  public Reserva checkout(Long id, Actor a) {
+  public Reserva checkout(Long id, CheckoutRequest request, Actor a) {
     Reserva r = find(id, true);
     exigirOperativo(r, a);
+
+    var danos = request == null ? null : request.danos();
+    String descripcion = danos == null ? null : danos.descripcion().strip();
+    BigDecimal monto = danos == null ? null : danos.monto().setScale(2);
+    String medio = danos == null ? null : danos.medioPago();
+    RegistroCheckout anterior = r.getCheckout();
+    if (r.getEstadoReserva() == EstadoReserva.FINALIZADA && anterior != null) {
+      if (Objects.equals(anterior.descripcionDanos(), descripcion)
+          && Objects.equals(anterior.montoDanos(), monto)
+          && Objects.equals(anterior.medioPago(), medio)) {
+        return r;
+      }
+      conflicto("El check-out ya se registró con otros datos");
+    }
     if (r.getEstadoReserva() != EstadoReserva.OCUPADA) conflicto("La reserva no está ocupada");
-    actualizarOcupacion(r, false);
+
+    r.setCheckout(new RegistroCheckout(
+        LocalDateTime.now(ZoneId.of("America/Lima")).truncatedTo(ChronoUnit.SECONDS),
+        a.id(), descripcion, monto, medio));
     r.setEstadoReserva(EstadoReserva.FINALIZADA);
+    // Si catálogo falla, la transacción revierte el registro y permite reintentar.
+    reservas.saveAndFlush(r);
+    actualizarOcupacion(r, false);
     return r;
   }
 

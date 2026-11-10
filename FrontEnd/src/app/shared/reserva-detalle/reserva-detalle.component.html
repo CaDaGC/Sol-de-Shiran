@@ -46,7 +46,58 @@
             <div class="wide balance"><dt>Saldo pendiente</dt><dd>{{ reserva.saldoPendiente | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
           </dl>
         </section>
-        @if (exitoPago()) {
+        @if (exitoCheckout()) {
+          <p class="payment-success" role="status">{{ exitoCheckout() }}</p>
+        }
+        @if (reserva.checkout; as checkout) {
+          <section aria-labelledby="salida-title">
+            <h3 id="salida-title">Salida registrada</h3>
+            <dl>
+              <div><dt>Fecha y hora</dt><dd>{{ checkout.fecha | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+              @if (checkout.medioPago; as medioPago) {
+                <div><dt>Cobro por daños</dt><dd>{{ checkout.montoDanos | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
+                <div class="wide"><dt>Descripción de los daños</dt><dd>{{ checkout.descripcionDanos }}</dd></div>
+                <div><dt>Medio de pago</dt><dd>{{ mediosPagoDanos[medioPago] }}</dd></div>
+              } @else {
+                <div><dt>Cobro por daños</dt><dd>Sin cobro</dd></div>
+              }
+            </dl>
+          </section>
+        }
+        @if (reserva.estadoReserva === 'OCUPADA') {
+          <section aria-labelledby="checkout-title">
+            <h3 id="checkout-title">Registrar check-out</h3>
+            <p class="payment-help">Confirma la salida para finalizar la reserva y liberar la cabaña.</p>
+            <form #checkoutForm="ngForm" (ngSubmit)="registrarCheckout()">
+              <fieldset [disabled]="guardando()">
+                <label class="checkout-checkbox">
+                  <input type="checkbox" name="huboDanos" [(ngModel)]="huboDanos">
+                  Registrar cobro por daños
+                </label>
+                @if (huboDanos) {
+                  <p class="payment-help">Ingresa los datos del pago recibido presencialmente.</p>
+                  <label for="descripcion-danos">Descripción de los daños</label>
+                  <textarea id="descripcion-danos" name="descripcionDanos" [(ngModel)]="descripcionDanos"
+                    rows="3" required maxlength="500"></textarea>
+                  <label for="monto-danos">Importe (S/)</label>
+                  <input id="monto-danos" name="montoDanos" [(ngModel)]="montoDanos"
+                    required inputmode="decimal" [pattern]="formatoMontoDanos">
+                  <label for="medio-pago-danos">Medio de pago</label>
+                  <select id="medio-pago-danos" name="medioPagoDanos" [(ngModel)]="medioPagoDanos">
+                    @for (medio of mediosPagoDanos | keyvalue; track medio.key) {
+                      <option [value]="medio.key">{{ medio.value }}</option>
+                    }
+                  </select>
+                }
+              </fieldset>
+              <button class="primary-button" type="submit" [disabled]="guardando() || checkoutForm.invalid">
+                {{ guardando() ? 'Registrando salida…' : 'Confirmar check-out' }}
+              </button>
+            </form>
+            @if (errorCheckout()) { <p class="payment-error" role="alert">{{ errorCheckout() }}</p> }
+          </section>
+        }
+        @if (exitoPago() && reserva.estadoReserva === 'OCUPADA') {
           <p class="payment-success" role="status">{{ exitoPago() }}</p>
         }
         @if (reserva.estadoReserva === 'CONFIRMADA' && !exitoPago()) {

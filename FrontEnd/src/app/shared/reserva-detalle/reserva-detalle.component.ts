@@ -5,7 +5,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { afterNextRender, Component, DestroyRef, ElementRef, inject, input, OnInit, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { ESTADOS_RESERVA, ReservaDetalleResponse } from '../../models/reserva.model';
+import {
+  CheckoutRequest, ESTADOS_RESERVA, MEDIOS_PAGO_DANOS, MedioPagoDanos, ReservaDetalleResponse
+} from '../../models/reserva.model';
 import { ReservasService } from '../../services/reservas.service';
 @Component({
   selector: 'app-reserva-detalle',
@@ -23,6 +25,14 @@ export class ReservaDetalleComponent implements OnInit {
   readonly actualizado = output<void>();
   private readonly pagosService = inject(PagosService);
   readonly guardando = signal(false);
+  readonly errorCheckout = signal('');
+  readonly exitoCheckout = signal('');
+  readonly mediosPagoDanos = MEDIOS_PAGO_DANOS;
+  readonly formatoMontoDanos = /^\d{1,8}([.,]\d{1,2})?$/;
+  huboDanos = false;
+  descripcionDanos = '';
+  montoDanos = '';
+  medioPagoDanos: MedioPagoDanos = 'EFECTIVO';
   readonly consultandoPago = signal(true);
   readonly errorPago = signal('');
   readonly exitoPago = signal('');
@@ -83,6 +93,44 @@ export class ReservaDetalleComponent implements OnInit {
       }
     });
   }
+  registrarCheckout(): void {
+    const reserva = this.detalle();
+    if (!reserva || reserva.estadoReserva !== 'OCUPADA' || this.guardando()) return;
+
+    const request: CheckoutRequest = {};
+    if (this.huboDanos) {
+      const descripcion = this.descripcionDanos.trim();
+      const montoTexto = this.montoDanos.trim();
+      const monto = Number(montoTexto.replace(',', '.'));
+      if (!descripcion || descripcion.length > 500 || !this.formatoMontoDanos.test(montoTexto) || monto <= 0) {
+        this.errorCheckout.set('Ingresa una descripción y un importe mayor que cero con hasta dos decimales.');
+        return;
+      }
+      request.danos = { descripcion, monto, medioPago: this.medioPagoDanos };
+    }
+
+    this.errorCheckout.set('');
+    this.guardando.set(true);
+    this.reservasService.registrarCheckout(reserva.idReserva, request).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.guardando.set(false))
+    ).subscribe({
+      next: ({ estadoReserva, checkout }) => {
+        this.detalle.set({ ...reserva, estadoReserva, checkout });
+        this.exitoPago.set('');
+        this.exitoCheckout.set('Check-out registrado. La cabaña quedó disponible.');
+        this.actualizado.emit();
+      },
+      error: (error: unknown) => {
+        this.errorCheckout.set(error instanceof HttpErrorResponse && error.status === 403
+          ? 'Tu cuenta no tiene permiso para registrar el check-out.'
+          : error instanceof HttpErrorResponse && error.status === 409
+            ? 'La reserva cambió. Cierra y vuelve a abrir el detalle para consultar su estado.'
+            : 'No se pudo confirmar el check-out. Reintenta con los mismos datos.');
+      }
+    });
+  }
+
   readonly detalle = signal<ReservaDetalleResponse | null>(null);
   readonly cargando = signal(true);
   readonly error = signal('');

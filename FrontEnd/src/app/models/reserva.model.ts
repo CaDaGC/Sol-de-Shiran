@@ -83,7 +83,31 @@ export interface ReservasPaginaResponse {
   totalPages: number;
 }
 
+export const MEDIOS_PAGO_DANOS = {
+  EFECTIVO: 'Efectivo',
+  TARJETA: 'Tarjeta',
+  YAPE: 'Yape',
+  PLIN: 'Plin'
+} as const;
+
+export type MedioPagoDanos = keyof typeof MEDIOS_PAGO_DANOS;
+
+export interface CheckoutRequest {
+  danos?: { descripcion: string; monto: number; medioPago: MedioPagoDanos };
+}
+
+export interface CheckoutResponse {
+  estadoReserva: string;
+  checkout: {
+    fecha: string;
+    descripcionDanos: string | null;
+    montoDanos: number | null;
+    medioPago: MedioPagoDanos | null;
+  };
+}
+
 export interface ReservaDetalleResponse extends ReservaPanelResponse {
+  checkout?: CheckoutResponse['checkout'] | null;
   tarifaNocheAplicada: number;
   expiraEn: string;
   fechaCreacion: string | null;

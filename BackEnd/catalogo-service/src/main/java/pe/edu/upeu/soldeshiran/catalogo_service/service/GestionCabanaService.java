@@ -185,6 +185,7 @@ public class GestionCabanaService {
     m.put("tarifaNoche", c.getTarifaNoche());
     m.put("imagenPrincipal", c.getImagenPrincipal());
     m.put("estado", c.getEstado());
+    m.put("estadoOcupacion", c.getEstadoOcupacion());
     m.put("duenoId", c.getDuenoId());
     m.put("trabajadores", c.getTrabajadores());
     m.put("imagenesSecundarias", c.getImagenes().stream().map(CabanaImagen::getUrlImagen).toList());

@@ -1,0 +1,368 @@
+{
+  "info": {
+    "name": "HU9 Check-out y cobro opcional por daños",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Usar dos reservas OCUPADAS de cabañas activas distintas, ambas asignadas al trabajador. Completar los IDs y tokens en las variables de la colección antes de ejecutar en orden. La colección finaliza las dos reservas de prueba."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8061/api/v1"
+    },
+    {
+      "key": "trabajadorToken",
+      "value": ""
+    },
+    {
+      "key": "clienteToken",
+      "value": ""
+    },
+    {
+      "key": "idReservaSinDanos",
+      "value": ""
+    },
+    {
+      "key": "idReservaConDanos",
+      "value": ""
+    },
+    {
+      "key": "idCabanaSinDanos",
+      "value": ""
+    },
+    {
+      "key": "idCabanaConDanos",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Cabaña ocupada antes de la salida",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/cabanas/gestion"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const id = Number(pm.collectionVariables.get(\"idCabanaSinDanos\"));",
+              "const cabana = pm.response.json().find(c => c.idCabana === id);",
+              "pm.test(\"Ocupación OCUPADA\", () => pm.expect(cabana?.estadoOcupacion).to.eql(\"OCUPADA\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Cliente no autorizado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{clienteToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaSinDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Rechazar monto con más de dos decimales",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaConDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"danos\": {\n    \"descripcion\": \"Toalla dañada\",\n    \"monto\": 25.555,\n    \"medioPago\": \"YAPE\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Registrar salida sin daños",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaSinDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const reserva = pm.response.json();",
+              "pm.test(\"Reserva finalizada\", () => pm.expect(reserva.estadoReserva).to.eql(\"FINALIZADA\"));",
+              "pm.test(\"Fecha de salida registrada\", () => pm.expect(reserva.checkout.fecha).to.be.a(\"string\"));",
+              "pm.test(\"Sin cargo por daños\", () => pm.expect(reserva.checkout.montoDanos).to.be.null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Verificar cabaña liberada sin daños",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/cabanas/gestion"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const id = Number(pm.collectionVariables.get(\"idCabanaSinDanos\"));",
+              "const cabana = pm.response.json().find(c => c.idCabana === id);",
+              "pm.test(\"Ocupación DISPONIBLE\", () => pm.expect(cabana?.estadoOcupacion).to.eql(\"DISPONIBLE\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Registrar salida con daños",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaConDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"danos\": {\n    \"descripcion\": \"Toalla dañada\",\n    \"monto\": 25.5,\n    \"medioPago\": \"YAPE\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const reserva = pm.response.json();",
+              "pm.test(\"Reserva finalizada\", () => pm.expect(reserva.estadoReserva).to.eql(\"FINALIZADA\"));",
+              "pm.test(\"Fecha de salida registrada\", () => pm.expect(reserva.checkout.fecha).to.be.a(\"string\"));",
+              "pm.test(\"Cargo de S/ 25.50 por Yape\", () => {",
+              "  pm.expect(reserva.checkout.descripcionDanos).to.eql(\"Toalla dañada\");",
+              "  pm.expect(reserva.checkout.montoDanos).to.eql(25.50);",
+              "  pm.expect(reserva.checkout.medioPago).to.eql(\"YAPE\");",
+              "});",
+              "pm.collectionVariables.set(\"fechaCheckoutConDanos\", reserva.checkout.fecha);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Verificar cabaña liberada con daños",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/cabanas/gestion"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const id = Number(pm.collectionVariables.get(\"idCabanaConDanos\"));",
+              "const cabana = pm.response.json().find(c => c.idCabana === id);",
+              "pm.test(\"Ocupación DISPONIBLE\", () => pm.expect(cabana?.estadoOcupacion).to.eql(\"DISPONIBLE\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Reintentar sin duplicar el registro",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaConDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"danos\": {\n    \"descripcion\": \"Toalla dañada\",\n    \"monto\": 25.5,\n    \"medioPago\": \"YAPE\"\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const reserva = pm.response.json();",
+              "pm.test(\"Reserva finalizada\", () => pm.expect(reserva.estadoReserva).to.eql(\"FINALIZADA\"));",
+              "pm.test(\"Fecha de salida registrada\", () => pm.expect(reserva.checkout.fecha).to.be.a(\"string\"));",
+              "pm.test(\"Cargo de S/ 25.50 por Yape\", () => {",
+              "  pm.expect(reserva.checkout.descripcionDanos).to.eql(\"Toalla dañada\");",
+              "  pm.expect(reserva.checkout.montoDanos).to.eql(25.50);",
+              "  pm.expect(reserva.checkout.medioPago).to.eql(\"YAPE\");",
+              "});",
+              "pm.test(\"Se conserva el registro original\", () => {",
+              "  pm.expect(reserva.checkout.fecha).to.eql(pm.collectionVariables.get(\"fechaCheckoutConDanos\"));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Rechazar un cambio de cargo tras finalizar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/{{idReservaConDanos}}/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Consultar el cobro persistido en el panel",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{trabajadorToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/reservas/panel/{{idReservaConDanos}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const reserva = pm.response.json();",
+              "pm.test(\"Reserva finalizada\", () => pm.expect(reserva.estadoReserva).to.eql(\"FINALIZADA\"));",
+              "pm.test(\"Fecha de salida registrada\", () => pm.expect(reserva.checkout.fecha).to.be.a(\"string\"));",
+              "pm.test(\"Cargo de S/ 25.50 por Yape\", () => {",
+              "  pm.expect(reserva.checkout.descripcionDanos).to.eql(\"Toalla dañada\");",
+              "  pm.expect(reserva.checkout.montoDanos).to.eql(25.50);",
+              "  pm.expect(reserva.checkout.medioPago).to.eql(\"YAPE\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

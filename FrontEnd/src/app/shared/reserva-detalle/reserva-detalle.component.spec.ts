@@ -39,7 +39,7 @@ describe('HU7 pago restante y check-in', () => {
     post.flush({ completado: true });
     http.expectOne(r => r.url.endsWith('/reservas/panel/3')).flush({ ...reserva, saldoPendiente: 0, estadoReserva: 'OCUPADA' });
     expect(actualizado).toHaveBeenCalledOnce(); expect(fixture.componentInstance.exitoPago()).toContain('completado');
-    fixture.detectChanges(); expect(fixture.nativeElement.querySelector('form')).toBeNull();
+    fixture.detectChanges(); expect(fixture.nativeElement.querySelector('#check-in-title')).toBeNull();
   });
   it('recupera registro pendiente y reintenta con la misma clave', () => {
     const clave = crypto.randomUUID();
@@ -76,5 +76,84 @@ describe('HU7 pago restante y check-in', () => {
   it('bloquea envío si no pudo consultar el pago existente' , () => {
     http.expectOne(r => r.url.endsWith('/restante')).flush({}, { status: 503, statusText: 'Unavailable' });
     fixture.componentInstance.registrarPago(); http.expectNone(r => r.method === 'POST');
+  });
+});
+
+describe('HU9 registro de check-out', () => {
+  let fixture: ComponentFixture<ReservaDetalleComponent>;
+  let http: HttpTestingController;
+  const reserva = {
+    idReserva: 9, idCabana: 4, estadoReserva: 'OCUPADA', saldoPendiente: 0,
+    montoTotal: 250, montoAdelanto: 125, fechaIngreso: '2026-11-05', fechaSalida: '2026-11-06'
+  };
+
+  beforeEach(async () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() {} });
+    TestBed.configureTestingModule({
+      imports: [ReservaDetalleComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
+    });
+    fixture = TestBed.createComponent(ReservaDetalleComponent);
+    fixture.componentRef.setInput('idReserva', 9);
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http.expectOne(r => r.url.endsWith('/reservas/panel/9')).flush(reserva);
+    http.expectOne(r => r.url.endsWith('/restante')).flush(null);
+    fixture.detectChanges();
+    await fixture.whenStable();
+  });
+
+  afterEach(() => { fixture.destroy(); http.verify(); });
+
+  it('registra salida sin cobro y notifica al panel una sola vez', () => {
+    const actualizado = vi.fn();
+    fixture.componentInstance.actualizado.subscribe(actualizado);
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('#monto-danos')).toBeNull();
+
+    const form = root.querySelector('form')!;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    const post = http.expectOne(r => r.method === 'POST' && r.url.endsWith('/9/check-out'));
+    expect(post.request.body).toEqual({});
+    post.flush({
+      estadoReserva: 'FINALIZADA',
+      checkout: { fecha: '2026-11-06T10:00:00', descripcionDanos: null, montoDanos: null, medioPago: null }
+    });
+    fixture.detectChanges();
+    expect(actualizado).toHaveBeenCalledOnce();
+    expect(root.querySelector('form')).toBeNull();
+    expect(root.textContent).toContain('Sin cobro');
+  });
+
+  it('muestra los campos de daños y envía un cobro presencial válido', async () => {
+    const root: HTMLElement = fixture.nativeElement;
+    root.querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    expect(root.querySelector('#monto-danos')).toBeTruthy();
+
+    component.registrarCheckout();
+    http.expectNone(r => r.method === 'POST');
+    component.descripcionDanos = '  Toalla dañada  ';
+    component.montoDanos = '25,501';
+    component.registrarCheckout();
+    http.expectNone(r => r.method === 'POST');
+
+    component.montoDanos = '25,50';
+    component.medioPagoDanos = 'YAPE';
+    component.registrarCheckout();
+    const post = http.expectOne(r => r.method === 'POST' && r.url.endsWith('/9/check-out'));
+    expect(post.request.body).toEqual({
+      danos: { descripcion: 'Toalla dañada', monto: 25.5, medioPago: 'YAPE' }
+    });
+    post.flush({
+      estadoReserva: 'FINALIZADA',
+      checkout: { fecha: '2026-11-06T10:00:00', descripcionDanos: 'Toalla dañada', montoDanos: 25.5, medioPago: 'YAPE' }
+    });
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Toalla dañada');
+    expect(root.textContent).toContain('Yape');
   });
 });

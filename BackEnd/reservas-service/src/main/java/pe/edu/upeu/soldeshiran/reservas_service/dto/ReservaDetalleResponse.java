@@ -1,6 +1,7 @@
 package pe.edu.upeu.soldeshiran.reservas_service.dto;
 
 import pe.edu.upeu.soldeshiran.reservas_service.model.EstadoReserva;
+import pe.edu.upeu.soldeshiran.reservas_service.model.RegistroCheckout;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public record ReservaDetalleResponse(
         BigDecimal saldoPendiente,
         EstadoReserva estadoReserva,
         LocalDateTime expiraEn,
-        LocalDateTime fechaCreacion
+        LocalDateTime fechaCreacion,
+        RegistroCheckout checkout
 ) {
 }

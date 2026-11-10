@@ -6,6 +6,8 @@ import {
 import { Observable, timeout } from 'rxjs';
 import { API_CONFIG } from '../core/api.config';
 import {
+  CheckoutRequest,
+  CheckoutResponse,
   CotizacionReservaResponse,
   CrearReservaRequest,
   FechasOcupadasResponse,
@@ -32,6 +34,11 @@ export class ReservasService {
 
   consultarDetalle(idReserva: number): Observable<ReservaDetalleResponse> {
     return this.http.get<ReservaDetalleResponse>(`${this.url}/panel/${idReserva}`)
+      .pipe(timeout({ first: 15000 }));
+  }
+
+  registrarCheckout(idReserva: number, request: CheckoutRequest): Observable<CheckoutResponse> {
+    return this.http.post<CheckoutResponse>(`${this.url}/${idReserva}/check-out`, request)
       .pipe(timeout({ first: 15000 }));
   }
 
