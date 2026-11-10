@@ -25,6 +25,8 @@ import { ReservasService } from '../../services/reservas.service';
 import { CheckoutRetornoService } from '../../services/checkout-retorno.service';
 import { PagoModalComponent } from '../../shared/pago-modal/pago-modal.component';
 
+import { ResenasCabanaComponent } from './resenas-cabana.component';
+
 interface DiaCalendario {
   fecha: string;
   numero: number;
@@ -35,7 +37,7 @@ interface DiaCalendario {
 @Component({
   selector: 'app-detalle-cabana',
   standalone: true,
-  imports: [CommonModule, RouterLink, PagoModalComponent],
+  imports: [CommonModule, RouterLink, PagoModalComponent, ResenasCabanaComponent],
   templateUrl: './detalle-cabana.component.html',
   styleUrl: './detalle-cabana.component.css'
 })

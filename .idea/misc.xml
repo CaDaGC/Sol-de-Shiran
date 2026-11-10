@@ -12,6 +12,7 @@
         <option value="$PROJECT_DIR$/BackEnd/catalogo-service/pom.xml" />
         <option value="$PROJECT_DIR$/BackEnd/reservas-service/pom.xml" />
         <option value="$PROJECT_DIR$/BackEnd/pagos-service/pom.xml" />
+        <option value="$PROJECT_DIR$/BackEnd/resenas-service/pom.xml" />
       </list>
     </option>
   </component>

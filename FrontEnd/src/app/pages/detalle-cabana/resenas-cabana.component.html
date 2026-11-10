@@ -1,0 +1,58 @@
+<section class="reviews" aria-labelledby="reviews-heading">
+  <h2 id="reviews-heading">Reseñas de la cabaña</h2>
+
+  @if (cliente()) {
+    @if (estancia()) {
+      <form (ngSubmit)="enviar()" class="review-form">
+        <fieldset>
+          <legend>Tu calificación</legend>
+          <div class="stars">
+            @for (estrella of estrellas; track estrella) {
+              <label [class.filled]="estrella <= puntuacion">
+                <input type="radio" name="puntuacion" [value]="estrella" [(ngModel)]="puntuacion"
+                  [attr.aria-label]="estrella + (estrella === 1 ? ' estrella' : ' estrellas')" />
+                <span aria-hidden="true">{{ estrella <= puntuacion ? '★' : '☆' }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+        <label for="review-comment">Cuéntanos cómo fue tu estancia</label>
+        <textarea id="review-comment" name="comentario" [(ngModel)]="comentario"
+          maxlength="2000" rows="4" required></textarea>
+        <button type="submit" [disabled]="enviando() || !puntuacion || !comentario.trim()">
+          {{ enviando() ? 'Enviando…' : 'Enviar reseña' }}
+        </button>
+      </form>
+    } @else if (consultandoEstancia()) {
+      <p role="status">Comprobando tus estancias…</p>
+    } @else if (errorEstancia()) {
+      <p role="alert">{{ errorEstancia() }} <button type="button" (click)="reintentar()">Reintentar</button></p>
+    } @else {
+      <p>Podrás publicar una reseña por cada estancia finalizada en esta cabaña.</p>
+    }
+  }
+
+  @if (resultado()) { <p role="status">{{ resultado() }}</p> }
+  @if (errorEnvio()) { <p role="alert">{{ errorEnvio() }}</p> }
+
+  <ul class="reviews-list">
+    @for (opinion of opiniones(); track opinion.id) {
+      <li>
+        <strong>{{ opinion.autor }}</strong>
+        <div class="rating" [attr.aria-label]="opinion.puntuacion + ' de 5 estrellas'">
+          <span aria-hidden="true">{{ '★'.repeat(opinion.puntuacion) }}{{ '☆'.repeat(5 - opinion.puntuacion) }}</span>
+        </div>
+        <p>{{ opinion.comentario }}</p>
+      </li>
+    }
+  </ul>
+  @if (cargando()) {
+    <p role="status">Cargando reseñas…</p>
+  } @else if (errorLista()) {
+    <p role="alert">{{ errorLista() }} <button type="button" (click)="reintentar()">Reintentar</button></p>
+  } @else if (hayMas()) {
+    <button type="button" (click)="cargarMas()">Ver más reseñas</button>
+  } @else if (!opiniones().length) {
+    <p>Esta cabaña aún no tiene reseñas.</p>
+  }
+</section>

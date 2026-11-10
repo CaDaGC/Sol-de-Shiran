@@ -88,7 +88,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     || path.equals("/api/v1/usuarios/register")
                     || path.equals("/api/v1/pagos/webhook");
         }
-        return false;
+        return "GET".equals(method) && path.matches("/api/v1/resenas/cabanas/[0-9]+");
     }
 
     private boolean isCatalogo(String path, String method) {
@@ -109,6 +109,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean permitido(String rol, String path, String method) {
         if (path.equals("/api/v1/reservas/mis-reservas")) return "CLIENTE".equals(rol);
+        if (path.startsWith("/api/v1/resenas/")) return "CLIENTE".equals(rol);
         if ("ADMIN".equals(rol)) return true;
         boolean cuenta = path.equals("/api/v1/usuarios/me")
                 || path.matches("/api/v1/usuarios/[0-9]+(/password)?")

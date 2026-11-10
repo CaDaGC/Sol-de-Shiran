@@ -111,6 +111,7 @@ class ReservasServiceApplicationTests {
             var ocupada = reservas.findById(id).orElseThrow();
             assertEquals(EstadoReserva.OCUPADA, ocupada.getEstadoReserva());
             assertNull(ocupada.getCheckout());
+            assertTrue(reservas.listarEstanciasFinalizadas(5L, 12L).isEmpty());
             exportador.exportar();
             verifyNoInteractions(pagos);
 
@@ -122,6 +123,9 @@ class ReservasServiceApplicationTests {
             String fechaOriginal = JsonPath.read(respuesta, "$.checkout.fecha");
             var finalizada = reservas.findById(id).orElseThrow();
             assertEquals(EstadoReserva.FINALIZADA, finalizada.getEstadoReserva());
+            assertEquals(java.util.List.of(id), reservas.listarEstanciasFinalizadas(5L, 12L));
+            assertTrue(reservas.listarEstanciasFinalizadas(6L, 12L).isEmpty());
+            assertTrue(reservas.listarEstanciasFinalizadas(5L, 13L).isEmpty());
             assertEquals(new BigDecimal("25.50"), finalizada.getCheckout().montoDanos());
 
             mvc.perform(salida.content(cuerpo))

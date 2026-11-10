@@ -15,6 +15,15 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
   @Query("select distinct r.idCabana from Reserva r")
   List<Long> listarCabanasConReservas();
 
+  @Query("""
+      select r.idReserva from Reserva r
+      where r.idUsuario = :usuario and r.idCabana = :cabana
+        and r.estadoReserva = pe.edu.upeu.soldeshiran.reservas_service.model.EstadoReserva.FINALIZADA
+        and r.checkout.fecha is not null
+      order by r.checkout.fecha, r.idReserva
+      """)
+  List<Long> listarEstanciasFinalizadas(@Param("usuario") Long usuario, @Param("cabana") Long cabana);
+
   interface CobroDanioPendiente {
     Long getIdReserva();
     Long getRegistradoPor();

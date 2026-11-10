@@ -99,6 +99,7 @@
         </div>
       </section>
     </section>
+    <app-resenas-cabana *ngIf="cabana() as detalle" [idCabana]="detalle.idCabana" />
   </ng-container>
 
   <div
