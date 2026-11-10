@@ -9,54 +9,55 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import pe.edu.upeu.soldeshiran.pagos_service.client.ReservaInternaClient;
 import pe.edu.upeu.soldeshiran.pagos_service.dto.*;
-import pe.edu.upeu.soldeshiran.pagos_service.model.PagoRestante;
-import pe.edu.upeu.soldeshiran.pagos_service.repository.PagoRestanteRepository;
+import pe.edu.upeu.soldeshiran.pagos_service.model.TransaccionPago;
+import pe.edu.upeu.soldeshiran.pagos_service.model.EstadoTransaccion;
+import pe.edu.upeu.soldeshiran.pagos_service.repository.TransaccionPagoRepository;
 
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class PagoRestanteService {
-    private final PagoRestanteRepository repository;
+    private final TransaccionPagoRepository repository;
     private final ReservaInternaClient reservas;
     @Value("${servicios.interno.token}")
     private String token;
 
     // Cada saveAndFlush confirma una transacción local antes de invocar otro servicio.
     // Si la respuesta remota se pierde, se conserva el registro y se reintenta su misma referencia.
-    public PagoRestante registrar(Long trabajador, Long idReserva, RegistrarPagoRestanteRequest request) {
+    public TransaccionPago registrar(Long trabajador, Long idReserva, RegistrarPagoRestanteRequest request) {
         String operacion = request.numeroOperacion() == null ? null : request.numeroOperacion().trim();
         if (operacion != null && operacion.isEmpty()) operacion = null;
 
-        PagoRestante pago = repository.findByIdReserva(idReserva).orElse(null);
+        TransaccionPago pago = repository.findByReservaPagoRestante(idReserva).orElse(null);
         if (pago == null) {
             pago = preparar(trabajador, idReserva, request, operacion);
         }
         if (!pago.getMetodoPago().equals(request.metodoPago().name())
-                || !Objects.equals(pago.getNumeroOperacion(), operacion)) {
+                || !Objects.equals(pago.getNumeroOperacionFisica(), operacion)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Ya existe un pago restante con otros datos. Recupera el registro existente antes de continuar.");
         }
-        if (!pago.isCompletado()) {
+        if (pago.getEstadoTransaccion() != EstadoTransaccion.APROBADA) {
             try {
-                reservas.checkIn(idReserva, token, new CheckInRequest("RESTANTE-" + pago.getId(), pago.getMonto()));
+                reservas.checkIn(idReserva, token, new CheckInRequest(referencia(pago), pago.getMonto()));
             } catch (FeignException e) {
                 throw remoto(e);
             }
-            pago.setCompletado(true);
+            pago.setEstadoTransaccion(EstadoTransaccion.APROBADA);
             pago = repository.saveAndFlush(pago);
         }
         return pago;
     }
 
-    private PagoRestante preparar(Long trabajador, Long idReserva,
+    private TransaccionPago preparar(Long trabajador, Long idReserva,
             RegistrarPagoRestanteRequest request, String operacion) {
         SaldoCheckInResponse saldo;
         try {
             saldo = reservas.saldoCheckIn(idReserva, token);
         } catch (FeignException e) {
             // Otra solicitud puede haber completado el check-in mientras consultábamos el saldo.
-            PagoRestante concurrente = repository.findByIdReserva(idReserva).orElse(null);
+            TransaccionPago concurrente = repository.findByReservaPagoRestante(idReserva).orElse(null);
             if (concurrente != null) return concurrente;
             throw remoto(e);
         }
@@ -64,24 +65,32 @@ public class PagoRestanteService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "La reserva debe estar confirmada para registrar el check-in.");
         }
-        PagoRestante pago = new PagoRestante();
+        TransaccionPago pago = new TransaccionPago();
         pago.setIdReserva(idReserva);
+        pago.setTipoPago(TransaccionPago.RESTANTE);
+        pago.setReservaPagoRestante(idReserva);
         pago.setIdTrabajador(trabajador);
-        pago.setClaveIdempotencia(request.claveIdempotencia().toString());
+        pago.setClaveIdempotenciaRestante(request.claveIdempotencia().toString());
         pago.setMonto(saldo.saldoPendiente());
         pago.setMetodoPago(request.metodoPago().name());
-        pago.setNumeroOperacion(operacion);
+        pago.setNumeroOperacionFisica(operacion);
         try {
             return repository.saveAndFlush(pago);
         } catch (DataIntegrityViolationException e) {
             // La restricción UNIQUE de reserva arbitra incluso entre distintas instancias de pagos.
-            return repository.findByIdReserva(idReserva).orElseThrow(() ->
+            return repository.findByReservaPagoRestante(idReserva).orElseThrow(() ->
                     new ResponseStatusException(HttpStatus.CONFLICT, "La clave ya identifica otro pago."));
         }
     }
 
-    public PagoRestante consultar(Long idReserva) {
-        return repository.findByIdReserva(idReserva).orElse(null);
+    private String referencia(TransaccionPago pago) {
+        return pago.getReferenciaCheckIn() == null
+                ? "RESTANTE-TX-" + pago.getIdTransaccion()
+                : pago.getReferenciaCheckIn();
+    }
+
+    public TransaccionPago consultar(Long idReserva) {
+        return repository.findByReservaPagoRestante(idReserva).orElse(null);
     }
 
     private ResponseStatusException remoto(FeignException e) {

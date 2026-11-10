@@ -34,15 +34,15 @@ describe('Acceso al panel del guardián', () => {
 
   it('permite ingresar al guardián autenticado', () => {
     autenticado = true;
-    usuarioActual.set({ nombre: 'Antonella', email: 'guardian@example.com', rol: 'GUARDIAN' });
+    usuarioActual.set({ nombre: 'Antonella', email: 'guardian@example.com', rol: 'TRABAJADOR' });
     expect(acceder()).toBe(true);
   });
 
   it('impide el acceso a cuentas con otros roles', () => {
     autenticado = true;
-    for (const rol of ['CLIENTE', 'USUARIO']) {
+    for (const rol of ['CLIENTE', 'DUENO']) {
       usuarioActual.set({ nombre: 'Usuario', email: 'usuario@example.com', rol });
-      expect(acceder()).toEqual(TestBed.inject(Router).createUrlTree(['/catalogo']));
+      expect(acceder()).toEqual(TestBed.inject(Router).createUrlTree([rol === 'CLIENTE' ? '/mis-reservas' : '/inicio-dueno']));
     }
   });
 });

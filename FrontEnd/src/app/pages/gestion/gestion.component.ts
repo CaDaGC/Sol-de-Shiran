@@ -5,7 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { API_CONFIG } from '../../core/api.config';
-type RolCuenta = 'USUARIO' | 'TRABAJADOR' | 'DUENO' | 'ADMIN';
+type RolCuenta = 'CLIENTE' | 'TRABAJADOR' | 'DUENO' | 'ADMIN';
 
 interface Cuenta {
   id: number;
@@ -37,7 +37,7 @@ export class GestionComponent implements OnInit {
   readonly cabanas = signal<any[]>([]);
   readonly usuarios = signal<Cuenta[]>([]);
   readonly seccionesCuentas: ReadonlyArray<{ rol: RolCuenta; titulo: string; singular: string }> = [
-    { rol: 'USUARIO', titulo: 'Usuarios', singular: 'usuario' },
+    { rol: 'CLIENTE', titulo: 'Clientes', singular: 'cliente' },
     { rol: 'TRABAJADOR', titulo: 'Trabajadores', singular: 'trabajador' },
     { rol: 'DUENO', titulo: 'Dueños', singular: 'dueño' },
     { rol: 'ADMIN', titulo: 'Administradores', singular: 'administrador' },
@@ -73,7 +73,7 @@ export class GestionComponent implements OnInit {
   }
   rol(): string {
     return this.perfil()?.rol === 'CLIENTE'
-      ? 'USUARIO'
+      ? 'CLIENTE'
       : (this.perfil()?.rol ?? '').replace('DUEÑO', 'DUENO');
   }
   es(...roles: string[]): boolean {
@@ -87,18 +87,18 @@ export class GestionComponent implements OnInit {
     this.http.get<any>(this.url + '/usuarios/me').subscribe({
       next: (p) => {
         this.perfil.set(p);
-        this.tab = this.es('ADMIN', 'DUENO', 'TRABAJADOR') ? 'cabanas' : 'perfil';
+        this.tab = this.es('ADMIN') ? 'cabanas' : 'perfil';
         this.cargar();
       },
       error: (e) => this.fallo(e),
     });
   }
   cargar(): void {
-    if (this.es('ADMIN', 'DUENO', 'TRABAJADOR'))
+    if (this.es('ADMIN'))
       this.http
         .get<any[]>(this.url + '/cabanas/gestion')
         .subscribe({ next: (x) => this.cabanas.set(x), error: (e) => this.fallo(e) });
-    if (this.es('ADMIN', 'DUENO'))
+    if (this.es('ADMIN'))
       this.http
         .get<Cuenta[]>(this.url + '/usuarios')
         .subscribe({ next: (x) => this.usuarios.set(x), error: (e) => this.fallo(e) });
@@ -184,7 +184,7 @@ export class GestionComponent implements OnInit {
 
   rolCuenta(cuenta: Cuenta): string {
     switch (cuenta.rol.toUpperCase()) {
-      case 'CLIENTE': return 'USUARIO';
+      case 'USUARIO': return 'CLIENTE';
       case 'DUEÑO':
       case 'PROPIETARIO': return 'DUENO';
       case 'EMPLEADO':

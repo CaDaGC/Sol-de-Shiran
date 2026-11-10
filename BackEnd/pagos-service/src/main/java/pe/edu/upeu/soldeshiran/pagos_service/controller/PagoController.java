@@ -22,7 +22,7 @@ public class PagoController {
             @PathVariable @Positive Long idReserva,
             @Valid @RequestBody CrearPagoBrickRequest request
     ) {
-        return pagoService.procesarPagoBrick(Actor.desde(solicitud).id(), idReserva, request);
+        return pagoService.procesarPagoBrick(cliente(solicitud).id(), idReserva, request);
     }
 
     @PostMapping({"/reservas/{idReserva}/orden", "/reservas/{idReserva}/preferencia"})
@@ -32,10 +32,17 @@ public class PagoController {
             @PathVariable @Positive Long idReserva,
             @Valid @RequestBody CrearPreferenciaRequest request
     ) {
-        return pagoService.crearPreferencia(Actor.desde(solicitud).id(), idReserva, request);
+        return pagoService.crearPreferencia(cliente(solicitud).id(), idReserva, request);
     }
     @GetMapping("/transacciones/{idTransaccion}")
     public PagoResponse consultarEstado(HttpServletRequest solicitud,
             @PathVariable Long idTransaccion) {
-        return pagoService.consultarEstado(Actor.desde(solicitud).id(), idTransaccion);
-    }}
+        return pagoService.consultarEstado(cliente(solicitud).id(), idTransaccion);
+    }
+
+    private Actor cliente(HttpServletRequest solicitud) {
+        Actor actor = Actor.desde(solicitud);
+        actor.exigir("ADMIN", "CLIENTE");
+        return actor;
+    }
+}

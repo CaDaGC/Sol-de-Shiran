@@ -4,7 +4,6 @@ import feign.FeignException;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.jupiter.api.BeforeEach;
 import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
-import pe.edu.upeu.soldeshiran.reservas_service.service.GestionReservaService;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,7 +39,7 @@ class ReservaDetalleControllerTest {
     void preparar() {
         repository = mock(ReservaRepository.class);
         client = mock(PanelReservasClient.class);
-        var consultas = new ReservaConsultaService(repository, client, mock(GestionReservaService.class));
+        var consultas = new ReservaConsultaService(repository, client);
         ReflectionTestUtils.setField(consultas, "internalKey", "test-key");
         var mapper = Jackson2ObjectMapperBuilder.json()
                 .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).build();

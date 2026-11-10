@@ -30,6 +30,26 @@ class CheckInTest {
   var request=new CheckInRequest("RESTANTE-7",new BigDecimal("125.00"));service.checkIn(3L,request);service.checkIn(3L,request);
   verify(catalogo,times(1)).ocupar(any(),any(),any());
  }
+ @Test void conflictoDeOcupacionConservaElSaldoYPermiteReintentarTrasCheckout() {
+  var request = new CheckInRequest("RESTANTE-7", new BigDecimal("125.00"));
+  String detalle = "La cabaña sigue ocupada por la reserva #29.";
+  var httpRequest = feign.Request.create(feign.Request.HttpMethod.POST, "http://catalogo",
+          Map.of(), null, java.nio.charset.StandardCharsets.UTF_8, null);
+  var conflicto = feign.FeignException.errorStatus("ocupar", feign.Response.builder()
+          .request(httpRequest).status(409)
+          .body("{\"detail\":\"" + detalle + "\"}", java.nio.charset.StandardCharsets.UTF_8).build());
+  doThrow(conflicto).doNothing().when(catalogo).ocupar(4L, 3L, "internal");
+
+  var error = assertThrows(ResponseStatusException.class, () -> service.checkIn(3L, request));
+  assertEquals(409, error.getStatusCode().value());
+  assertEquals(detalle, error.getReason());
+  assertEquals(EstadoReserva.CONFIRMADA, r.getEstadoReserva());
+  assertEquals(new BigDecimal("125.00"), r.getSaldoPendiente());
+
+  service.checkIn(3L, request);
+  assertEquals(EstadoReserva.OCUPADA, r.getEstadoReserva());
+  assertEquals("RESTANTE-7", r.getReferenciaPagoRestante());
+ }
  @Test void rechazaMontoAlterado() {
   assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",BigDecimal.ONE)));
   verifyNoInteractions(catalogo);

@@ -12,8 +12,14 @@ public class OcupacionService {
  @Transactional public String ocupar(Long id, Long reserva) {
   var c=repository.bloquearPorId(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"No existe la cabaña."));
   if(reserva.equals(c.getIdReservaOcupante())) return c.getEstadoOcupacion();
-  if(c.getEstado()!=EstadoCabana.ACTIVA || c.getIdReservaOcupante()!=null)
-   throw new ResponseStatusException(HttpStatus.CONFLICT,"La cabaña no está disponible para check-in.");
+  if (c.getIdReservaOcupante() != null) {
+   throw new ResponseStatusException(HttpStatus.CONFLICT,
+           "La cabaña sigue ocupada por la reserva #" + c.getIdReservaOcupante()
+                   + ". Registra su check-out antes de reintentar el check-in.");
+  }
+  if (c.getEstado() != EstadoCabana.ACTIVA) {
+   throw new ResponseStatusException(HttpStatus.CONFLICT, "La cabaña está inactiva.");
+  }
   c.setIdReservaOcupante(reserva); repository.saveAndFlush(c); return c.getEstadoOcupacion();
  }
     @Transactional

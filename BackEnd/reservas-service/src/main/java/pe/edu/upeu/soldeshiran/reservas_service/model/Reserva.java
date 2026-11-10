@@ -32,6 +32,9 @@ public class Reserva {
   @Embedded
   private RegistroCheckout checkout;
 
+  @Column(name = "checkout_pago_danos_exportado")
+  private Boolean checkoutPagoDanosExportado;
+
   @Column(columnDefinition = "boolean default false")
   private Boolean adelantoEnLinea = false;
 

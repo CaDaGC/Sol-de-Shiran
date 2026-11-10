@@ -30,19 +30,17 @@ import java.util.stream.Collectors;
 public class ReservaConsultaService {
     private final ReservaRepository reservaRepository;
     private final PanelReservasClient panelClient;
-    private final GestionReservaService gestion;
 
     @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
     private String internalKey;
 
     public ReservaDetalleResponse consultarDetalle(Actor actor, Long idReserva) {
-        actor.exigir("ADMIN", "DUENO", "TRABAJADOR");
+        actor.exigir("ADMIN", "TRABAJADOR");
         if (idReserva == null || idReserva <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ID de reserva debe ser positivo.");
         }
         Reserva reserva = reservaRepository.findById(idReserva)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada."));
-        gestion.exigirOperativo(reserva, actor);
         try {
             var usuario = panelClient.consultarUsuarios(internalKey, null, List.of(reserva.getIdUsuario()))
                     .stream().filter(u -> u.id().equals(reserva.getIdUsuario())).findFirst().orElse(null);
@@ -62,20 +60,31 @@ public class ReservaConsultaService {
         }
     }
 
+    private List<CabanaResumen> resumenCabanas(List<Long> ids) {
+        try {
+            return panelClient.consultarCabanas(internalKey, ids);
+        } catch (org.springframework.web.client.RestClientException e) {
+            return List.of();
+        }
+    }
+
+    public List<CabanaResumen> consultarCabanas(Actor actor) {
+        actor.exigir("ADMIN", "TRABAJADOR");
+        var ids = reservaRepository.listarCabanasConReservas();
+        var nombres = resumenCabanas(ids).stream()
+                .collect(Collectors.toMap(CabanaResumen::idCabana, CabanaResumen::nombre));
+        return ids.stream().sorted()
+                .map(id -> new CabanaResumen(id, nombres.getOrDefault(id, "Cabaña #" + id)))
+                .toList();
+    }
+
     public ReservasPaginaResponse consultar(Actor actor, String buscar, Long idCabana,
                                            int page, int size) {
-        actor.exigir("ADMIN", "DUENO", "TRABAJADOR");
+        actor.exigir("ADMIN", "TRABAJADOR");
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "idReserva"));
         Specification<Reserva> filtro = (root, query, cb) -> cb.conjunction();
         if (idCabana != null) {
             filtro = filtro.and((root, query, cb) -> cb.equal(root.get("idCabana"), idCabana));
-        }
-        if (!actor.es("ADMIN")) {
-            var permitidas = reservaRepository.listarCabanasConReservas().stream()
-                    .filter(id -> idCabana == null || idCabana.equals(id))
-                    .filter(id -> gestion.operativo(id, actor)).toList();
-            if (permitidas.isEmpty()) return ReservasPaginaResponse.from(Page.empty(pageable));
-            filtro = filtro.and((root, query, cb) -> root.get("idCabana").in(permitidas));
         }
         try {
             Map<Long, UsuarioResumen> usuarios = null;
@@ -99,7 +108,7 @@ public class ReservaConsultaService {
                         .collect(Collectors.toMap(UsuarioResumen::id, Function.identity()));
             }
             var idsCabanas = reservas.stream().map(Reserva::getIdCabana).distinct().toList();
-            var cabanas = panelClient.consultarCabanas(internalKey, idsCabanas).stream()
+            var cabanas = resumenCabanas(idsCabanas).stream()
                     .collect(Collectors.toMap(CabanaResumen::idCabana, Function.identity()));
             var usuariosPagina = usuarios;
             return ReservasPaginaResponse.from(reservas.map(r -> {

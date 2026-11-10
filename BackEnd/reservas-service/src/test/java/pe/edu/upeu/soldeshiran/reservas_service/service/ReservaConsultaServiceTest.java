@@ -3,7 +3,6 @@ package pe.edu.upeu.soldeshiran.reservas_service.service;
 import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
-import pe.edu.upeu.soldeshiran.reservas_service.service.GestionReservaService;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +33,7 @@ class ReservaConsultaServiceTest {
     @BeforeEach
     void preparar() {
         client = mock(PanelReservasClient.class);
-        service = new ReservaConsultaService(repository, client, mock(GestionReservaService.class));
+        service = new ReservaConsultaService(repository, client);
         ReflectionTestUtils.setField(service, "internalKey", "test-key");
         when(client.consultarUsuarios(eq("test-key"), isNull(), anyList())).thenReturn(List.of(
                 new UsuarioResumen(1L, "Antonella", "antonella@gmail.com"),
@@ -104,6 +103,17 @@ class ReservaConsultaServiceTest {
         assertThatThrownBy(() -> service.consultar(new Actor(1L, "ADMIN"), null, null, 0, 20))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
+    @Test
+    void trabajadorVeReservasDeTodasLasCabanasYDuenoNoAccedeAlPanel() {
+        var trabajador = new Actor(3L, "TRABAJADOR");
+        var resultado = service.consultar(trabajador, null, null, 0, 20);
+        assertThat(resultado.content()).extracting(r -> r.idCabana()).containsOnly(1L, 2L);
+        assertThat(service.consultarCabanas(trabajador)).hasSize(2);
+        assertThatThrownBy(() -> service.consultar(new Actor(3L, "DUENO"), null, null, 0, 20))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     private void guardar(Long usuario, Long cabana) {

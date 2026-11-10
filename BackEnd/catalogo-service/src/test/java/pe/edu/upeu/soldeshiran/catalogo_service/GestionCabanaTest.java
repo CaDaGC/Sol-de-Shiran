@@ -83,9 +83,10 @@ class GestionCabanaTest {
   }
 
   @Test
-  void duenoCreaASuNombre() {
-    var resultado = service.crear(request(), new Actor(10L, "DUENO"));
-    assertEquals(10L, resultado.get("duenoId"));
+  void duenoNoPuedeCrearCabana() {
+    var error = assertThrows(ResponseStatusException.class,
+        () -> service.crear(request(), new Actor(10L, "DUENO")));
+    assertEquals(403, error.getStatusCode().value());
   }
 
   @Test
@@ -96,7 +97,7 @@ class GestionCabanaTest {
 
   @Test
   void eliminarEsDesactivar() {
-    service.desactivar(1L, new Actor(10L, "DUENO"));
+    service.desactivar(1L, new Actor(1L, "ADMIN"));
     assertEquals(EstadoCabana.INACTIVA, c.getEstado());
     verify(repo, never()).delete(any());
   }
@@ -109,12 +110,12 @@ class GestionCabanaTest {
   }
 
   @Test
-  void listaDelDuenoNoExponeAjenas() {
-    Cabana otra = new Cabana();
-    otra.setIdCabana(2L);
-    otra.setDuenoId(11L);
-    when(repo.findAll()).thenReturn(List.of(c, otra));
-    assertEquals(1, service.listar(new Actor(10L, "DUENO")).size());
+  void soloAdminListaGestionDeCabanas() {
+    for (String rol : List.of("DUENO", "TRABAJADOR", "CLIENTE")) {
+      var error = assertThrows(ResponseStatusException.class,
+          () -> service.listar(new Actor(10L, rol)));
+      assertEquals(403, error.getStatusCode().value());
+    }
   }
 
   @Test

@@ -6,9 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, catchError, finalize, of, switchMap, timer } from 'rxjs';
 import { ESTADOS_RESERVA, ReservaPanelResponse, ReservasPaginaResponse } from '../../models/reserva.model';
 import { ReservaDetalleComponent } from '../../shared/reserva-detalle/reserva-detalle.component';
-import { Cabana } from '../../models/cabana.model';
 import { ReservasService } from '../../services/reservas.service';
-import { CabanaService } from '../../services/cabana.service';
 
 @Component({
   selector: 'app-panel-reservas',
@@ -19,11 +17,10 @@ import { CabanaService } from '../../services/cabana.service';
 })
 export class PanelReservasComponent {
   private readonly reservasService = inject(ReservasService);
-  private readonly cabanaService = inject(CabanaService);
   private readonly consultas = new BehaviorSubject({ buscar: '', idCabana: null as number | null, page: 0, espera: 0 });
 
   readonly resultado = signal<ReservasPaginaResponse | null>(null);
-  readonly cabanas = signal<Cabana[]>([]);
+  readonly cabanas = signal<{ idCabana: number; nombre: string }[]>([]);
   readonly cargando = signal(true);
   readonly cargandoCabanas = signal(true);
   readonly error = signal('');
@@ -50,7 +47,7 @@ export class PanelReservasComponent {
   readonly hayFiltros = computed(() => !!this.buscar().trim() || this.idCabana() !== null);
 
   constructor() {
-    this.cabanaService.listarCabanas().pipe(takeUntilDestroyed()).subscribe({
+    this.reservasService.listarCabanasDelPanel().pipe(takeUntilDestroyed()).subscribe({
       next: cabanas => {
         this.cabanas.set(cabanas);
         this.cargandoCabanas.set(false);

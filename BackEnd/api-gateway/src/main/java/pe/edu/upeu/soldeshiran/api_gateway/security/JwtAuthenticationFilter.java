@@ -25,11 +25,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
         String method = exchange.getRequest().getMethod().name();
 
-        if (path.contains("/interno/") || path.startsWith("/internal/")) {
+        if (path.contains("/interno/") || path.endsWith("/interno") || path.startsWith("/internal/")) {
             exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
             return exchange.getResponse().setComplete();
         }
-        if (isPublicRoute(path, method)) {
+        if (isPublicRoute(path, method) && !isCatalogo(path, method)) {
             return chain.filter(exchange);
         }
 
@@ -37,6 +37,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
 
+        if (authHeader == null && isCatalogo(path, method)) {
+            return chain.filter(exchange);
+        }
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
@@ -50,14 +53,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            String rol = jwtUtil.getRol(token);
-            if (path.equals("/api/v1/reservas/mis-reservas")
-                    && !java.util.List.of("USUARIO", "CLIENTE").contains(rol)) {
-                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-                return exchange.getResponse().setComplete();
-            }
-            boolean panelReservas = isPanelReservasRoute(path, method);
-            if (panelReservas && !java.util.List.of("ADMIN", "DUENO", "TRABAJADOR", "GUARDIAN").contains(rol)) {
+            String rol = normalizar(jwtUtil.getRol(token));
+            if (!permitido(rol, path, method)) {
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }
@@ -91,16 +88,45 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     || path.equals("/api/v1/usuarios/register")
                     || path.equals("/api/v1/pagos/webhook");
         }
+        return false;
+    }
+
+    private boolean isCatalogo(String path, String method) {
         return "GET".equals(method)
                 && (path.equals("/api/v1/cabanas")
                 || path.matches("/api/v1/cabanas/[0-9]+")
                 || path.matches("/api/v1/reservas/cabanas/[0-9]+/(disponibilidad|fechas-ocupadas)"));
     }
 
-    private boolean isPanelReservasRoute(String path, String method) {
-        return path.matches("/api/v1/pagos/reservas/[0-9]+/restante")
-                || path.equals("/api/v1/reservas/panel")
-                || path.startsWith("/api/v1/reservas/panel/");
+    private String normalizar(String rol) {
+        if (rol == null) return "";
+        return switch (rol.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "USUARIO" -> "CLIENTE";
+            case "GUARDIAN", "EMPLEADO" -> "TRABAJADOR";
+            default -> rol.trim().toUpperCase(java.util.Locale.ROOT);
+        };
+    }
+
+    private boolean permitido(String rol, String path, String method) {
+        if (path.equals("/api/v1/reservas/mis-reservas")) return "CLIENTE".equals(rol);
+        if ("ADMIN".equals(rol)) return true;
+        boolean cuenta = path.equals("/api/v1/usuarios/me")
+                || path.matches("/api/v1/usuarios/[0-9]+(/password)?")
+                    && ("GET".equals(method) || "PUT".equals(method));
+        if ("TRABAJADOR".equals(rol)) {
+            return cuenta || path.equals("/api/v1/reservas/panel")
+                    || path.startsWith("/api/v1/reservas/panel/")
+                    || path.matches("/api/v1/reservas/[0-9]+(/pagos|/check-in|/check-out)")
+                    || path.matches("/api/v1/pagos/reservas/[0-9]+/restante");
+        }
+        if ("CLIENTE".equals(rol)) {
+            return cuenta || isCatalogo(path, method)
+                    || path.equals("/api/v1/reservas")
+                    || path.matches("/api/v1/reservas/[0-9]+(/pagos)?")
+                    || path.matches("/api/v1/pagos/reservas/[0-9]+/(brick|orden|preferencia)")
+                    || path.matches("/api/v1/pagos/transacciones/[0-9]+");
+        }
+        return false;
     }
 
     @Override

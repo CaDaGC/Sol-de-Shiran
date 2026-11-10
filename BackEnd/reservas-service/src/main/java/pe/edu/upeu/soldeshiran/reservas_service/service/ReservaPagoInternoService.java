@@ -50,7 +50,15 @@ public class ReservaPagoInternoService {
             if (e.status() == 401 || e.status() == 403)
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                         "Catálogo rechazó la credencial interna. Configura el mismo INTERNAL_SERVICE_TOKEN en catálogo, reservas y pagos. El pago registrado se conserva.");
-            throw new ResponseStatusException(e.status()==409?HttpStatus.CONFLICT:HttpStatus.SERVICE_UNAVAILABLE,"No se pudo confirmar la ocupación de la cabaña.");
+            if (e.status() == 409) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, detalleOcupacion(e), e);
+            }
+            if (e.status() == 404) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "La cabaña de la reserva ya no existe en Catálogo.", e);
+            }
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo confirmar la ocupación de la cabaña.", e);
         }
         r.setSaldoPendiente(java.math.BigDecimal.ZERO);
         r.setTotalPagado(r.getMontoTotal());
@@ -59,6 +67,16 @@ public class ReservaPagoInternoService {
         reservaRepository.saveAndFlush(r);
     }
 
+
+    private String detalleOcupacion(feign.FeignException error) {
+        String generico = "La cabaña no está disponible. Revisa su ocupación antes de reintentar.";
+        try {
+            var cuerpo = new com.fasterxml.jackson.databind.ObjectMapper().readTree(error.contentUTF8());
+            return cuerpo == null ? generico : cuerpo.path("detail").asText(generico);
+        } catch (java.io.IOException ignored) {
+            return generico;
+        }
+    }
 
     @Transactional(readOnly = true)
     public ReservaPagoInternoResponse consultar(Long idReserva) {
@@ -94,7 +112,7 @@ public class ReservaPagoInternoService {
 
     @Transactional
     public void confirmar(Long idReserva, ConfirmarPagoInternoRequest request) {
-        Reserva reserva = reservaRepository.findById(idReserva)
+        Reserva reserva = reservaRepository.bloquearPorId(idReserva)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "No existe la reserva."
                 ));

@@ -18,6 +18,28 @@ export interface AuthResponse {
   rol: string;
 }
 
+export function normalizarRol(rol: string): string {
+  switch (rol.trim().toUpperCase()) {
+    case 'USUARIO': return 'CLIENTE';
+    case 'GUARDIAN':
+    case 'EMPLEADO': return 'TRABAJADOR';
+    case 'DUEÑO':
+    case 'PROPIETARIO': return 'DUENO';
+    default: return rol.trim().toUpperCase();
+  }
+}
+
+export function inicioPorRol(rol?: string): string {
+  switch (normalizarRol(rol ?? '')) {
+    case 'TRABAJADOR': return '/guardian/reservas';
+    case 'CLIENTE': return '/mis-reservas';
+    case 'DUENO': return '/inicio-dueno';
+    case 'ADMIN':
+    case '': return '/catalogo';
+    default: return '/inicio-dueno';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -49,7 +71,7 @@ export class AuthService {
     const usuario: UsuarioAutenticado = {
       nombre: response.nombre?.trim() || 'Usuario',
       email: response.email?.trim() || '',
-      rol: response.rol?.trim() || 'Usuario'
+      rol: normalizarRol(response.rol ?? '')
     };
 
     localStorage.setItem('token', response.token);
@@ -219,7 +241,7 @@ export class AuthService {
       this.aTexto(anidado['role']) ||
       'Usuario';
 
-    return { nombre, email, rol };
+    return { nombre, email, rol: normalizarRol(rol) };
   }
 
   private aTexto(valor: unknown): string {

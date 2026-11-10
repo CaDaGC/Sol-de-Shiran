@@ -10,8 +10,8 @@
   </button>
   <a
     class="brand"
-    routerLink="/catalogo"
-    aria-label="Ir al catálogo de Sol de Shirán"
+    [routerLink]="inicioPorRol(perfil()?.rol)"
+    aria-label="Inicio de Sol de Shirán"
   >
     <img class="brand-logo" src="/images/logo-sol-shiran.png" alt="Complejo Turístico Sol de Shirán" width="1698" height="926">
     <span class="brand-symbol" aria-hidden="true"><img src="/images/logo-sol-shiran.png" alt="" width="1698" height="926"></span>
@@ -20,19 +20,19 @@
   <p class="nav-heading">NAVEGACIÓN</p>
 
   <nav id="sidebar-navigation" class="side-nav" aria-label="Navegación principal">
-    @if (['CLIENTE', 'USUARIO'].includes(perfil()?.rol ?? '')) {
+    @if (perfil()?.rol === 'CLIENTE') {
       <a routerLink="/mis-reservas" routerLinkActive="active" aria-label="Mis reservas" [attr.title]="contraido() ? 'Mis reservas' : null">
         <span class="nav-icon" aria-hidden="true">▤</span><span>Mis reservas</span>
       </a>
     }
-    @if (['ADMIN', 'DUENO', 'TRABAJADOR', 'GUARDIAN'].includes(perfil()?.rol ?? '')) {
+    @if (['ADMIN', 'TRABAJADOR'].includes(perfil()?.rol ?? '')) {
       <a routerLink="/guardian/reservas" routerLinkActive="active" aria-label="Reservas" [attr.title]="contraido() ? 'Reservas' : null">
         <span class="nav-icon" aria-hidden="true">▤</span>
         <span>Reservas</span>
       </a>
     }
     <a
-      *ngIf="perfil()?.rol !== 'GUARDIAN'"
+      *ngIf="!perfil() || ['ADMIN', 'CLIENTE'].includes(perfil()?.rol ?? '')"
       routerLink="/catalogo"
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
@@ -42,7 +42,7 @@
       <span>Catálogo</span>
     </a>
 
-    <a *ngIf="perfil()" routerLink="/gestion" routerLinkActive="active" aria-label="Gestión y cuenta" [attr.title]="contraido() ? 'Gestión y cuenta' : null">
+    <a *ngIf="['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')" routerLink="/gestion" routerLinkActive="active" aria-label="Gestión y cuenta" [attr.title]="contraido() ? 'Gestión y cuenta' : null">
       <span class="nav-icon" aria-hidden="true">⚙</span><span>Gestión y cuenta</span>
     </a>
 

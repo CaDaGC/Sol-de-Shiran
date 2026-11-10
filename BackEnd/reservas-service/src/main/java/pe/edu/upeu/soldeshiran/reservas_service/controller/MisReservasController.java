@@ -19,7 +19,7 @@ public class MisReservasController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         var actor = pe.edu.upeu.soldeshiran.reservas_service.security.Actor.desde(request);
-        actor.exigir("USUARIO");
+        actor.exigir("CLIENTE");
         return service.consultar(actor.id(), grupo, page, size);
     }
 }

@@ -1,8 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
-import { CabanaService } from '../../services/cabana.service';
 import { ReservaPanelResponse, ReservasPaginaResponse } from '../../models/reserva.model';
 import { PanelReservasComponent } from './panel-reservas.component';
 
@@ -41,12 +39,13 @@ describe('Integración del panel de reservas', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [PanelReservasComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: CabanaService, useValue: { listarCabanas: () => of([{ idCabana: 2, nombre: 'Familiar' }]) } }]
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(PanelReservasComponent);
     fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith("/reservas/panel/cabanas"))
+      .flush([{ idCabana: 2, nombre: "Familiar" }]);
     await esperar();
   });
 

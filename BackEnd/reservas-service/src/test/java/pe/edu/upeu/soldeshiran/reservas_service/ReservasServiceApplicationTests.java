@@ -27,13 +27,53 @@ import pe.edu.upeu.soldeshiran.reservas_service.repository.ReservaRepository;
 import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
 
 @ActiveProfiles("test")
-@SpringBootTest
+@SpringBootTest(properties = "reservas.exportar-danos-cada-ms=3600000")
 class ReservasServiceApplicationTests {
 
     @Autowired private ObjectMapper mapper;
     @Autowired private ReservaRepository reservas;
+    @Autowired private pe.edu.upeu.soldeshiran.reservas_service.service.ReservaExpirationScheduler limpieza;
     @Autowired private GestionReservaController gestion;
     @MockitoBean private CatalogoClient catalogo;
+    @MockitoBean private pe.edu.upeu.soldeshiran.reservas_service.client.PagoDanioClient pagos;
+    @Autowired private pe.edu.upeu.soldeshiran.reservas_service.service.PagoDanioScheduler exportador;
+
+    @Test
+    void eliminaSoloExpiradasYPendientesImpagasVencidas() {
+        var ahora = LocalDateTime.now();
+        Long expirada = guardarReserva(EstadoReserva.EXPIRADA, ahora.plusMinutes(1), BigDecimal.ZERO);
+        Long vencida = guardarReserva(EstadoReserva.PENDIENTE_PAGO, ahora, BigDecimal.ZERO);
+        Long vigente = guardarReserva(EstadoReserva.PENDIENTE_PAGO, ahora.plusMinutes(15), BigDecimal.ZERO);
+        Long conPago = guardarReserva(EstadoReserva.PENDIENTE_PAGO, ahora.minusMinutes(1), BigDecimal.ONE);
+        Long confirmada = guardarReserva(EstadoReserva.CONFIRMADA, ahora.minusMinutes(1), BigDecimal.TEN);
+        try {
+            limpieza.eliminarReservasVencidas();
+            assertFalse(reservas.existsById(expirada));
+            assertFalse(reservas.existsById(vencida));
+            assertTrue(reservas.existsById(vigente));
+            assertTrue(reservas.existsById(conPago));
+            assertTrue(reservas.existsById(confirmada));
+        } finally {
+            reservas.deleteAllById(java.util.List.of(expirada, vencida, vigente, conPago, confirmada));
+        }
+    }
+
+    private Long guardarReserva(EstadoReserva estado, LocalDateTime vencimiento, BigDecimal pagado) {
+        var r = new Reserva();
+        r.setIdCabana(12L);
+        r.setIdUsuario(5L);
+        r.setEstadoReserva(estado);
+        r.setCantidadHuespedes(2);
+        r.setFechaIngreso(LocalDate.now());
+        r.setFechaSalida(LocalDate.now().plusDays(1));
+        r.setExpiraEn(vencimiento);
+        r.setTarifaNocheAplicada(BigDecimal.TEN);
+        r.setMontoTotal(BigDecimal.TEN);
+        r.setMontoAdelanto(BigDecimal.ONE);
+        r.setSaldoPendiente(BigDecimal.TEN.subtract(pagado));
+        r.setTotalPagado(pagado);
+        return reservas.saveAndFlush(r).getIdReserva();
+    }
 
     @Test
     void checkoutValidaElCargoYRevierteElRegistroCuandoFallaCatalogo() throws Exception {
@@ -71,6 +111,8 @@ class ReservasServiceApplicationTests {
             var ocupada = reservas.findById(id).orElseThrow();
             assertEquals(EstadoReserva.OCUPADA, ocupada.getEstadoReserva());
             assertNull(ocupada.getCheckout());
+            exportador.exportar();
+            verifyNoInteractions(pagos);
 
             var respuesta = mvc.perform(salida.content(cuerpo))
                     .andExpect(status().isOk())
@@ -86,6 +128,16 @@ class ReservasServiceApplicationTests {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.checkout.fecha").value(fechaOriginal));
             verify(catalogo, times(2)).liberar(12L, id, "test-internal-token");
+            var cobro = new pe.edu.upeu.soldeshiran.reservas_service.client.PagoDanioClient.Cobro(
+                    1L, "Toalla dañada", new BigDecimal("25.50"), "YAPE", finalizada.getCheckout().fecha());
+            doThrow(mock(FeignException.class)).doNothing()
+                    .when(pagos).registrar(id, "test-internal-token", cobro);
+            exportador.exportar();
+            assertNotEquals(Boolean.TRUE, reservas.findById(id).orElseThrow().getCheckoutPagoDanosExportado());
+            exportador.exportar();
+            assertEquals(Boolean.TRUE, reservas.findById(id).orElseThrow().getCheckoutPagoDanosExportado());
+            exportador.exportar();
+            verify(pagos, times(2)).registrar(id, "test-internal-token", cobro);
         } finally {
             reservas.deleteById(id);
         }

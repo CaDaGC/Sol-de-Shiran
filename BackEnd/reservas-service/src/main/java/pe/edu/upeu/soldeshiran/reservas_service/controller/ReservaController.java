@@ -32,6 +32,12 @@ public class ReservaController {
   private final ReservaService reservaService;
   private final ReservaConsultaService reservaConsultaService;
 
+  @GetMapping("/panel/cabanas")
+  public java.util.List<pe.edu.upeu.soldeshiran.reservas_service.client.PanelReservasClient.CabanaResumen>
+      consultarCabanasDelPanel(HttpServletRequest request) {
+    return reservaConsultaService.consultarCabanas(Actor.desde(request));
+  }
+
   @GetMapping("/panel/{idReserva}")
   public ReservaDetalleResponse consultarDetalle(
       HttpServletRequest request, @PathVariable @Positive Long idReserva) {
@@ -72,10 +78,9 @@ public class ReservaController {
   public ResponseEntity<ReservaResponse> crearReservaTemporal(
       jakarta.servlet.http.HttpServletRequest servletRequest,
       @Valid @RequestBody CrearReservaRequest request) {
-    ReservaResponse reserva =
-        reservaService.crearReservaTemporal(
-            pe.edu.upeu.soldeshiran.reservas_service.security.Actor.desde(servletRequest).id(),
-            request);
+    Actor actor = Actor.desde(servletRequest);
+    actor.exigir("ADMIN", "CLIENTE");
+    ReservaResponse reserva = reservaService.crearReservaTemporal(actor.id(), request);
 
     return ResponseEntity.status(HttpStatus.CREATED)
         .contentType(MediaType.APPLICATION_JSON)

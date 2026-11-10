@@ -5,22 +5,22 @@
     <p *ngIf="perfil()">{{ perfil().nombre }} · {{ rol() }}</p>
   </header>
   <nav aria-label="Secciones de gestión">
-    <button *ngIf="es('ADMIN', 'DUENO', 'TRABAJADOR')" (click)="tab = 'cabanas'">Cabañas</button>
+    <button *ngIf="es('ADMIN')" (click)="tab = 'cabanas'">Cabañas</button>
     <ng-container *ngFor="let seccion of seccionesCuentas">
       <button
-        *ngIf="es('ADMIN') || (es('DUENO') && seccion.rol === 'TRABAJADOR')"
+        *ngIf="es('ADMIN')"
         [attr.aria-pressed]="tab === 'cuentas' && seccionCuenta.rol === seccion.rol"
         (click)="abrirCuentas(seccion)"
       >{{ seccion.titulo }}</button>
     </ng-container>
-    <button *ngIf="es('ADMIN', 'DUENO')" (click)="tab = 'bloqueos'">Bloquear fechas</button>
+    <button *ngIf="es('ADMIN')" (click)="tab = 'bloqueos'">Bloquear fechas</button>
     <button (click)="tab = 'perfil'">Mi perfil</button>
   </nav>
   <p class="success" role="status" *ngIf="mensaje()">{{ mensaje() }}</p>
   <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
-  <section *ngIf="tab === 'cabanas' && es('ADMIN', 'DUENO', 'TRABAJADOR')">
+  <section *ngIf="tab === 'cabanas' && es('ADMIN')">
     <h2>Cabañas {{ es('ADMIN') ? 'del centro' : 'asignadas a tu cuenta' }}</h2>
-    <form *ngIf="es('ADMIN', 'DUENO')" (ngSubmit)="guardarCabana()" #cf="ngForm">
+    <form *ngIf="es('ADMIN')" (ngSubmit)="guardarCabana()" #cf="ngForm">
       <h3>{{ cabana.idCabana ? 'Editar cabaña' : 'Nueva cabaña' }}</h3>
       <div class="grid">
         <label
@@ -96,7 +96,7 @@
           Dueño: {{ c.duenoId ? nombreCuenta(c.duenoId) : 'Administración' }} · Trabajadores:
           {{ nombresTrabajadores(c.trabajadores ?? []) || 'Sin asignar' }}
         </p>
-        <div *ngIf="es('ADMIN', 'DUENO')">
+        <div *ngIf="es('ADMIN')">
           <button (click)="editarCabana(c)">Editar</button
           ><button [disabled]="ocupado()" (click)="abrirAsignacion(c)">Asignar trabajadores</button
           ><button *ngIf="c.estado !== 'INACTIVA'" class="danger" (click)="desactivarCabana(c)">
@@ -123,7 +123,7 @@
     </div>
     <p *ngIf="!cabanas().length">No hay cabañas para tu cuenta.</p>
   </section>
-  <section *ngIf="tab === 'cuentas' && es('ADMIN', 'DUENO')">
+  <section *ngIf="tab === 'cuentas' && es('ADMIN')">
     <h2>{{ seccionCuenta.titulo }}</h2>
     <form (ngSubmit)="guardarUsuario()" #uf="ngForm">
       <h3>{{ usuario.id ? 'Editar' : 'Agregar' }} {{ seccionCuenta.singular }}</h3>
@@ -194,7 +194,7 @@
     </div>
     <p *ngIf="!cuentasDe(seccionCuenta.rol).length">Todavía no hay cuentas en esta sección.</p>
   </section>
-  <section *ngIf="tab === 'bloqueos' && es('ADMIN', 'DUENO')">
+  <section *ngIf="tab === 'bloqueos' && es('ADMIN')">
     <h2>Bloquear disponibilidad</h2>
     <form (ngSubmit)="bloquear()" #bf="ngForm">
       <div class="grid">

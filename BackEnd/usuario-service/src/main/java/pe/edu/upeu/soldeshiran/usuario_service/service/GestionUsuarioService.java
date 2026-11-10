@@ -37,10 +37,9 @@ public class GestionUsuarioService {
   public UsuarioResponse crear(UsuarioRequest r, Actor actor, boolean publico) {
     validar(r);
     String rol =
-        publico ? "USUARIO" : Actor.normalizar(r.getRol() == null ? "USUARIO" : r.getRol());
+        publico ? "CLIENTE" : Actor.normalizar(r.getRol() == null ? "CLIENTE" : r.getRol());
     if (!publico) {
-      actor.exigir("ADMIN", "DUENO");
-      if (actor.es("DUENO") && !rol.equals("TRABAJADOR")) prohibido();
+      actor.exigir("ADMIN");
     }
     if (usuarios.existsByEmail(r.getEmail().trim().toLowerCase()))
       conflicto("El correo ya estÃ¡ registrado");
@@ -50,15 +49,13 @@ public class GestionUsuarioService {
       malo("La contraseÃ±a debe tener al menos 8 caracteres");
     u.setPassword(passwords.encode(r.getPassword()));
     u.setRol(rol(rol));
-    if (!publico && actor.es("DUENO")) u.setDuenoId(actor.id());
-    else if (!publico && rol.equals("TRABAJADOR")) u.setDuenoId(validarDueno(r.getDuenoId()));
+    if (!publico && rol.equals("TRABAJADOR")) u.setDuenoId(validarDueno(r.getDuenoId()));
     return mapper.toResponse(usuarios.save(u));
   }
 
   public List<UsuarioResponse> listar(Actor a) {
-    a.exigir("ADMIN", "DUENO");
+    a.exigir("ADMIN");
     return usuarios.findAll().stream()
-        .filter(u -> a.es("ADMIN") || subordinado(u, a))
         .map(mapper::toResponse)
         .toList();
   }
@@ -100,9 +97,8 @@ public class GestionUsuarioService {
   }
 
   public void eliminar(Long id, Actor a) {
-    a.exigir("ADMIN", "DUENO");
+    a.exigir("ADMIN");
     Usuario u = find(id);
-    if (a.es("DUENO") && !subordinado(u, a)) prohibido();
     if (id.equals(a.id())) malo("No puedes eliminar ni desactivar tu propia cuenta");
     if ("ADMIN".equals(Actor.normalizar(u.getRol().getNombre()))) {
       u.setActivo(false);
@@ -160,6 +156,7 @@ public class GestionUsuarioService {
   }
 
   public UsuarioResponse password(Long id, String password, String actual, Actor a) {
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
     if (!id.equals(a.id())) prohibido();
     Usuario u = find(id);
     if (actual == null || !passwords.matches(actual, u.getPassword())) prohibido();
@@ -168,13 +165,9 @@ public class GestionUsuarioService {
     return mapper.toResponse(u);
   }
 
-  private boolean subordinado(Usuario u, Actor a) {
-    return "TRABAJADOR".equals(Actor.normalizar(u.getRol().getNombre()))
-        && Objects.equals(u.getDuenoId(), a.id());
-  }
-
   private void exigirVisible(Usuario u, Actor a) {
-    if (!a.es("ADMIN") && !u.getId().equals(a.id()) && !(a.es("DUENO") && subordinado(u, a)))
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
+    if (!a.es("ADMIN") && !u.getId().equals(a.id()))
       prohibido();
   }
 
@@ -187,7 +180,7 @@ public class GestionUsuarioService {
   }
 
   private Rol rol(String nombre) {
-    if (!List.of("ADMIN", "DUENO", "TRABAJADOR", "USUARIO").contains(nombre)) malo("Rol invÃ¡lido");
+    if (!List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE").contains(nombre)) malo("Rol invÃ¡lido");
     return roles
         .findByNombre(nombre)
         .orElseThrow(

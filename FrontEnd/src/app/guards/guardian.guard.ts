@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../services/auth';
+import { AuthService, inicioPorRol } from '../services/auth';
 
 export const guardianGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
@@ -10,7 +10,7 @@ export const guardianGuard: CanActivateFn = (_route, state) => {
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
 
-  return ['ADMIN', 'DUENO', 'TRABAJADOR', 'GUARDIAN'].includes(auth.usuarioActual()?.rol ?? '')
+  return ['ADMIN', 'TRABAJADOR'].includes(auth.usuarioActual()?.rol ?? '')
     ? true
-    : router.createUrlTree(['/catalogo']);
+    : router.createUrlTree([inicioPorRol(auth.usuarioActual()?.rol)]);
 };

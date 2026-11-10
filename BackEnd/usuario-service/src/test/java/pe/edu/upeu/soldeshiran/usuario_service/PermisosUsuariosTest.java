@@ -63,13 +63,27 @@ class PermisosUsuariosTest {
   @Autowired MockMvc mvc;
   @Autowired UsuarioRepository usuarios;
   @Autowired RolRepository roles;
+  @Autowired pe.edu.upeu.soldeshiran.usuario_service.security.RoleInitializer inicializador;
   long admin, cliente, dueno;
+
+  @Test
+  void migraRolesAnterioresSinCambiarLasCuentas() {
+    for (String[] cambio : new String[][] {{"USUARIO", "CLIENTE"}, {"GUARDIAN", "TRABAJADOR"}}) {
+      Rol anterior = new Rol();
+      anterior.setNombre(cambio[0]);
+      roles.save(anterior);
+      long id = crear(cambio[0], cambio[0] + "@test.local");
+      inicializador.run();
+      Assertions.assertTrue(roles.findByNombre(cambio[0]).isEmpty());
+      Assertions.assertEquals(cambio[1], usuarios.findById(id).orElseThrow().getRol().getNombre());
+    }
+  }
 
   @BeforeEach
   void preparar() {
     usuarios.deleteAll();
     admin = crear("ADMIN", "admin@test.local");
-    cliente = crear("USUARIO", "user@test.local");
+    cliente = crear("CLIENTE", "user@test.local");
     dueno = crear("DUENO", "dueno@test.local");
   }
 
@@ -127,7 +141,7 @@ class PermisosUsuariosTest {
                 .content(
                     "{\"nombre\":\"Registro\",\"email\":\"registro@test.local\",\"password\":\"Password123!\",\"rol\":\"ADMIN\"}"))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.rol").value("USUARIO"));
+        .andExpect(jsonPath("$.rol").value("CLIENTE"));
   }
 
   @Test
@@ -208,35 +222,27 @@ class PermisosUsuariosTest {
   }
 
   @Test
-  void adminDebeReasignarTrabajadoresAntesDeEliminarSuDueno() throws Exception {
+  void adminPuedeEliminarDuenoYDesvinculaTrabajadores() throws Exception {
     Usuario trabajador = usuarios.findById(crear("TRABAJADOR", "trabajador@test.local"))
         .orElseThrow();
     trabajador.setDuenoId(dueno);
     usuarios.save(trabajador);
     mvc.perform(delete("/api/v1/usuarios/" + dueno).header("Authorization", token(admin)))
-        .andExpect(status().isConflict());
-    Assertions.assertTrue(usuarios.existsById(dueno));
+        .andExpect(status().isNoContent());
+    Assertions.assertFalse(usuarios.existsById(dueno));
+    Assertions.assertNull(usuarios.findById(trabajador.getId()).orElseThrow().getDuenoId());
   }
 
   @Test
-  void duenoEliminaTrabajadorPropioDespuesDeRetirarSuAsignacion() throws Exception {
+  void duenoNoPuedeEliminarTrabajadorPropio() throws Exception {
     Usuario trabajador = usuarios.findById(crear("TRABAJADOR", "propio@test.local"))
         .orElseThrow();
     trabajador.setDuenoId(dueno);
     usuarios.save(trabajador);
-    String url = "/api/v1/usuarios/" + trabajador.getId();
-
-    asignado.set(true);
-    try {
-      mvc.perform(delete(url).header("Authorization", token(dueno)))
-          .andExpect(status().isConflict());
-      Assertions.assertTrue(usuarios.existsById(trabajador.getId()));
-    } finally {
-      asignado.set(false);
-    }
-    mvc.perform(delete(url).header("Authorization", token(dueno)))
-        .andExpect(status().isNoContent());
-    Assertions.assertFalse(usuarios.existsById(trabajador.getId()));
+    mvc.perform(delete("/api/v1/usuarios/" + trabajador.getId())
+        .header("Authorization", token(dueno)))
+        .andExpect(status().isForbidden());
+    Assertions.assertTrue(usuarios.existsById(trabajador.getId()));
   }
 
   private String token(long id) throws Exception {

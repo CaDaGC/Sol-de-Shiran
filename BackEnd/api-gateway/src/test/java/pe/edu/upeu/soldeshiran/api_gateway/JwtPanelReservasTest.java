@@ -29,7 +29,7 @@ class JwtPanelReservasTest {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/reservas/mis-reservas")
                 .header("Authorization", "Bearer token").header("X-User-Id", "999"));
         new JwtAuthenticationFilter(jwt).filter(exchange, chain).block();
-        for (String rol : List.of("GUARDIAN", "ADMIN")) {
+        for (String rol : List.of("ADMIN", "TRABAJADOR", "DUENO")) {
             when(jwt.getRol("token")).thenReturn(rol);
             var denegado = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/reservas/mis-reservas")
                     .header("Authorization", "Bearer token"));
@@ -74,7 +74,7 @@ class JwtPanelReservasTest {
             assertThat(exchange.getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("TRABAJADOR");
             return Mono.empty();
         });
-        for (String rol : List.of("USUARIO", "TRABAJADOR")) {
+        for (String rol : List.of("USUARIO", "DUENO", "TRABAJADOR")) {
             when(jwt.getRol("token")).thenReturn(rol);
             var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/pagos/reservas/1/restante")
                     .header("Authorization", "Bearer token")

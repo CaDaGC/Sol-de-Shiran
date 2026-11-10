@@ -66,8 +66,8 @@ public class PagoServiceImpl implements PagoService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "No se pudo iniciar el adelanto de la reserva.", exception);
         }
-        var pendiente = transaccionRepository.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(
-                idReserva, EstadoTransaccion.PENDIENTE);
+        var pendiente = transaccionRepository.findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(
+                idReserva, TransaccionPago.ONLINE_ADELANTO, EstadoTransaccion.PENDIENTE);
         if (pendiente.isPresent()) {
             TransaccionPago anterior = pendiente.get();
             if (anterior.getIdExternoPasarela() == null) {
@@ -154,6 +154,7 @@ public class PagoServiceImpl implements PagoService {
     public PagoResponse consultarEstado(Long usuario, Long idTransaccion) {
         // Validar que la transacción exista y pertenezca al usuario
         TransaccionPago tx = transaccionRepository.findById(idTransaccion)
+                .filter(pago -> TransaccionPago.ONLINE_ADELANTO.equals(pago.getTipoPago()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe la transacción."));
         ReservaPagoResponse reserva = reservaClient.obtenerReserva(tx.getIdReserva(), internalToken);
         if (!Objects.equals(usuario, reserva.idUsuario())) {
@@ -177,6 +178,9 @@ public class PagoServiceImpl implements PagoService {
                         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Orden sin transacción local.");
                     }
                 });
+        if (!TransaccionPago.ONLINE_ADELANTO.equals(tx.getTipoPago())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Orden sin transacción en línea.");
+        }
         actualizarOrden(tx, order);
     }
 
@@ -284,7 +288,7 @@ public class PagoServiceImpl implements PagoService {
     private TransaccionPago nuevaTransaccion(ReservaPagoResponse reserva) {
         TransaccionPago tx = new TransaccionPago();
         tx.setIdReserva(reserva.idReserva());
-        tx.setTipoPago("ONLINE_ADELANTO");
+        tx.setTipoPago(TransaccionPago.ONLINE_ADELANTO);
         tx.setMonto(reserva.montoAdelanto());
         tx.setMoneda("PEN");
         tx.setMetodoPago("MERCADO_PAGO_ORDERS");

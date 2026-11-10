@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, input, output } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../services/auth';
+import { inicioPorRol, AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth';
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent {
+  readonly inicioPorRol = inicioPorRol;
   readonly contraido = input(false);
   readonly alternar = output<void>();
   private readonly authService = inject(AuthService);

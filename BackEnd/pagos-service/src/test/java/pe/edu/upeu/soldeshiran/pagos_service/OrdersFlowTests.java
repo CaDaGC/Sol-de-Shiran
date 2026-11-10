@@ -90,7 +90,7 @@ class OrdersFlowTests {
         assertEquals(EstadoTransaccion.PENDIENTE,incierto.getEstadoTransaccion());
         assertNotNull(incierto.getSolicitudCheckout());
         original[0] = incierto.getSolicitudCheckout();
-        when(repo.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(3L,EstadoTransaccion.PENDIENTE)).thenReturn(Optional.of(incierto));
+        when(repo.findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(3L, TransaccionPago.ONLINE_ADELANTO, EstadoTransaccion.PENDIENTE)).thenReturn(Optional.of(incierto));
         service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("changed@example.com"));
         verify(repo,times(2)).saveAndFlush(any()); server.verify();
     }
@@ -114,7 +114,7 @@ class OrdersFlowTests {
 
     @Test void claveYaUtilizadaNoSeRotaNiSeReintentaAutomaticamente() {
         tx.setSolicitudCheckout("{\"type\":\"online\",\"total_amount\":\"100.00\"}");
-        when(repo.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(3L, EstadoTransaccion.PENDIENTE))
+        when(repo.findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(3L, TransaccionPago.ONLINE_ADELANTO, EstadoTransaccion.PENDIENTE))
                 .thenReturn(Optional.of(tx));
         server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
             .andExpect(header("X-Idempotency-Key", "orden-7"))
@@ -175,7 +175,7 @@ class OrdersFlowTests {
         assertThrows(ResponseStatusException.class,()->webhook.recibir("ORDTST123","ts=123,v1=incorrecta","req","{}"));
     }
     @Test void reutilizaCheckoutPendienteSinCrearOtraOrden() {
-        when(repo.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(3L,EstadoTransaccion.PENDIENTE))
+        when(repo.findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(3L, TransaccionPago.ONLINE_ADELANTO, EstadoTransaccion.PENDIENTE))
                 .thenReturn(Optional.of(tx));
         expectOrder(order("created","","100.00").replace("}",",\"checkout_url\":\"https://www.mercadopago.com.pe/checkout/test\"}"));
         var result=service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("buyer@example.com"));
@@ -184,7 +184,7 @@ class OrdersFlowTests {
         server.verify();
     }
     @Test void noDuplicaPagoDeResultadoIncierto() {
-        when(repo.findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(3L,EstadoTransaccion.PENDIENTE))
+        when(repo.findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(3L, TransaccionPago.ONLINE_ADELANTO, EstadoTransaccion.PENDIENTE))
                 .thenReturn(Optional.of(tx));
         assertThrows(ResponseStatusException.class,()->service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("buyer@example.com")));
         verify(repo,never()).saveAndFlush(any());

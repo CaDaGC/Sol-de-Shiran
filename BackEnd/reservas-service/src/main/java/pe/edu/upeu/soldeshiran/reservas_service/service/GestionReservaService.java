@@ -29,9 +29,6 @@ public class GestionReservaService {
   @Value("${servicios.interno.token}")
   private String tokenOcupacion;
 
-  @Value("${catalogo.url:http://localhost:8086}")
-  private String catalogoUrl;
-
   @Value("${usuarios.url:http://localhost:8087}")
   private String usuariosUrl;
 
@@ -50,48 +47,17 @@ public class GestionReservaService {
       @NotNull LocalDate hasta,
       @NotBlank @Size(max = 200) String motivo) {}
 
-  private JsonNode acceso(Long id, Actor a) {
-    try {
-      return pe.edu.upeu.soldeshiran.reservas_service.security.InternalHttp.cliente(catalogoUrl)
-          .get()
-          .uri(
-              b ->
-                  b.path("/internal/cabanas/" + id + "/acceso")
-                      .queryParam("usuarioId", a.id())
-                      .queryParam("rol", a.rol())
-                      .build())
-          .header("X-Internal-Key", key)
-          .retrieve()
-          .body(JsonNode.class);
-    } catch (org.springframework.web.client.RestClientResponseException ex) {
-      if (ex.getStatusCode().value() == 404) return null;
-      throw new ResponseStatusException(
-          HttpStatus.SERVICE_UNAVAILABLE, "No se pudo validar la cabaña");
-    } catch (org.springframework.web.client.ResourceAccessException ex) {
-      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Catálogo no disponible");
-    }
+  private boolean operativo(Actor a) {
+    return a.es("ADMIN", "TRABAJADOR");
   }
 
-  boolean operativo(Long id, Actor a) {
-    if (a.es("ADMIN")) return true;
-    if (!a.es("DUENO", "TRABAJADOR")) return false;
-    var x = acceso(id, a);
-    return x != null && x.path("operativo").asBoolean();
-  }
-
-  private boolean propietario(Long id, Actor a) {
-    if (a.es("ADMIN")) return true;
-    if (!a.es("DUENO")) return false;
-    var x = acceso(id, a);
-    return x != null && x.path("propietario").asBoolean();
-  }
-
-  void exigirOperativo(Reserva r, Actor a) {
-    if (!operativo(r.getIdCabana(), a)) prohibido();
+  void exigirOperativo(Actor a) {
+    if (!operativo(a)) prohibido();
   }
 
   private void exigirVer(Reserva r, Actor a) {
-    if (!Objects.equals(r.getIdUsuario(), a.id()) && !operativo(r.getIdCabana(), a)) prohibido();
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
+    if (!Objects.equals(r.getIdUsuario(), a.id()) && !operativo(a)) prohibido();
   }
 
   private Reserva find(Long id, boolean lock) {
@@ -101,7 +67,7 @@ public class GestionReservaService {
   }
 
   public List<Reserva> listar(Actor a, Long cabana, LocalDate desde, LocalDate hasta) {
-    Map<Long, Boolean> scopes = new HashMap<>();
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
     return reservas.findAll().stream()
         .filter(r -> cabana == null || cabana.equals(r.getIdCabana()))
         .filter(r -> desde == null || !r.getFechaSalida().isBefore(desde))
@@ -109,7 +75,7 @@ public class GestionReservaService {
         .filter(
             r ->
                 Objects.equals(r.getIdUsuario(), a.id())
-                    || scopes.computeIfAbsent(r.getIdCabana(), id -> operativo(id, a)))
+                    || operativo(a))
         .toList();
   }
 
@@ -147,7 +113,8 @@ public class GestionReservaService {
   }
 
   public void exigirAccesoOperativo(Long id, Actor actor) {
-    exigirOperativo(find(id, false), actor);
+    exigirOperativo(actor);
+    find(id, false);
   }
 
   public List<PagoPresencial> pagos(Long id, Actor a) {
@@ -157,7 +124,7 @@ public class GestionReservaService {
 
   public Reserva pagar(Long id, PagoRequest p, Actor a) {
     Reserva r = find(id, true);
-    exigirOperativo(r, a);
+    exigirOperativo(a);
     var anterior = pagos.findByClaveOperacion(p.claveOperacion());
     if (anterior.isPresent()) {
       PagoPresencial x = anterior.get();
@@ -202,7 +169,7 @@ public class GestionReservaService {
 
   public Reserva checkin(Long id, Actor a) {
     Reserva r = find(id, true);
-    exigirOperativo(r, a);
+    exigirOperativo(a);
     if (r.getEstadoReserva() != EstadoReserva.CONFIRMADA
         || r.getSaldoPendiente().compareTo(BigDecimal.ZERO) != 0)
       conflicto("Debe estar confirmada y sin saldo pendiente");
@@ -216,7 +183,7 @@ public class GestionReservaService {
 
   public Reserva checkout(Long id, CheckoutRequest request, Actor a) {
     Reserva r = find(id, true);
-    exigirOperativo(r, a);
+    exigirOperativo(a);
 
     var danos = request == null ? null : request.danos();
     String descripcion = danos == null ? null : danos.descripcion().strip();
@@ -258,9 +225,9 @@ public class GestionReservaService {
   }
 
   public Reserva cancelar(Long id, Actor a) {
-    a.exigir("ADMIN", "DUENO", "USUARIO");
+    a.exigir("ADMIN", "CLIENTE");
     Reserva r = find(id, true);
-    boolean gestion = propietario(r.getIdCabana(), a);
+    boolean gestion = a.es("ADMIN");
     if (!gestion && !Objects.equals(r.getIdUsuario(), a.id())) prohibido();
     if (!List.of(EstadoReserva.PENDIENTE_PAGO, EstadoReserva.CONFIRMADA)
         .contains(r.getEstadoReserva())) conflicto("No se puede cancelar este estado");
@@ -275,7 +242,7 @@ public class GestionReservaService {
   }
 
   public BloqueoFecha bloquear(BloqueoRequest b, Actor a) {
-    if (!propietario(b.idCabana(), a)) prohibido();
+    a.exigir("ADMIN");
     if (b.hasta().isBefore(b.desde()) || b.desde().isBefore(LocalDate.now()))
       malo("Rango inválido");
     boolean cruza =
@@ -299,21 +266,21 @@ public class GestionReservaService {
   }
 
   public List<BloqueoFecha> bloqueos(Long cabana, Actor a) {
-    if (!propietario(cabana, a)) prohibido();
+    a.exigir("ADMIN");
     return bloqueos.findByIdCabanaAndActivoTrue(cabana);
   }
 
   public void desbloquear(Long id, Actor a) {
     var b =
         bloqueos.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    if (!propietario(b.getIdCabana(), a)) prohibido();
+    a.exigir("ADMIN");
     b.setActivo(false);
   }
 
   public Map<String, Object> reporte(Actor a) {
-    a.exigir("ADMIN", "DUENO");
+    a.exigir("ADMIN");
     var lista =
-        listar(a, null, null, null).stream().filter(r -> propietario(r.getIdCabana(), a)).toList();
+        listar(a, null, null, null);
     BigDecimal cobrado =
         lista.stream()
             .map(r -> r.getTotalPagado() == null ? BigDecimal.ZERO : r.getTotalPagado())

@@ -32,6 +32,11 @@ export class ReservasService {
       .pipe(timeout({ first: 15000 }));
   }
 
+  listarCabanasDelPanel(): Observable<{ idCabana: number; nombre: string }[]> {
+    return this.http.get<{ idCabana: number; nombre: string }[]>(`${this.url}/panel/cabanas`)
+      .pipe(timeout({ first: 15000 }));
+  }
+
   consultarDetalle(idReserva: number): Observable<ReservaDetalleResponse> {
     return this.http.get<ReservaDetalleResponse>(`${this.url}/panel/${idReserva}`)
       .pipe(timeout({ first: 15000 }));

@@ -25,7 +25,7 @@ public class UsuarioMapper {
     response.setEmail(usuario.getEmail());
     response.setActivo(!Boolean.FALSE.equals(usuario.getActivo()));
     response.setDuenoId(usuario.getDuenoId());
-    response.setRol(usuario.getRol().getNombre());
+    response.setRol(pe.edu.upeu.soldeshiran.usuario_service.security.Actor.normalizar(usuario.getRol().getNombre()));
     return response;
   }
 }

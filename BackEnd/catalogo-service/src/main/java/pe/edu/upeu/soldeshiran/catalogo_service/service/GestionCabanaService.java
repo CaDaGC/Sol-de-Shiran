@@ -59,20 +59,18 @@ public class GestionCabanaService {
   }
 
   public void exigirGestion(Cabana c, Actor a) {
-    a.exigir("ADMIN", "DUENO");
-    if (a.es("DUENO") && !Objects.equals(c.getDuenoId(), a.id()))
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Esta cabaña pertenece a otro dueño");
+    a.exigir("ADMIN");
   }
 
   public List<Map<String, Object>> listar(Actor a) {
-    a.exigir("ADMIN", "DUENO", "TRABAJADOR");
-    return cabanas.findAll().stream().filter(c -> puedeVer(c, a)).map(this::view).toList();
+    a.exigir("ADMIN");
+    return cabanas.findAll().stream().map(this::view).toList();
   }
 
   public Map<String, Object> crear(CabanaRequest r, Actor a) {
-    a.exigir("ADMIN", "DUENO");
+    a.exigir("ADMIN");
     Cabana c = new Cabana();
-    c.setDuenoId(a.es("DUENO") ? a.id() : validarDueno(r.duenoId()));
+    c.setDuenoId(validarDueno(r.duenoId()));
     aplicar(c, r);
     return view(cabanas.save(c));
   }
@@ -80,12 +78,10 @@ public class GestionCabanaService {
   public Map<String, Object> editar(Long id, CabanaRequest r, Actor a) {
     Cabana c = obtener(id);
     exigirGestion(c, a);
-    if (a.es("ADMIN") && !Objects.equals(c.getDuenoId(), r.duenoId())) {
+    if (!Objects.equals(c.getDuenoId(), r.duenoId())) {
       c.setDuenoId(validarDueno(r.duenoId()));
       c.getTrabajadores().clear();
     }
-    if (a.es("DUENO") && r.duenoId() != null && !r.duenoId().equals(a.id()))
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes transferir la cabaña");
     aplicar(c, r);
     return view(c);
   }

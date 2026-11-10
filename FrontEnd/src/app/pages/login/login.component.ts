@@ -11,7 +11,7 @@ import {
   Router,
   RouterLink
 } from '@angular/router';
-import { AuthResponse, AuthService } from '../../services/auth';
+import { AuthResponse, AuthService, inicioPorRol } from '../../services/auth';
 
 @Component({
   selector: 'app-login',
@@ -60,8 +60,7 @@ export class LoginComponent {
           returnUrl.startsWith('/') &&
           !returnUrl.startsWith('//')
             ? returnUrl
-            : ['GUARDIAN', 'TRABAJADOR'].includes(response.rol) ? '/guardian/reservas'
-              : ['CLIENTE', 'USUARIO'].includes(response.rol) ? '/mis-reservas' : '/catalogo';
+            : inicioPorRol(response.rol);
 
         void this.router.navigateByUrl(destino);
       },

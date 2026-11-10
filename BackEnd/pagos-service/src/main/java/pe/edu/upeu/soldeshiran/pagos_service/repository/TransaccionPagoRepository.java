@@ -8,8 +8,12 @@ import java.util.Optional;
 public interface TransaccionPagoRepository
         extends JpaRepository<TransaccionPago, Long> {
 
-    Optional<TransaccionPago> findFirstByIdReservaAndEstadoTransaccionOrderByIdTransaccionDesc(
-            Long idReserva, pe.edu.upeu.soldeshiran.pagos_service.model.EstadoTransaccion estado);
+    Optional<TransaccionPago> findFirstByIdReservaAndTipoPagoAndEstadoTransaccionOrderByIdTransaccionDesc(
+            Long idReserva, String tipoPago, pe.edu.upeu.soldeshiran.pagos_service.model.EstadoTransaccion estado);
+
+    Optional<TransaccionPago> findByReservaPagoRestante(Long idReserva);
+
+    Optional<TransaccionPago> findByReservaPagoDanos(Long idReserva);
 
     Optional<TransaccionPago> findByIdExternoPasarela(String idExternoPasarela);
 }

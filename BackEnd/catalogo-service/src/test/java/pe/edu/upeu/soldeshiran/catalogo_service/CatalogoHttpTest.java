@@ -145,19 +145,18 @@ class CatalogoHttpTest {
   }
 
   @Test
-  void duenoPuedeEditarSuCabana() throws Exception {
+  void duenoNoPuedeEditarSuCabana() throws Exception {
     mvc.perform(
             put("/api/v1/cabanas/" + id)
                 .header("Authorization", token(10))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.nombre").value("CabaÃ±a nueva"));
+        .andExpect(status().isForbidden());
   }
 
   @Test
   void desactivarOcultaSinBorrar() throws Exception {
-    mvc.perform(delete("/api/v1/cabanas/" + id).header("Authorization", token(10)))
+    mvc.perform(delete("/api/v1/cabanas/" + id).header("Authorization", token(1)))
         .andExpect(status().isNoContent());
     mvc.perform(get("/api/v1/cabanas")).andExpect(jsonPath("$.length()").value(0));
     org.junit.jupiter.api.Assertions.assertTrue(cabanas.existsById(id));
@@ -192,7 +191,7 @@ class CatalogoHttpTest {
   void consultaInternaDetectaPropiedadYAsignacionDeTrabajador() throws Exception {
     String url = "/internal/cabanas/asignaciones/";
     mvc.perform(put("/api/v1/cabanas/" + id + "/trabajadores")
-            .header("Authorization", token(10))
+            .header("Authorization", token(1))
             .contentType(MediaType.APPLICATION_JSON).content("[20]"))
         .andExpect(status().isOk());
     mvc.perform(get(url + "20")).andExpect(status().isForbidden());
@@ -203,7 +202,7 @@ class CatalogoHttpTest {
           .andExpect(content().string("true"));
     }
     mvc.perform(put("/api/v1/cabanas/" + id + "/trabajadores")
-            .header("Authorization", token(10))
+            .header("Authorization", token(1))
             .contentType(MediaType.APPLICATION_JSON).content("[]"))
         .andExpect(status().isOk());
     mvc.perform(get(url + "20")

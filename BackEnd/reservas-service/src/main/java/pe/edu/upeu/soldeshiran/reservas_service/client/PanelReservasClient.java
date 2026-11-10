@@ -23,6 +23,14 @@ public class PanelReservasClient {
     }
 
     public List<CabanaResumen> consultarCabanas(String key, List<Long> ids) {
+        var resultado = new java.util.ArrayList<CabanaResumen>();
+        for (int inicio = 0; inicio < ids.size(); inicio += 100) {
+            resultado.addAll(consultarLoteCabanas(key, ids.subList(inicio, Math.min(inicio + 100, ids.size()))));
+        }
+        return resultado;
+    }
+
+    private List<CabanaResumen> consultarLoteCabanas(String key, List<Long> ids) {
         return InternalHttp.cliente(catalogoUrl).get()
                 .uri(uri -> uri.path("/internal/cabanas/resumen").queryParam("ids", ids).build())
                 .header("X-Internal-Key", key).retrieve()

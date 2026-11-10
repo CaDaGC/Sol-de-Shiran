@@ -20,6 +20,9 @@ describe('Acceso a Mis reservas', () => {
   });
   it('permite a clientes autenticados', () => { expect(comprobar(true, 'CLIENTE')).toBe(true); });
   it('no permite al guardián acceder a la pantalla del cliente', () => {
-    expect(comprobar(true, 'GUARDIAN')).toEqual(TestBed.inject(Router).createUrlTree(['/catalogo']));
+    expect(comprobar(true, 'TRABAJADOR')).toEqual(TestBed.inject(Router).createUrlTree(['/guardian/reservas']));
+  });
+  it('reserva el historial para clientes y devuelve al administrador al catálogo', () => {
+    expect(comprobar(true, 'ADMIN')).toEqual(TestBed.inject(Router).createUrlTree(['/catalogo']));
   });
 });

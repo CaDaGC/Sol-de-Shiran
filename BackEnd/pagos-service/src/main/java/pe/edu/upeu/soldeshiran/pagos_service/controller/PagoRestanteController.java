@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pe.edu.upeu.soldeshiran.pagos_service.client.ReservaInternaClient;
 import pe.edu.upeu.soldeshiran.pagos_service.dto.RegistrarPagoRestanteRequest;
-import pe.edu.upeu.soldeshiran.pagos_service.model.PagoRestante;
+import pe.edu.upeu.soldeshiran.pagos_service.dto.PagoRestanteResponse;
 import pe.edu.upeu.soldeshiran.pagos_service.security.Actor;
 import pe.edu.upeu.soldeshiran.pagos_service.service.PagoRestanteService;
 
@@ -24,21 +24,22 @@ public class PagoRestanteController {
     private final ReservaInternaClient reservas;
 
     @PostMapping
-    public PagoRestante registrar(HttpServletRequest solicitud, @PathVariable @Positive Long idReserva,
+    public PagoRestanteResponse registrar(HttpServletRequest solicitud, @PathVariable @Positive Long idReserva,
             @Valid @RequestBody RegistrarPagoRestanteRequest request) {
         Actor actor = Actor.desde(solicitud);
         autorizar(actor, idReserva, solicitud.getHeader("Authorization"));
-        return service.registrar(actor.id(), idReserva, request);
+        return PagoRestanteResponse.desde(service.registrar(actor.id(), idReserva, request));
     }
 
     @GetMapping
-    public PagoRestante consultar(HttpServletRequest solicitud, @PathVariable @Positive Long idReserva) {
+    public PagoRestanteResponse consultar(HttpServletRequest solicitud, @PathVariable @Positive Long idReserva) {
         autorizar(Actor.desde(solicitud), idReserva, solicitud.getHeader("Authorization"));
-        return service.consultar(idReserva);
+        var pago = service.consultar(idReserva);
+        return pago == null ? null : PagoRestanteResponse.desde(pago);
     }
 
     private void autorizar(Actor actor, Long idReserva, String authorization) {
-        actor.exigir("ADMIN", "DUENO", "TRABAJADOR");
+        actor.exigir("ADMIN", "TRABAJADOR");
         try {
             reservas.exigirAccesoOperativo(idReserva, authorization);
         } catch (FeignException exception) {
