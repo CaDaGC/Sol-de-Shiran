@@ -9,6 +9,18 @@ function fechaLocal(fecha: Date): string {
   return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
 }
 
+function fechaUtcValida(fecha: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const dia = Date.parse(`${fecha}T00:00:00Z`);
+  return Number.isFinite(dia) && new Date(dia).toISOString().slice(0, 10) === fecha ? dia : null;
+}
+
+export function rangoMetricasValido(desde: string, hasta: string): boolean {
+  const inicio = fechaUtcValida(desde);
+  const fin = fechaUtcValida(hasta);
+  return inicio !== null && fin !== null && fin >= inicio && fin - inicio <= 366 * 86400000;
+}
+
 @Component({
   selector: 'app-metricas',
   standalone: true,
@@ -59,10 +71,13 @@ export class MetricasComponent implements OnDestroy {
   }
 
   cargar(): void {
-    const inicio = new Date(`${this.desde}T12:00:00`);
-    const fin = new Date(`${this.hasta}T12:00:00`);
-    if (!this.desde || !this.hasta || Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())
-        || fin < inicio || (fin.getTime() - inicio.getTime()) / 86400000 > 366) {
+    if (!rangoMetricasValido(this.desde, this.hasta)) {
+      this.solicitud?.unsubscribe();
+      this.cargando.set(false);
+      this.ingresos.set(null);
+      this.frecuencia.set(null);
+      this.diaSeleccionado.set(null);
+      this.cabanaSeleccionada.set(null);
       this.error.set('Elige un rango válido de hasta 367 días.');
       return;
     }
