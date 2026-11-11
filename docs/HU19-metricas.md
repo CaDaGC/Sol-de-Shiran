@@ -27,3 +27,14 @@ Authorization: Bearer <token-admin>
 Comprobar con Postman que una cuenta CLIENTE recibe 403, que `desde > hasta` recibe 400, que pagos pendientes no suman y que reservas canceladas no aparecen en el ranking. Ejecutar las consultas con datos de prueba representativos y medir el tiempo de respuesta; la meta de la HU es menos de 3 segundos. Una prueba unitaria no acredita ese tiempo en el entorno real.
 
 Pruebas automáticas aisladas: `MetricasIngresosControllerTest` y `MetricasReservasControllerTest` verifican filtros, sumas y acceso ADMIN en H2.
+
+## Prueba funcional paso a paso
+
+1. Inicia el contenedor MySQL, service-registry, config-server, usuario-service, auth-service, catalogo-service, reservas-service, pagos-service y api-gateway. Inicia Angular con `npm start` desde `FrontEnd`.
+2. Importa `docs/postman/HU19.postman_collection.json` en Postman. Define `adminToken` y `clienteToken` con JWT vigentes obtenidos mediante `POST /api/v1/auth/login`. No guardes correos ni contraseñas en la colección.
+3. Ajusta `desde` y `hasta` al período que quieras comprobar. Ejecuta las cinco solicitudes de la colección en orden. Las primeras tres deben responder 200; la cuarta, 403; la quinta, 400. Para la quinta, `desde` debe ser anterior a `hasta` antes de invertirlos.
+4. Usa datos de prueba con al menos una transacción `APROBADA` y una reserva `CONFIRMADA`, `OCUPADA` o `FINALIZADA` cuya `fecha_ingreso` caiga en el período. Contrasta `totalIngresos` con la suma de `ingresosPorDia` y `totalReservas` con la suma de `ranking[].reservas`. Los pagos pendientes y las reservas canceladas no deben aumentar esos totales.
+5. Entra al frontend con una cuenta ADMIN y abre **Métricas** en el menú, o visita `/admin/metricas`. Prueba los rangos rápidos de 7, 30 y 90 días y un rango personalizado. Al seleccionar una barra de ingresos o una cabaña del ranking debe aparecer su detalle. Un período sin datos debe mostrar cero ingresos y un ranking vacío, sin fallo de carga.
+6. Mide en Postman el tiempo de respuesta de cada endpoint con los datos reales de prueba y registra el resultado. La meta de HU19 es menos de 3 segundos. Si la primera llamada arranca un servicio o descarga dependencias, repite la medición con los servicios ya listos.
+
+La colección solo consulta información: no inserta pagos, reservas ni usuarios. Si el panel no carga pero las dos métricas responden 200, verifica también `GET /api/v1/cabanas/gestion`, porque Angular combina las tres respuestas para mostrar los nombres de las cabañas.
