@@ -28,6 +28,7 @@ button { cursor: pointer; }
 .ranking button:hover, .ranking button.selected { background: #e7f0e5; }
 .track { grid-column: 1 / -1; height: 7px; background: #dce8da; border-radius: 10px; overflow: hidden; }
 .track span { display: block; height: 100%; background: #4c8057; }
+.empty { padding: 1rem; border-radius: 8px; background: #f2f5ef; color: #486050; }
 .selection { padding: .6rem; border-radius: 8px; background: #edf3ec; }
 @media (max-width: 850px) { .panels { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .dashboard { padding: 1rem; } .summary { grid-template-columns: 1fr; } }

@@ -33,17 +33,21 @@
         <section class="panel" aria-labelledby="income-title">
           <h2 id="income-title">Ingresos por día</h2>
           <p>Selecciona una barra para ver el importe y las operaciones.</p>
-          <div class="chart-scroll">
-            <div class="chart" [style.grid-template-columns]="'repeat(' + dias().length + ', minmax(20px, 1fr))'">
-              @for (dia of dias(); track dia.fecha) {
-                <button type="button" class="bar" [class.selected]="diaSeleccionado() === dia.fecha"
-                  [style.height.%]="altura(dia)" [attr.aria-label]="dia.fecha + ': ' + dia.total + ' soles, ' + dia.operaciones + ' pagos'"
-                  [attr.title]="dia.fecha + ' · S/ ' + dia.total" (click)="diaSeleccionado.set(dia.fecha)"></button>
-              }
+          @if (ventas.numeroPagos === 0) {
+            <p class="empty" role="status">No hay pagos aprobados en este período.</p>
+          } @else {
+            <div class="chart-scroll">
+              <div class="chart" [style.grid-template-columns]="'repeat(' + dias().length + ', minmax(20px, 1fr))'">
+                @for (dia of dias(); track dia.fecha) {
+                  <button type="button" class="bar" [class.selected]="diaSeleccionado() === dia.fecha"
+                    [style.height.%]="altura(dia)" [attr.aria-label]="dia.fecha + ': ' + dia.total + ' soles, ' + dia.operaciones + ' pagos'"
+                    [attr.title]="dia.fecha + ' · S/ ' + dia.total" (click)="diaSeleccionado.set(dia.fecha)"></button>
+                }
+              </div>
             </div>
-          </div>
-          @if (detalleDia(); as dia) {
-            <p class="selection" role="status">{{ dia.fecha }} · {{ dia.total | currency:'PEN':'S/ ':'1.2-2' }} · {{ dia.operaciones }} pagos</p>
+            @if (detalleDia(); as dia) {
+              <p class="selection" role="status">{{ dia.fecha }} · {{ dia.total | currency:'PEN':'S/ ':'1.2-2' }} · {{ dia.operaciones }} pagos</p>
+            }
           }
         </section>
 
