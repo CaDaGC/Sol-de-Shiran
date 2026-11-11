@@ -13,6 +13,10 @@ export const cuentaGuard: CanActivateFn = (_route, state) => {
   return accesoAutenticado(state.url, ['ADMIN', 'CLIENTE', 'TRABAJADOR']);
 };
 
+export const adminGuard: CanActivateFn = (_route, state) => {
+  return accesoAutenticado(state.url, ['ADMIN']);
+};
+
 export const pagoGuard: CanActivateFn = (_route, state) => {
   return accesoAutenticado(state.url, ['ADMIN', 'CLIENTE']);
 };

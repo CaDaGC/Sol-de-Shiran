@@ -1,0 +1,73 @@
+<main class="dashboard">
+  <header class="heading">
+    <div>
+      <p class="eyebrow">SOL DE SHIRÁN · ADMINISTRACIÓN</p>
+      <h1>Métricas de ventas y reservas</h1>
+      <p>Ingresos registrados y frecuencia de estancias por cabaña.</p>
+    </div>
+  </header>
+
+  <form class="filters" (ngSubmit)="cargar()">
+    <label>Desde <input type="date" name="desde" [(ngModel)]="desde" required /></label>
+    <label>Hasta <input type="date" name="hasta" [(ngModel)]="hasta" required /></label>
+    <button type="submit" [disabled]="cargando()">Aplicar fechas</button>
+    <div class="quick-ranges" aria-label="Rangos rápidos">
+      <button type="button" (click)="ultimos(7)">7 días</button>
+      <button type="button" (click)="ultimos(30)">30 días</button>
+      <button type="button" (click)="ultimos(90)">90 días</button>
+    </div>
+  </form>
+
+  @if (cargando()) { <p role="status">Calculando métricas…</p> }
+  @if (error()) { <p role="alert" class="error">{{ error() }} <button type="button" (click)="cargar()">Reintentar</button></p> }
+
+  @if (ingresos(); as ventas) {
+    @if (frecuencia(); as reservas) {
+      <div class="summary">
+        <article><span>Ingresos acreditados</span><strong>{{ ventas.totalIngresos | currency:'PEN':'S/ ':'1.2-2' }}</strong></article>
+        <article><span>Pagos aprobados</span><strong>{{ ventas.numeroPagos }}</strong></article>
+        <article><span>Reservas con ingreso en el período</span><strong>{{ reservas.totalReservas }}</strong></article>
+      </div>
+
+      <div class="panels">
+        <section class="panel" aria-labelledby="income-title">
+          <h2 id="income-title">Ingresos por día</h2>
+          <p>Selecciona una barra para ver el importe y las operaciones.</p>
+          <div class="chart-scroll">
+            <div class="chart" [style.grid-template-columns]="'repeat(' + dias().length + ', minmax(20px, 1fr))'">
+              @for (dia of dias(); track dia.fecha) {
+                <button type="button" class="bar" [class.selected]="diaSeleccionado() === dia.fecha"
+                  [style.height.%]="altura(dia)" [attr.aria-label]="dia.fecha + ': ' + dia.total + ' soles, ' + dia.operaciones + ' pagos'"
+                  [attr.title]="dia.fecha + ' · S/ ' + dia.total" (click)="diaSeleccionado.set(dia.fecha)"></button>
+              }
+            </div>
+          </div>
+          @if (detalleDia(); as dia) {
+            <p class="selection" role="status">{{ dia.fecha }} · {{ dia.total | currency:'PEN':'S/ ':'1.2-2' }} · {{ dia.operaciones }} pagos</p>
+          }
+        </section>
+
+        <section class="panel" aria-labelledby="ranking-title">
+          <h2 id="ranking-title">Cabañas más reservadas</h2>
+          <p>Ranking según la fecha de ingreso de reservas confirmadas.</p>
+          @if (reservas.ranking.length) {
+            <ol class="ranking">
+              @for (cabana of reservas.ranking; track cabana.idCabana) {
+                <li>
+                  <button type="button" [class.selected]="cabanaSeleccionada() === cabana.idCabana"
+                    (click)="cabanaSeleccionada.set(cabana.idCabana)">
+                    <span>{{ nombre(cabana.idCabana) }}</span><strong>{{ cabana.reservas }}</strong>
+                    <span class="track"><span [style.width.%]="ancho(cabana)"></span></span>
+                  </button>
+                </li>
+              }
+            </ol>
+            @if (detalleCabana(); as cabana) {
+              <p class="selection" role="status">{{ nombre(cabana.idCabana) }}: {{ cabana.reservas }} reservas</p>
+            }
+          } @else { <p>No hay reservas confirmadas en este período.</p> }
+        </section>
+      </div>
+    }
+  }
+</main>

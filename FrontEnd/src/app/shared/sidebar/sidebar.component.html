@@ -31,6 +31,12 @@
         <span>Reservas</span>
       </a>
     }
+    @if (perfil()?.rol === 'ADMIN') {
+      <a routerLink="/admin/metricas" routerLinkActive="active" aria-label="Métricas"
+        [attr.title]="contraido() ? 'Métricas' : null">
+        <span class="nav-icon" aria-hidden="true">▥</span><span>Métricas</span>
+      </a>
+    }
     <a
       *ngIf="!perfil() || ['ADMIN', 'CLIENTE'].includes(perfil()?.rol ?? '')"
       routerLink="/catalogo"
