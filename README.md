@@ -9,3 +9,9 @@ Abre **BackEnd/pom.xml** como proyecto Maven en IntelliJ con Java 21.
 Entra en **BackEnd/** para ejecutar `docker compose up -d mysql`.
 Las instrucciones y ejemplos de Postman están en [BackEnd/README.md](BackEnd/README.md).
 La configuración privada se encuentra en BackEnd/.env y no se sube a Git.
+
+## HU19: métricas administrativas
+
+- [Guía funcional y criterios de validación](docs/HU19-metricas.md).
+- [Colección Postman de las API de métricas](docs/postman/HU19.postman_collection.json).
+- [Inicio local del frontend y acceso al dashboard](FrontEnd/README.md).
