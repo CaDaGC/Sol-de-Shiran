@@ -18,6 +18,9 @@ export class SidebarComponent {
   private readonly router = inject(Router);
 
   readonly perfil = this.authService.usuarioActual;
+  readonly fotoPerfil = this.authService.fotoPerfil;
+
+  ngOnInit(): void { this.authService.cargarFotoPerfil(); }
 
   cerrarSesion(): void {
     this.authService.cerrarSesion();

@@ -87,8 +87,8 @@
                     reserva.nombreCabana || 'Cabaña #' + reserva.idCabana
                   }}</span>
                   <span class="secondary"
-                    >{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} –
-                    {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</span
+                    >{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }} –
+                    {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</span
                   ></span
                 >
                 <span class="row-summary"
@@ -161,14 +161,14 @@
         </p>
         <div class="stay-strip">
           <div>
-            <span>LLEGADA</span><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</strong>
+            <span>LLEGADA</span><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</strong>
           </div>
           <div class="nights">
             <span aria-hidden="true">→</span
             ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
           </div>
           <div>
-            <span>SALIDA</span><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</strong>
+            <span>SALIDA</span><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</strong>
           </div>
         </div>
         <div class="guest-profile">

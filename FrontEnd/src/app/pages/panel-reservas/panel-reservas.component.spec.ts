@@ -37,6 +37,8 @@ describe('Integración del panel de reservas', () => {
   const solicitud = () => http.expectOne(req => req.url.endsWith('/reservas/panel'));
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-12-01T15:00:00Z'));
     TestBed.configureTestingModule({
       imports: [PanelReservasComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
@@ -52,6 +54,7 @@ describe('Integración del panel de reservas', () => {
   afterEach(() => {
     fixture.destroy();
     http.verify();
+    vi.useRealTimers();
   });
 
   it('muestra carga antes de la respuesta y luego las reservas confirmadas', () => {

@@ -14,6 +14,9 @@ public class ReservaSchemaInitializer implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) {
+    jdbc.update("INSERT INTO cerrojo_reservas (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM cerrojo_reservas WHERE id=1)");
+    jdbc.update("UPDATE reserva SET hora_ingreso='00:00:00' WHERE hora_ingreso IS NULL");
+    jdbc.update("UPDATE reserva SET hora_salida='00:00:00' WHERE hora_salida IS NULL");
     jdbc.update("UPDATE reserva SET version=0 WHERE version IS NULL");
     jdbc.update("UPDATE reserva SET total_pagado=0 WHERE total_pagado IS NULL");
     jdbc.update(

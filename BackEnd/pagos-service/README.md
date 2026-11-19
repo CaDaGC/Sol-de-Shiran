@@ -7,10 +7,10 @@ La aplicación Mercado Pago configurada utiliza Checkout Pro / Orders. El fronte
 - `MP_ACCESS_TOKEN`: Access Token de la aplicación y entorno Prueba.
 - `MP_WEBHOOK_SECRET`: firma secreta del mismo entorno y aplicación.
 - `INTERNAL_SERVICE_TOKEN`: mismo valor en pagos, reservas y catálogo.
-- `MP_FRONTEND_URL`: por defecto `http://localhost:4200`.
+- `MP_FRONTEND_URL`: por defecto `http://localhost:14200`.
 - `MP_WEBHOOK_URL`: URL informativa del receptor. En Orders, guardar la URL y el evento en el panel de Mercado Pago; cambiar esta propiedad por sí sola NO configura notificaciones en Mercado Pago.
 
-Ngrok debe reenviar al Gateway: `ngrok http 8061`. Consultar `http://127.0.0.1:4040/api/tunnels` para conocer la URL HTTPS activa. En Mercado Pago / Configuración de Webhooks / Prueba, guardar `<URL HTTPS>/api/v1/pagos/webhook`, seleccionar **Order (Mercado Pago)** y usar su firma secreta en pagos-service. Si cambia el dominio ngrok, actualizar también el panel. No usar el puerto 8086: pertenece a catálogo.
+Ngrok debe reenviar al Gateway: `ngrok http 18061`. Consultar `http://127.0.0.1:4040/api/tunnels` para conocer la URL HTTPS activa. En Mercado Pago / Configuración de Webhooks / Prueba, guardar `<URL HTTPS>/api/v1/pagos/webhook`, seleccionar **Order (Mercado Pago)** y usar su firma secreta en pagos-service. Si cambia el dominio ngrok, actualizar también el panel. No usar el puerto 18086: pertenece a catálogo.
 
 ## Flujo
 

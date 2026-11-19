@@ -84,7 +84,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
       FROM Reserva r
       WHERE r.idCabana = :idCabana
         AND r.fechaIngreso <= :hasta
-        AND r.fechaSalida > :desde
+        AND r.fechaSalida >= :desde
         AND (
               r.estadoReserva IN :estadosBloqueantes
               OR (

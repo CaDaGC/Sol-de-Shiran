@@ -1,7 +1,7 @@
 server:
-  port: 8090
+  port: 18090
 spring:
   application:
     name: resenas-service
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:http://localhost:18089/"

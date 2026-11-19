@@ -19,7 +19,7 @@ import pe.edu.upeu.soldeshiran.catalogo_service.security.Actor;
 public class GestionCabanaService {
   private final CabanaRepository cabanas;
 
-  @Value("${usuarios.url:http://localhost:8087}")
+  @Value("${usuarios.url:http://localhost:18087}")
   private String usuariosUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")

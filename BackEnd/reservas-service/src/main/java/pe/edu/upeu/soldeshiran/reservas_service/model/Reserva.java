@@ -56,6 +56,13 @@ public class Reserva {
   @Column(name = "fecha_salida", nullable = false)
   private LocalDate fechaSalida;
 
+  @Column(name = "hora_ingreso")
+  private java.time.LocalTime horaIngreso = java.time.LocalTime.MIDNIGHT;
+  @Column(name = "hora_salida")
+  private java.time.LocalTime horaSalida = java.time.LocalTime.MIDNIGHT;
+  public LocalDateTime inicioEstancia() { return fechaIngreso.atTime(horaIngreso == null ? java.time.LocalTime.MIDNIGHT : horaIngreso); }
+  public LocalDateTime finEstancia() { return fechaSalida.atTime(horaSalida == null ? java.time.LocalTime.MIDNIGHT : horaSalida); }
+
   @Column(name = "cantidad_huespedes", nullable = false)
   private Integer cantidadHuespedes;
 

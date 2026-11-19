@@ -9,6 +9,8 @@ describe('HU7 pago restante y check-in', () => {
   const reserva = { idReserva: 3, idCabana: 4, estadoReserva: 'CONFIRMADA', saldoPendiente: 125,
     montoTotal: 250, montoAdelanto: 125, fechaIngreso: '2026-11-05', fechaSalida: '2026-11-06' };
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-05T15:00:00Z'));
     Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() {} });
     TestBed.configureTestingModule({ imports: [ReservaDetalleComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
     fixture = TestBed.createComponent(ReservaDetalleComponent);
@@ -17,7 +19,23 @@ describe('HU7 pago restante y check-in', () => {
     fixture.detectChanges();
     http.expectOne(r => r.url.endsWith('/reservas/panel/3')).flush(reserva);
   });
-  afterEach(() => { fixture.destroy(); http.verify(); });
+  afterEach(() => { fixture.destroy(); http.verify(); vi.useRealTimers(); });
+  it('no envía un cobro antes del ingreso ni muestra el formulario', () => {
+    http.expectOne(r => r.url.endsWith('/restante')).flush(null);
+    vi.setSystemTime(new Date('2026-11-04T15:00:00Z'));
+    fixture.detectChanges();
+    fixture.componentInstance.registrarPago();
+    http.expectNone(r => r.method === 'POST');
+    expect(fixture.componentInstance.puedeCobrarHoy()).toBe(false);
+    expect(fixture.nativeElement.querySelector('#metodo-restante')).toBeNull();
+  });
+  it('no permite iniciar la estancia desde la salida', () => {
+    http.expectOne(r => r.url.endsWith('/restante')).flush(null);
+    vi.setSystemTime(new Date('2026-11-06T15:00:00Z'));
+    fixture.componentInstance.registrarPago();
+    http.expectNone(r => r.method === 'POST');
+    expect(fixture.componentInstance.puedeCobrarHoy()).toBe(false);
+  });
   it('exige referencia para tarjeta y billetera antes de enviar', () => {
     http.expectOne(r => r.url.endsWith('/restante')).flush(null);
     for (const metodo of ['TARJETA', 'YAPE_BILLETERA'] as const) {

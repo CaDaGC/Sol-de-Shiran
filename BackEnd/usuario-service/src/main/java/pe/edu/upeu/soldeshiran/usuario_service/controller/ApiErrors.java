@@ -6,6 +6,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiErrors {
+  @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+  public ResponseEntity<ProblemDetail> fotoGrande(Exception e) {
+    return ResponseEntity.status(413).body(ProblemDetail.forStatusAndDetail(
+        HttpStatus.PAYLOAD_TOO_LARGE, "La foto debe pesar como máximo 2 MB."));
+  }
   @ExceptionHandler(ResponseStatusException.class)
   public ResponseEntity<ProblemDetail> status(ResponseStatusException e) {
     return ResponseEntity.status(e.getStatusCode())

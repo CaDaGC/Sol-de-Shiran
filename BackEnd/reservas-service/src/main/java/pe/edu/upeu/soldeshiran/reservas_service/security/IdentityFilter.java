@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class IdentityFilter extends OncePerRequestFilter {
   private final TokenVerifier verifier;
 
-  @Value("${usuarios.url:http://localhost:8087}")
+  @Value("${usuarios.url:http://localhost:18087}")
   private String identityUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")

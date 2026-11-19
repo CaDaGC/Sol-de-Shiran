@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class IdentityFilter extends OncePerRequestFilter {
   private final TokenVerifier verifier;
 
-  @Value("${usuarios.url:http://localhost:8087}")
+  @Value("${usuarios.url:http://localhost:18087}")
   private String identityUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
@@ -82,6 +82,7 @@ public class IdentityFilter extends OncePerRequestFilter {
         || ("GET".equals(r.getMethod())
             && (p.equals("/api/v1/cabanas")
                 || p.matches("/api/v1/cabanas/[0-9]+")
+                || p.matches("/api/v1/cabanas/fotos/[a-f0-9-]{36}")
                 || p.matches("/api/v1/reservas/cabanas/[0-9]+/(disponibilidad|fechas-ocupadas)")));
   }
 }

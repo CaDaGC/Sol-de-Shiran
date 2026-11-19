@@ -38,12 +38,16 @@ public class MisReservasService {
         var ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
         var hoy = ahora.toLocalDate();
         Specification<Reserva> propietario = (root, query, cb) -> cb.equal(root.get("idUsuario"), idUsuario);
+        Specification<Reserva> vigente = (root, query, cb) -> cb.or(
+            cb.greaterThan(root.get("fechaSalida"), hoy),
+            cb.and(cb.equal(root.get("fechaSalida"), hoy),
+                cb.greaterThan(cb.coalesce(root.<java.time.LocalTime>get("horaSalida"), java.time.LocalTime.MIDNIGHT), ahora.toLocalTime())));
         Specification<Reserva> pendientes = (root, query, cb) -> cb.and(
                 cb.equal(root.get("estadoReserva"), EstadoReserva.PENDIENTE_PAGO),
-                cb.greaterThan(root.get("expiraEn"), ahora), cb.greaterThan(root.get("fechaSalida"), hoy));
+                cb.greaterThan(root.get("expiraEn"), ahora), vigente.toPredicate(root,query,cb));
         Specification<Reserva> confirmadas = (root, query, cb) -> cb.and(
                 root.get("estadoReserva").in(EstadoReserva.CONFIRMADA, EstadoReserva.OCUPADA),
-                cb.greaterThan(root.get("fechaSalida"), hoy));
+                vigente.toPredicate(root,query,cb));
         var filtro = switch (grupo) {
             case TODAS -> propietario;
             case PENDIENTES -> propietario.and(pendientes);
@@ -62,9 +66,9 @@ public class MisReservasService {
                 var estado = r.getEstadoReserva();
                 boolean vencida = estado == EstadoReserva.PENDIENTE_PAGO && !r.getExpiraEn().isAfter(ahora);
                 if (vencida) estado = EstadoReserva.EXPIRADA;
-                boolean pendiente = estado == EstadoReserva.PENDIENTE_PAGO && r.getFechaSalida().isAfter(hoy);
+                boolean pendiente = estado == EstadoReserva.PENDIENTE_PAGO && r.finEstancia().isAfter(ahora);
                 boolean confirmada = (estado == EstadoReserva.CONFIRMADA || estado == EstadoReserva.OCUPADA)
-                        && r.getFechaSalida().isAfter(hoy);
+                        && r.finEstancia().isAfter(ahora);
                 var categoria = pendiente ? GrupoReservasCliente.PENDIENTES
                         : confirmada ? GrupoReservasCliente.CONFIRMADAS : GrupoReservasCliente.PASADAS;
                 var cabana = cabanas.get(r.getIdCabana());
@@ -72,7 +76,7 @@ public class MisReservasService {
                         cabana == null ? null : cabana.nombre(), cabana == null ? null : cabana.imagenPrincipal(),
                         r.getFechaIngreso(), r.getFechaSalida(), r.getCantidadHuespedes(), r.getTarifaNocheAplicada(),
                         r.getMontoTotal(), r.getMontoAdelanto(), r.getSaldoPendiente(), estado, r.getExpiraEn(),
-                        categoria, pendiente && !r.getFechaIngreso().isBefore(hoy));
+                        categoria, pendiente && !r.inicioEstancia().isBefore(ahora), r.getHoraIngreso(), r.getHoraSalida());
             }).toList();
             return new MisReservasPaginaResponse(contenido, page, size, pagina.getTotalElements(), pagina.getTotalPages());
         } catch (FeignException exception) {

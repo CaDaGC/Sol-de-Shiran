@@ -70,21 +70,34 @@
           required
         ></textarea>
       </label>
-      <label
-        >Imagen principal (URL https o ruta /assets/…)<input
-          name="imagen"
-          [(ngModel)]="cabana.imagenPrincipal"
-          required
-          maxlength="255"
-      /></label>
-      <label
-        >Fotos adicionales (una URL por línea)<textarea
-          name="imagenes"
-          [(ngModel)]="imagenes"
-        ></textarea>
-      </label>
-      <button class="primary" [disabled]="cf.invalid || ocupado()">Guardar cabaña</button
-      ><button type="button" (click)="nueva()">Limpiar formulario</button>
+      <div class="fotos-editor" aria-label="Fotos de la cabaña">
+        <h3>Fotos de la cabaña</h3>
+        <p>Selecciona fotos JPG o PNG de hasta 2 MB y 16 megapíxeles. La principal será la portada del catálogo.</p>
+        <div class="foto-principal">
+          <img [src]="cabana.imagenPrincipal" alt="Vista previa de la imagen principal" />
+          <div>
+            <label>Imagen principal
+              <input type="file" accept="image/jpeg,image/png" [disabled]="subiendoFotos() || ocupado()"
+                (change)="seleccionarFotos($event, true)" />
+            </label>
+            <button type="button" [disabled]="subiendoFotos() || ocupado()"
+              (click)="cabana.imagenPrincipal = '/images/cabana-placeholder.svg'">Quitar imagen principal</button>
+          </div>
+        </div>
+        <label>Agregar fotos a la galería (máximo 8)
+          <input type="file" accept="image/jpeg,image/png" multiple [disabled]="subiendoFotos() || ocupado()"
+            (change)="seleccionarFotos($event, false)" />
+        </label>
+        <div class="galeria-editor">
+          <figure *ngFor="let foto of fotosAdicionales(); let i = index">
+            <img [src]="foto" [alt]="'Foto adicional ' + (i + 1)" />
+            <button type="button" [disabled]="subiendoFotos() || ocupado()" (click)="quitarFoto(i)">Quitar foto {{ i + 1 }}</button>
+          </figure>
+        </div>
+        <p *ngIf="subiendoFotos()" role="status">Subiendo fotos… Espera antes de guardar la cabaña.</p>
+      </div>
+      <button class="primary" [disabled]="cf.invalid || ocupado() || subiendoFotos()">Guardar cabaña</button
+      ><button type="button" [disabled]="subiendoFotos() || ocupado()" (click)="nueva()">Limpiar formulario</button>
     </form>
     <div class="cards">
       <article *ngFor="let c of cabanas()">
@@ -97,7 +110,7 @@
           {{ nombresTrabajadores(c.trabajadores ?? []) || 'Sin asignar' }}
         </p>
         <div *ngIf="es('ADMIN')">
-          <button (click)="editarCabana(c)">Editar</button
+          <button [disabled]="subiendoFotos() || ocupado()" (click)="editarCabana(c)">Editar</button
           ><button [disabled]="ocupado()" (click)="abrirAsignacion(c)">Asignar trabajadores</button
           ><button *ngIf="c.estado !== 'INACTIVA'" class="danger" (click)="desactivarCabana(c)">
             Desactivar</button
@@ -228,6 +241,23 @@
   </section>
   <section *ngIf="tab === 'perfil' && perfil()">
     <h2>Mi perfil</h2>
+    <article class="editor-foto-perfil">
+      <img *ngIf="vistaFotoPerfil() || auth.fotoPerfil(); else sinFotoPerfil"
+        [src]="vistaFotoPerfil() || auth.fotoPerfil()" alt="Tu foto de perfil" />
+      <ng-template #sinFotoPerfil><div class="perfil-inicial" aria-label="Sin foto de perfil">{{ perfil().nombre.charAt(0).toUpperCase() }}</div></ng-template>
+      <div>
+        <h3>Foto de perfil</h3>
+        <p>JPG o PNG, hasta 2 MB y 16 megapíxeles.</p>
+        <label>Seleccionar foto<input type="file" accept="image/jpeg,image/png"
+          [disabled]="guardandoFotoPerfil()" (change)="seleccionarFotoPerfil($event)" /></label>
+        <button type="button" class="primary" [disabled]="!archivoFotoPerfil || guardandoFotoPerfil()"
+          (click)="guardarFotoPerfil()">Guardar foto</button>
+        <button type="button" *ngIf="archivoFotoPerfil" [disabled]="guardandoFotoPerfil()" (click)="cancelarFotoPerfil()">Cancelar</button>
+        <button type="button" *ngIf="auth.fotoPerfil()" [disabled]="guardandoFotoPerfil()"
+          (click)="quitarFotoPerfil()">Quitar foto</button>
+        <p *ngIf="guardandoFotoPerfil()" role="status">Guardando foto…</p>
+      </div>
+    </article>
     <form (ngSubmit)="guardarPerfil()">
       <label>Nombre<input name="mnombre" [(ngModel)]="perfil().nombre" required /></label
       ><label

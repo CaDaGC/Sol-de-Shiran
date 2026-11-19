@@ -8,6 +8,9 @@ import pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaResponse;
 import java.time.LocalDate;
 
 public interface ReservaService {
+    CotizacionReservaResponse consultarDisponibilidad(Long idCabana, LocalDate fechaIngreso, LocalDate fechaSalida,
+      Integer cantidadHuespedes, java.time.LocalTime horaIngreso, java.time.LocalTime horaSalida);
+
 
     CotizacionReservaResponse consultarDisponibilidad(
             Long idCabana,

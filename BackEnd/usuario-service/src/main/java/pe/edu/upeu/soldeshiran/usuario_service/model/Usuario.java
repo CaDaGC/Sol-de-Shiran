@@ -24,6 +24,13 @@ public class Usuario {
 
   private Long duenoId;
 
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  @Lob @Column(columnDefinition = "LONGBLOB")
+  private byte[] fotoPerfil;
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  private String tipoFotoPerfil;
+
   @ManyToOne
   @JoinColumn(name = "rol_id")
   private Rol rol;

@@ -16,12 +16,12 @@
    ```
 
    Ejecuta este bloque en cada terminal que uses para levantar un servicio.
-3. Para recibir notificaciones de prueba, configura en el panel de Mercado Pago una URL HTTPS pública que reenvíe `/api/v1/pagos/webhook` al API Gateway. En Windows, ejecuta `ngrok http 8061` y selecciona **Order (Mercado Pago)** en Webhooks. Usa la firma del entorno Prueba en `MP_WEBHOOK_SECRET`.
+3. Para recibir notificaciones de prueba, configura en el panel de Mercado Pago una URL HTTPS pública que reenvíe `/api/v1/pagos/webhook` al API Gateway. En Windows, ejecuta `ngrok http 18061` y selecciona **Order (Mercado Pago)** en Webhooks. Usa la firma del entorno Prueba en `MP_WEBHOOK_SECRET`.
 4. Levanta MySQL y ejecuta en IntelliJ Config Server, Eureka, usuarios, auth, catálogo, reservas, pagos y el API Gateway. El frontend
-   envia las solicitudes al gateway en `http://localhost:8061`.
+   envia las solicitudes al gateway en `http://localhost:18061`.
 
-El gateway enruta `/api/v1/pagos/**` a `MS-PAGOS` (puerto local 8083). El webhook
-tambien debe llegar a ese servicio, no al catalogo que utiliza el puerto 8086.
+El gateway enruta `/api/v1/pagos/**` a `MS-PAGOS` (puerto local 18083). El webhook
+tambien debe llegar a ese servicio, no al catalogo que utiliza el puerto 18086.
 
 ## Pruebas
 

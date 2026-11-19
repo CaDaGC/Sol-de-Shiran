@@ -7,10 +7,10 @@ import java.util.List;
 
 @Component
 public class PanelReservasClient {
-    @Value("${usuarios.url:http://localhost:8087}")
+    @Value("${usuarios.url:http://localhost:18087}")
     private String usuariosUrl;
 
-    @Value("${catalogo.url:http://localhost:8086}")
+    @Value("${catalogo.url:http://localhost:18086}")
     private String catalogoUrl;
 
     public List<UsuarioResumen> consultarUsuarios(String key, String buscar, List<Long> ids) {

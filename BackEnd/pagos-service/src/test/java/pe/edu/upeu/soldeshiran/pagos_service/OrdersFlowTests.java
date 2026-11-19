@@ -42,7 +42,7 @@ class OrdersFlowTests {
         server = MockRestServiceServer.bindTo(builder).build();
         ReflectionTestUtils.setField(service, "mercadoPago", builder.build());
         ReflectionTestUtils.setField(service, "internalToken", "internal");
-        ReflectionTestUtils.setField(service, "frontendUrl", "http://localhost:4200");
+        ReflectionTestUtils.setField(service, "frontendUrl", "http://localhost:14200");
         tx = new TransaccionPago(); tx.setIdTransaccion(7L); tx.setIdReserva(3L);
         tx.setMonto(new BigDecimal("100.00"));
         when(repo.findById(7L)).thenReturn(Optional.of(tx));

@@ -1,11 +1,11 @@
 server:
-  port: 8061
+  port: 18061
 
 spring:
   application:
     name: api-gateway
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:http://localhost:18089/"
   cloud:
     config:
       override-none: false
@@ -17,7 +17,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     serviceUrl:
-      defaultZone: http://localhost:8762/eureka/
+      defaultZone: http://localhost:18762/eureka/
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}

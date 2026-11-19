@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { API_CONFIG } from '../../core/api.config';
+import { imagenUrl } from '../../core/imagen-url';
 type RolCuenta = 'CLIENTE' | 'TRABAJADOR' | 'DUENO' | 'ADMIN';
 
 interface Cuenta {
@@ -51,6 +53,10 @@ export class GestionComponent implements OnInit {
   tab = 'cabanas';
   cabana = this.nuevaCabana();
   imagenes = '';
+  readonly subiendoFotos = signal(false);
+  readonly guardandoFotoPerfil = signal(false);
+  readonly vistaFotoPerfil = signal<string | null>(null);
+  archivoFotoPerfil: File | null = null;
   usuario = this.nuevoUsuario();
   bloqueo = { idCabana: 0, desde: '', hasta: '', motivo: '' };
   passwordActual = '';
@@ -97,7 +103,9 @@ export class GestionComponent implements OnInit {
     if (this.es('ADMIN'))
       this.http
         .get<any[]>(this.url + '/cabanas/gestion')
-        .subscribe({ next: (x) => this.cabanas.set(x), error: (e) => this.fallo(e) });
+        .subscribe({ next: (x) => this.cabanas.set(x.map(c => ({ ...c,
+          imagenPrincipal: imagenUrl(c.imagenPrincipal),
+          imagenesSecundarias: (c.imagenesSecundarias ?? []).map(imagenUrl) }))), error: (e) => this.fallo(e) });
     if (this.es('ADMIN'))
       this.http
         .get<Cuenta[]>(this.url + '/usuarios')
@@ -113,7 +121,49 @@ export class GestionComponent implements OnInit {
     this.imagenes = '';
     this.limpiar();
   }
+  fotosAdicionales(): string[] {
+    return this.imagenes.split('\n').map((x) => x.trim()).filter(Boolean);
+  }
+
+  quitarFoto(indice: number): void {
+    this.imagenes = this.fotosAdicionales().filter((_, i) => i !== indice).join('\n');
+  }
+
+  async seleccionarFotos(evento: Event, principal: boolean): Promise<void> {
+    const input = evento.target as HTMLInputElement;
+    const archivos = Array.from(input.files ?? []);
+    input.value = '';
+    if (!archivos.length || this.subiendoFotos()) return;
+    if (!principal && this.fotosAdicionales().length + archivos.length > 8) {
+      this.error.set('Puedes agregar hasta 8 fotos adicionales.');
+      return;
+    }
+    if (archivos.some((f) => !['image/jpeg', 'image/png'].includes(f.type)
+        || f.size === 0 || f.size > 2 * 1024 * 1024)) {
+      this.error.set('Selecciona fotos JPG o PNG de hasta 2 MB cada una.');
+      return;
+    }
+    this.limpiar();
+    this.subiendoFotos.set(true);
+    try {
+      for (const archivo of archivos) {
+        const datos = new FormData();
+        datos.append('archivo', archivo);
+        const respuesta = await firstValueFrom(this.http.post<{ url: string }>(
+          this.url + '/cabanas/fotos', datos,
+        ));
+        const fotoUrl = new URL(respuesta.url, this.url).href;
+        if (principal) this.cabana.imagenPrincipal = fotoUrl;
+        else this.imagenes = [...this.fotosAdicionales(), fotoUrl].join('\n');
+      }
+    } catch (e) {
+      this.fallo(e as HttpErrorResponse);
+    } finally {
+      this.subiendoFotos.set(false);
+    }
+  }
   guardarCabana(): void {
+    if (this.ocupado() || this.subiendoFotos()) return;
     const id = this.cabana.idCabana;
     const body = {
       ...this.cabana,
@@ -285,6 +335,62 @@ export class GestionComponent implements OnInit {
       .delete(this.url + '/reservas/bloqueos/' + b.id)
       .subscribe({ next: () => this.consultarBloqueos(), error: (e) => this.fallo(e) });
   }
+  seleccionarFotoPerfil(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo || this.guardandoFotoPerfil()) return;
+    if (!['image/jpeg', 'image/png'].includes(archivo.type)
+        || archivo.size === 0 || archivo.size > 2 * 1024 * 1024) {
+      this.error.set('Selecciona una foto JPG o PNG de hasta 2 MB.');
+      return;
+    }
+    this.cancelarFotoPerfil();
+    this.limpiar();
+    this.archivoFotoPerfil = archivo;
+    this.vistaFotoPerfil.set(URL.createObjectURL(archivo));
+  }
+
+  cancelarFotoPerfil(): void {
+    const anterior = this.vistaFotoPerfil();
+    if (anterior) URL.revokeObjectURL(anterior);
+    this.vistaFotoPerfil.set(null);
+    this.archivoFotoPerfil = null;
+  }
+
+  guardarFotoPerfil(): void {
+    if (!this.archivoFotoPerfil || this.guardandoFotoPerfil()) return;
+    const datos = new FormData();
+    datos.append('archivo', this.archivoFotoPerfil);
+    this.guardandoFotoPerfil.set(true);
+    this.limpiar();
+    this.http.put(this.url + '/usuarios/me/foto', datos).subscribe({
+      next: () => {
+        this.auth.cargarFotoPerfil();
+        this.cancelarFotoPerfil();
+        this.guardandoFotoPerfil.set(false);
+        this.mensaje.set('Foto de perfil guardada.');
+      },
+      error: (e) => { this.guardandoFotoPerfil.set(false); this.fallo(e); },
+    });
+  }
+
+  quitarFotoPerfil(): void {
+    if (this.guardandoFotoPerfil()) return;
+    this.guardandoFotoPerfil.set(true);
+    this.limpiar();
+    this.http.delete(this.url + '/usuarios/me/foto').subscribe({
+      next: () => {
+        this.cancelarFotoPerfil();
+        this.auth.cargarFotoPerfil();
+        this.guardandoFotoPerfil.set(false);
+        this.mensaje.set('Foto de perfil eliminada.');
+      },
+      error: (e) => { this.guardandoFotoPerfil.set(false); this.fallo(e); },
+    });
+  }
+
+  ngOnDestroy(): void { this.cancelarFotoPerfil(); }
   guardarPerfil(): void {
     const p = this.perfil();
     this.http.put(this.url + '/usuarios/' + p.id, { nombre: p.nombre, email: p.email }).subscribe({

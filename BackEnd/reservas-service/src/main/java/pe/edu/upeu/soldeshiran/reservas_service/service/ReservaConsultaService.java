@@ -53,7 +53,7 @@ public class ReservaConsultaService {
                     reserva.getFechaIngreso(), reserva.getFechaSalida(), reserva.getCantidadHuespedes(),
                     reserva.getTarifaNocheAplicada(), reserva.getMontoTotal(), reserva.getMontoAdelanto(),
                     reserva.getSaldoPendiente(), reserva.getEstadoReserva(), reserva.getExpiraEn(),
-                    reserva.getFechaCreacion(), reserva.getCheckout());
+                    reserva.getFechaCreacion(), reserva.getCheckout(), reserva.getHoraIngreso(), reserva.getHoraSalida());
         } catch (FeignException | org.springframework.web.client.RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "No se pudieron consultar los datos del detalle de reserva. Intenta nuevamente.", exception);
@@ -118,7 +118,7 @@ public class ReservaConsultaService {
                         usuario == null ? null : usuario.nombre(), usuario == null ? null : usuario.email(),
                         r.getIdCabana(), cabana == null ? null : cabana.nombre(),
                         r.getFechaIngreso(), r.getFechaSalida(), r.getCantidadHuespedes(),
-                        r.getMontoTotal(), r.getMontoAdelanto(), r.getSaldoPendiente(), r.getEstadoReserva());
+                        r.getMontoTotal(), r.getMontoAdelanto(), r.getSaldoPendiente(), r.getEstadoReserva(), r.getHoraIngreso(), r.getHoraSalida());
             }));
         } catch (FeignException | org.springframework.web.client.RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,

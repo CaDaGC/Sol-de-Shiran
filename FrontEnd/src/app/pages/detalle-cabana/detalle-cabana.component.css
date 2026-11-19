@@ -809,3 +809,10 @@
     padding: 24px 18px;
   }
 }
+
+.calendar-panel input[type="time"], input[type="time"] {
+  display: block; margin: 8px 0; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid currentColor; color: inherit; background: transparent; font: inherit;
+}
+details { margin: 12px 0; max-height: 180px; overflow: auto; }
+summary { cursor: pointer; font-weight: 600; }

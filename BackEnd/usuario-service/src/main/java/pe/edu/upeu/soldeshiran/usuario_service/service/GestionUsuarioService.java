@@ -28,7 +28,7 @@ public class GestionUsuarioService {
   private final UsuarioMapper mapper;
   private final PasswordEncoder passwords;
 
-  @Value("${catalogo.url:http://localhost:8086}")
+  @Value("${catalogo.url:http://localhost:18086}")
   private String catalogoUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")

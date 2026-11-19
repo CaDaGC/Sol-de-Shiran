@@ -28,7 +28,7 @@ public class GestionReservaService {
   @Value("${servicios.interno.token}")
   private String tokenOcupacion;
 
-  @Value("${usuarios.url:http://localhost:8087}")
+  @Value("${usuarios.url:http://localhost:18087}")
   private String usuariosUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
@@ -116,8 +116,8 @@ public class GestionReservaService {
     if (r.getEstadoReserva() != EstadoReserva.CONFIRMADA
         || r.getSaldoPendiente().compareTo(BigDecimal.ZERO) != 0)
       conflicto("Debe estar confirmada y sin saldo pendiente");
-    LocalDate hoy = LocalDate.now();
-    if (hoy.isBefore(r.getFechaIngreso()) || !hoy.isBefore(r.getFechaSalida()))
+    var hoy = java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
+    if (hoy.isBefore(r.inicioEstancia()) || !hoy.isBefore(r.finEstancia()))
       conflicto("El ingreso debe estar dentro de la estancia");
     actualizarOcupacion(r, true);
     r.setEstadoReserva(EstadoReserva.OCUPADA);

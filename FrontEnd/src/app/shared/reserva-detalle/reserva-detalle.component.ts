@@ -66,6 +66,10 @@ export class ReservaDetalleComponent implements OnInit {
   }
   registrarPago(): void {
     if (this.guardando() || this.consultandoPago() || this.errorConsultaPago()) return;
+    if (!this.puedeCobrarHoy()) {
+      this.errorPago.set('El saldo solo se puede cobrar desde la fecha de ingreso y antes de la salida.');
+      return;
+    }
     const numero = this.numeroOperacion.trim();
     if (this.metodoPago !== 'EFECTIVO' && !numero) {
       this.errorPago.set('Ingresa el número de operación.'); return;
@@ -132,6 +136,16 @@ export class ReservaDetalleComponent implements OnInit {
   }
 
   readonly detalle = signal<ReservaDetalleResponse | null>(null);
+  puedeCobrarHoy(): boolean {
+    const reserva = this.detalle();
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const dato = (tipo: string) => partes.find(p => p.type === tipo)?.value ?? '';
+    const hoy = `${dato('year')}-${dato('month')}-${dato('day')}T${dato('hour')}:${dato('minute')}:${dato('second')}`;
+    return !!reserva && reserva.estadoReserva === 'CONFIRMADA'
+      && `${reserva.fechaIngreso}T${reserva.horaIngreso ?? '00:00:00'}` <= hoy && hoy < `${reserva.fechaSalida}T${reserva.horaSalida ?? '00:00:00'}`;
+  }
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly estados = ESTADOS_RESERVA;

@@ -48,6 +48,9 @@ export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private temporizadorExpiracion?: ReturnType<typeof setTimeout>;
 
+  readonly fotoPerfil = signal<string | null>(null);
+  private solicitudFoto = 0;
+
   readonly usuarioActual = signal<UsuarioAutenticado | null>(null);
 
   constructor(private readonly http: HttpClient) {
@@ -78,6 +81,7 @@ export class AuthService {
     localStorage.setItem('usuario', JSON.stringify(usuario));
     this.usuarioActual.set(usuario);
     this.programarExpiracion(response.token);
+    this.cargarFotoPerfil();
   }
 
   estaAutenticado(): boolean {
@@ -99,6 +103,8 @@ export class AuthService {
 
   cerrarSesion(): void {
     this.cancelarTemporizador();
+    this.solicitudFoto++;
+    this.establecerFoto(null);
 
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('token');
@@ -108,6 +114,24 @@ export class AuthService {
     this.usuarioActual.set(null);
   }
 
+  cargarFotoPerfil(): void {
+    if (!this.estaAutenticado()) return;
+    const solicitud = ++this.solicitudFoto;
+    this.http.get(`${API_CONFIG.baseUrl}/usuarios/me/foto`, { responseType: 'blob' }).subscribe({
+      next: (foto) => {
+        if (solicitud === this.solicitudFoto) this.establecerFoto(URL.createObjectURL(foto));
+      },
+      error: () => {
+        if (solicitud === this.solicitudFoto) this.establecerFoto(null);
+      },
+    });
+  }
+
+  private establecerFoto(url: string | null): void {
+    const anterior = this.fotoPerfil();
+    this.fotoPerfil.set(url);
+    if (anterior) URL.revokeObjectURL(anterior);
+  }
   private restaurarSesion(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 

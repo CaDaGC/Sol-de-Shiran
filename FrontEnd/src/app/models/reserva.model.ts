@@ -3,6 +3,8 @@ export interface CotizacionReservaResponse {
   nombreCabana: string;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
   noches: number;
   tarifaNoche: number;
@@ -18,12 +20,15 @@ export interface FechasOcupadasResponse {
   desde: string;
   hasta: string;
   fechasOcupadas: string[];
+  intervalos?: { inicio: string; fin: string }[];
 }
 
 export interface CrearReservaRequest {
   idCabana: number;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
 }
 
@@ -33,6 +38,8 @@ export interface ReservaResponse {
   idUsuario: number;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
   tarifaNocheAplicada: number;
   montoTotal: number;
@@ -68,6 +75,8 @@ export interface ReservaPanelResponse {
   nombreCabana: string | null;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
   montoTotal: number;
   montoAdelanto: number;

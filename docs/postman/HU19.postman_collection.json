@@ -5,7 +5,7 @@
     "description": "Consultas de solo lectura a traves del API Gateway. Configura adminToken y clienteToken con JWT de prueba; no guardes contrasenas en la coleccion."
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8061/api/v1" },
+    { "key": "baseUrl", "value": "http://localhost:18061/api/v1" },
     { "key": "adminToken", "value": "" },
     { "key": "clienteToken", "value": "" },
     { "key": "desde", "value": "2026-11-01" },

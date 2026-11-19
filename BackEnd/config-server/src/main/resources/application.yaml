@@ -1,5 +1,5 @@
 server:
-  port: 8089
+  port: 18089
 
 spring:
   application:
@@ -11,7 +11,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8762/eureka/}
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:18762/eureka/}
 
   instance:
     prefer-ip-address: true

@@ -15,12 +15,12 @@ El script `BackEnd/metricas-hu19-indices.sql` añade índices para filtrar por e
 Con un JWT de ADMIN y el Gateway activo:
 
 ```http
-GET http://localhost:8061/api/v1/pagos/metricas/ingresos?desde=2026-11-01&hasta=2026-11-30
+GET http://localhost:18061/api/v1/pagos/metricas/ingresos?desde=2026-11-01&hasta=2026-11-30
 Authorization: Bearer <token-admin>
 ```
 
 ```http
-GET http://localhost:8061/api/v1/reservas/metricas/frecuencia?desde=2026-11-01&hasta=2026-11-30
+GET http://localhost:18061/api/v1/reservas/metricas/frecuencia?desde=2026-11-01&hasta=2026-11-30
 Authorization: Bearer <token-admin>
 ```
 

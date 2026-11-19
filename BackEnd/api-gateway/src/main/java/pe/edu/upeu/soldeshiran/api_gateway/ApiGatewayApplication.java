@@ -23,7 +23,7 @@ public class ApiGatewayApplication {
 		CorsConfiguration corsConfig = new CorsConfiguration();
 
 		// Permitimos explícitamente tus orígenes de desarrollo y producción local
-		corsConfig.setAllowedOrigins(Arrays.asList("http://localhost", "http://localhost:4200", "http://127.0.0.1"));
+		corsConfig.setAllowedOrigins(Arrays.asList("http://localhost", "http://localhost:14200", "http://127.0.0.1"));
 		corsConfig.setMaxAge(3600L);
 		corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 		corsConfig.setAllowedHeaders(Arrays.asList("*"));

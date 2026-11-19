@@ -25,8 +25,8 @@
           </div>
           <dl>
             <div class="wide"><dt>Cabaña</dt><dd>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</dd></div>
-            <div><dt>Ingreso</dt><dd>{{ reserva.fechaIngreso | date:'dd/MM/yyyy' }}</dd></div>
-            <div><dt>Salida</dt><dd>{{ reserva.fechaSalida | date:'dd/MM/yyyy' }}</dd></div>
+            <div><dt>Ingreso</dt><dd>{{ reserva.fechaIngreso | date:'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</dd></div>
+            <div><dt>Salida</dt><dd>{{ reserva.fechaSalida | date:'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</dd></div>
             <div><dt>Huéspedes</dt><dd>{{ reserva.cantidadHuespedes }}</dd></div>
             <div><dt>Tarifa por noche</dt><dd>{{ reserva.tarifaNocheAplicada | currency:'PEN':'S/ ':'1.2-2' }}</dd></div>
           </dl>
@@ -104,7 +104,9 @@
           <section aria-labelledby="check-in-title">
             <h3 id="check-in-title">Pago restante y check-in</h3>
             <p class="payment-help">Registra el pago recibido para iniciar la estancia. El importe corresponde al saldo pendiente. El ingreso debe estar dentro de las fechas de la reserva.</p>
-            @if (consultandoPago()) {
+            @if (!puedeCobrarHoy()) {
+              <p class="payment-help" role="status">El saldo y el check-in solo se habilitan desde el {{ reserva.fechaIngreso | date:'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }} y antes de la fecha de salida.</p>
+            } @else if (consultandoPago()) {
               <p role="status">Consultando registro de pago…</p>
             } @else if (errorConsultaPago()) {
               <button type="button" class="secondary-button" (click)="consultarPago()">Reintentar consulta de pago</button>

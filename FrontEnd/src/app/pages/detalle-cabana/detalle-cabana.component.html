@@ -187,7 +187,7 @@
                 fechaOcupada(dia.fecha) || rangoNoDisponible(dia.fecha)
               "
               [disabled]="
-                dia.pasado || !dia.mesActual || !!reservaCreada()
+                  dia.pasado || !dia.mesActual || !!reservaCreada() || cargandoFechasOcupadas() || !!mensajeFechasOcupadas()
               "
               [attr.aria-label]="etiquetaDia(dia)"
               [attr.title]="etiquetaDia(dia)"
@@ -200,17 +200,25 @@
           <div class="calendar-legend">
             <span><i class="legend-dot selected"></i> Entrada o salida</span>
             <span><i class="legend-dot stay"></i> Tu estadía</span>
-            <span><i class="legend-dot unavailable"></i> Noche ocupada</span>
+            <span><i class="legend-dot unavailable"></i> Horario ocupado</span>
           </div>
 
+          <label>Hora de ingreso (hora de Perú)
+            <input type="time" step="60" [value]="horaIngreso()" [disabled]="!!reservaCreada()"
+              (change)="cambiarHora($any($event.target).value)" />
+          </label>
+          <p>Duración fija: 24 horas. La salida será al día siguiente a la misma hora.</p>
+          <details><summary>Ver horarios ocupados</summary>
+            @for (r of intervalos(); track $index) { <p>{{ r.inicio.replace('T',' ') }} → {{ r.fin.replace('T',' ') }}</p> }
+          </details>
           <div class="selected-dates">
             <p>
               <strong>Entrada:</strong>
-              {{ formatearFecha(fechaIngreso()) }}
+              {{ formatearFecha(fechaIngreso()) }} {{ horaIngreso() }}
             </p>
             <p>
               <strong>Salida:</strong>
-              {{ formatearFecha(fechaSalida()) }}
+              {{ formatearFecha(fechaSalida()) }} {{ horaIngreso() }}
             </p>
           </div>
         </section>

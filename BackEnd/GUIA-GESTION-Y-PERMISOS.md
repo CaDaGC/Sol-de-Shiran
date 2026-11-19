@@ -4,9 +4,9 @@
 
 1. Conservar el contenedor y el volumen MySQL existentes. No borrar la base de datos.
 2. Recargar los proyectos Maven en IntelliJ y usar JDK 21.
-3. Reiniciar service-registry (8762), config-server (8089), usuario-service (8087), auth-service (8088), catalogo-service (8086), reservas-service (8085) y api-gateway (8061).
-4. Config Server usa http://localhost:8762/eureka/ por defecto. Para otra dirección, establece EUREKA_CLIENT_SERVICEURL_DEFAULTZONE.
-5. Reiniciar Angular desde FrontEnd con `npm start`. Entrar en http://localhost:4200/login y luego abrir **Gestión y cuenta**, o http://localhost:4200/gestion.
+3. Reiniciar service-registry (18762), config-server (18089), usuario-service (18087), auth-service (18088), catalogo-service (18086), reservas-service (18085) y api-gateway (18061).
+4. Config Server usa http://localhost:18762/eureka/ por defecto. Para otra dirección, establece EUREKA_CLIENT_SERVICEURL_DEFAULTZONE.
+5. Reiniciar Angular desde FrontEnd con `npm start`. Entrar en http://localhost:14200/login y luego abrir **Gestión y cuenta**, o http://localhost:14200/gestion.
 
 Hibernate añade las columnas y tablas con ddl-auto=update. Al iniciar usuarios se crean los roles faltantes sin borrar los existentes. Las cabañas antiguas sin dueño quedan bajo administración de ADMIN hasta que se les asigne uno. Las reservas antiguas reciben version=0 y se conserva el adelanto ya reconocido en reservas confirmadas; no se inventan movimientos en el libro de pagos.
 
@@ -22,7 +22,7 @@ ADMIN_PASSWORD=UnaClaveLargaQueTuElijas2026!
 
 Reiniciar usuario-service. El inicializador crea la cuenta únicamente si el correo no existe. No cambia la contraseña ni eleva los permisos de cuentas existentes. La contraseña debe tener al menos 12 caracteres. Si el correo ya pertenece a un cliente, usar otro correo. Retirar las variables tras el primer inicio si se desea.
 
-Ahora `/usuarios/admin` requiere ADMIN incluso entrando directamente a 8087. Para crear otros administradores usar un token de administrador. Se eliminó el acceso público directo que antes permitía esa operación.
+Ahora `/usuarios/admin` requiere ADMIN incluso entrando directamente a 18087. Para crear otros administradores usar un token de administrador. Se eliminó el acceso público directo que antes permitía esa operación.
 
 ## Roles y alcance
 
@@ -47,7 +47,7 @@ Eliminar cabañas/cuentas es desactivación lógica. Cancelar una reserva no bor
 
 ## Postman
 
-Usar Gateway `http://localhost:8061/api/v1`. Body raw JSON y Content-Type application/json. Todas las operaciones de gestión requieren Authorization > Bearer Token. No enviar X-User-Id: el servicio obtiene la identidad del token firmado.
+Usar Gateway `http://localhost:18061/api/v1`. Body raw JSON y Content-Type application/json. Todas las operaciones de gestión requieren Authorization > Bearer Token. No enviar X-User-Id: el servicio obtiene la identidad del token firmado.
 
 ### 1. Login
 
@@ -126,7 +126,7 @@ Para trabajador creado por ADMIN, incluir `"rol":"TRABAJADOR","duenoId":ID_DEL_D
 
 Los microservicios verifican firma y vencimiento del JWT y consultan la cuenta activa y su rol actual. Las rutas `/internal/**` requieren X-Internal-Key y no se publican como rutas del Gateway. Configurar el mismo `SEGURIDAD_INTERNAL_KEY` en usuario-service, auth-service, catalogo-service y reservas-service; configurar el mismo `JWT_SECRET` en auth-service, api-gateway, usuario-service, catalogo-service y reservas-service. Se conserva el valor de desarrollo para la ejecución local actual; cambiar ambos secretos antes de desplegar. No exponer los puertos internos a Internet.
 
-Por defecto las consultas internas usan usuarios en localhost:8087 y catálogo en localhost:8086; pueden cambiarse con USUARIOS_URL y CATALOGO_URL. Las respuestas públicas de usuarios no incluyen el hash de contraseña.
+Por defecto las consultas internas usan usuarios en localhost:18087 y catálogo en localhost:18086; pueden cambiarse con USUARIOS_URL y CATALOGO_URL. Las respuestas públicas de usuarios no incluyen el hash de contraseña.
 
 ## Verificación
 

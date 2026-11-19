@@ -109,14 +109,14 @@
       <div class="card-information">
         <div class="stay-strip">
           <div>
-            <small>LLEGADA</small><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</strong>
+            <small>LLEGADA</small><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</strong>
           </div>
           <div class="nights">
             <span aria-hidden="true">→</span
             ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
           </div>
           <div>
-            <small>SALIDA</small><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</strong>
+            <small>SALIDA</small><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</strong>
           </div>
         </div>
         <dl class="amounts">
@@ -202,11 +202,11 @@
       <dl class="detail-grid">
         <div>
           <dt>Llegada</dt>
-          <dd>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}</dd>
+          <dd>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</dd>
         </div>
         <div>
           <dt>Salida</dt>
-          <dd>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}</dd>
+          <dd>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</dd>
         </div>
         <div>
           <dt>Noches</dt>

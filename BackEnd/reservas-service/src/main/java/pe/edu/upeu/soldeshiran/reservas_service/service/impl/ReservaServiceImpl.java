@@ -37,6 +37,7 @@ public class ReservaServiceImpl implements ReservaService {
 
   private final ReservaRepository reservaRepository;
   private final CatalogoClient catalogoClient;
+  private final org.springframework.jdbc.core.JdbcTemplate jdbc;
   private final pe.edu.upeu.soldeshiran.reservas_service.repository.BloqueoFechaRepository bloqueos;
 
   @Value("${reservas.tiempo-expiracion-minutos:15}")
@@ -45,23 +46,31 @@ public class ReservaServiceImpl implements ReservaService {
   @Override
   public CotizacionReservaResponse consultarDisponibilidad(
       Long idCabana, LocalDate fechaIngreso, LocalDate fechaSalida, Integer cantidadHuespedes) {
-    validarFechas(fechaIngreso, fechaSalida);
+    return consultarDisponibilidad(idCabana, fechaIngreso, fechaSalida, cantidadHuespedes,
+        java.time.LocalTime.MIDNIGHT, java.time.LocalTime.MIDNIGHT);
+  }
 
+  @Override
+  public CotizacionReservaResponse consultarDisponibilidad(Long idCabana, LocalDate fechaIngreso,
+      LocalDate fechaSalida, Integer cantidadHuespedes, java.time.LocalTime horaIngreso, java.time.LocalTime horaSalida) {
+    validarFechas(fechaIngreso, fechaSalida);
+    if (horaIngreso == null || horaSalida == null)
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona la hora de ingreso y salida.");
+    var inicio = fechaIngreso.atTime(horaIngreso);
+    var fin = fechaSalida.atTime(horaSalida);
+    if (!fin.equals(inicio.plusHours(24)))
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La reserva debe durar exactamente 24 horas.");
+    if (inicio.isBefore(LocalDateTime.now(java.time.ZoneId.of("America/Lima"))))
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La hora de ingreso no puede estar en el pasado.");
     CabanaDetalleClientResponse cabana = obtenerCabanaActiva(idCabana);
     validarAforo(cabana, cantidadHuespedes);
-
-    long noches = ChronoUnit.DAYS.between(fechaIngreso, fechaSalida);
+    long noches = 1;
     Montos montos = calcularMontos(cabana.tarifaNoche(), noches);
-
-    boolean disponible =
-        !hayBloqueo(idCabana, fechaIngreso, fechaSalida)
-            && !reservaRepository.existeCruceDeFechas(
-                idCabana,
-                fechaIngreso,
-                fechaSalida,
-                ESTADOS_BLOQUEANTES,
-                EstadoReserva.PENDIENTE_PAGO,
-                LocalDateTime.now());
+    boolean bloqueada = bloqueos.findByIdCabanaAndActivoTrue(idCabana).stream().anyMatch(b ->
+        b.getDesde().atStartOfDay().isBefore(fin) && b.getHasta().plusDays(1).atStartOfDay().isAfter(inicio));
+    boolean disponible = !bloqueada && reservaRepository.buscarReservasOcupadasEnRango(
+        idCabana, fechaIngreso, fechaSalida, ESTADOS_BLOQUEANTES, EstadoReserva.PENDIENTE_PAGO,
+        LocalDateTime.now()).stream().noneMatch(r -> r.inicioEstancia().isBefore(fin) && r.finEstancia().isAfter(inicio));
 
     String mensaje =
         disponible
@@ -80,7 +89,7 @@ public class ReservaServiceImpl implements ReservaService {
         montos.adelanto(),
         montos.saldo(),
         disponible,
-        mensaje);
+        mensaje, horaIngreso, horaSalida);
   }
 
   @Override
@@ -124,12 +133,18 @@ public class ReservaServiceImpl implements ReservaService {
       for (LocalDate fecha = inicio; !fecha.isAfter(fin); fecha = fecha.plusDays(1))
         fechasOcupadas.add(fecha);
     }
-    return new FechasOcupadasResponse(idCabana, desde, hasta, List.copyOf(fechasOcupadas));
+    var intervalos = new java.util.ArrayList<FechasOcupadasResponse.Intervalo>();
+    reservas.forEach(r -> intervalos.add(new FechasOcupadasResponse.Intervalo(r.inicioEstancia(), r.finEstancia())));
+    bloqueos.findByIdCabanaAndActivoTrue(idCabana).forEach(b -> intervalos.add(
+        new FechasOcupadasResponse.Intervalo(b.getDesde().atStartOfDay(), b.getHasta().plusDays(1).atStartOfDay())));
+    return new FechasOcupadasResponse(idCabana, desde, hasta, List.copyOf(fechasOcupadas), intervalos);
   }
 
   @Override
-  @Transactional
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public ReservaResponse crearReservaTemporal(Long idUsuario, CrearReservaRequest request) {
+    // A database row lock serializes check-and-insert across requests and service instances.
+    jdbc.queryForObject("SELECT id FROM cerrojo_reservas WHERE id=1 FOR UPDATE", Long.class);
     validarFechas(request.fechaIngreso(), request.fechaSalida());
 
     CabanaDetalleClientResponse cabana = obtenerCabanaActiva(request.idCabana());
@@ -141,7 +156,7 @@ public class ReservaServiceImpl implements ReservaService {
             request.idCabana(),
             request.fechaIngreso(),
             request.fechaSalida(),
-            request.cantidadHuespedes());
+            request.cantidadHuespedes(), request.horaIngreso(), request.horaSalida());
 
     if (!cotizacion.disponible()) {
       throw new ResponseStatusException(
@@ -155,6 +170,8 @@ public class ReservaServiceImpl implements ReservaService {
     reserva.setIdUsuario(idUsuario);
     reserva.setFechaIngreso(request.fechaIngreso());
     reserva.setFechaSalida(request.fechaSalida());
+    reserva.setHoraIngreso(request.horaIngreso());
+    reserva.setHoraSalida(request.horaSalida());
     reserva.setCantidadHuespedes(request.cantidadHuespedes());
     reserva.setTarifaNocheAplicada(cotizacion.tarifaNoche());
     reserva.setMontoTotal(cotizacion.montoTotal());
@@ -209,7 +226,7 @@ public class ReservaServiceImpl implements ReservaService {
           HttpStatus.BAD_REQUEST, "Las fechas de ingreso y salida son obligatorias.");
     }
 
-    if (fechaIngreso.isBefore(LocalDate.now())) {
+    if (fechaIngreso.isBefore(LocalDate.now(java.time.ZoneId.of("America/Lima")))) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "La fecha de ingreso no puede estar en el pasado.");
     }
@@ -256,7 +273,7 @@ public class ReservaServiceImpl implements ReservaService {
         reserva.getMontoAdelanto(),
         reserva.getSaldoPendiente(),
         reserva.getEstadoReserva(),
-        reserva.getExpiraEn());
+        reserva.getExpiraEn(), reserva.getHoraIngreso(), reserva.getHoraSalida());
   }
 
   private record Montos(BigDecimal total, BigDecimal adelanto, BigDecimal saldo) {}

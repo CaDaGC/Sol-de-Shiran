@@ -27,16 +27,16 @@ public class ReservaPagoInternoService {
         return new pe.edu.upeu.soldeshiran.reservas_service.dto.SaldoCheckInResponse(id,r.getSaldoPendiente(),r.getEstadoReserva().name());
     }
     private void validarCheckIn(Reserva r) {
-        java.time.LocalDate hoy=java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        var hoy=java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
         if (r.getEstadoReserva() != EstadoReserva.CONFIRMADA)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se puede realizar el check-in de una reserva confirmada.");
-        var formato = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        if (hoy.isBefore(r.getFechaIngreso()))
+        var formato = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        if (hoy.isBefore(r.inicioEstancia()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "El check-in estará disponible desde el " + r.getFechaIngreso().format(formato) + ". Todavía no se ha registrado el pago restante.");
-        if (!hoy.isBefore(r.getFechaSalida()))
+                    "El pago restante y el check-in estarán disponibles desde el " + r.inicioEstancia().format(formato) + ". No se puede cobrar antes del ingreso.");
+        if (!hoy.isBefore(r.finEstancia()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "La estancia terminó el " + r.getFechaSalida().format(formato) + ". No se puede iniciar el check-in.");
+                    "La estancia terminó el " + r.finEstancia().format(formato) + ". No se puede iniciar el check-in.");
     }
     @Transactional
     public void checkIn(Long id, pe.edu.upeu.soldeshiran.reservas_service.dto.CheckInRequest request) {

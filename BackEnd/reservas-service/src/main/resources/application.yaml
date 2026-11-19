@@ -1,12 +1,12 @@
 server:
-  port: 8085
+  port: 18085
 
 spring:
   application:
     name: ms-reservas
 
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:http://localhost:18089/"
 
   datasource:
     url: jdbc:mysql://localhost:3307/db_reservas?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
@@ -29,7 +29,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8762/eureka/
+      defaultZone: http://localhost:18762/eureka/
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}

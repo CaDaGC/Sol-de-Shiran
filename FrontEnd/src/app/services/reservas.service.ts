@@ -59,12 +59,14 @@ export class ReservasService {
     idCabana: number,
     fechaIngreso: string,
     fechaSalida: string,
-    cantidadHuespedes: number
+    cantidadHuespedes: number,
+    horaIngreso = "14:00", horaSalida = horaIngreso
   ): Observable<CotizacionReservaResponse> {
     const params = new HttpParams()
       .set('fechaIngreso', fechaIngreso)
       .set('fechaSalida', fechaSalida)
-      .set('cantidadHuespedes', cantidadHuespedes);
+      .set('cantidadHuespedes', cantidadHuespedes)
+      .set('horaIngreso', horaIngreso).set('horaSalida', horaSalida);
 
     return this.http
       .get<CotizacionReservaResponse>(

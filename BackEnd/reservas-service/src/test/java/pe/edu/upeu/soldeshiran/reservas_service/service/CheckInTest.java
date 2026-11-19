@@ -54,10 +54,33 @@ class CheckInTest {
   assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",BigDecimal.ONE)));
   verifyNoInteractions(catalogo);
  }
+ @Test void consultaDeSaldoNoPermitePrepararUnCobroFuturo() {
+  r.setFechaIngreso(LocalDate.now(ZoneId.of("America/Lima")).plusDays(1));
+  when(repo.findById(3L)).thenReturn(Optional.of(r));
+  var error=assertThrows(ResponseStatusException.class,()->service.saldoCheckIn(3L));
+  assertEquals(409,error.getStatusCode().value());
+  verify(repo,never()).saveAndFlush(any());
+  verifyNoInteractions(catalogo);
+ }
+ @Test void bloqueaIngresoDesdeElDiaDeSalida() {
+  r.setFechaIngreso(LocalDate.now(ZoneId.of("America/Lima")).minusDays(1));
+  r.setFechaSalida(LocalDate.now(ZoneId.of("America/Lima")));
+  assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));
+  verifyNoInteractions(catalogo);
+ }
  @Test void rechazaIngresoFuturoYReservaCancelada() {
   r.setFechaIngreso(r.getFechaIngreso().plusDays(1));
   assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));
   r.setEstadoReserva(EstadoReserva.CANCELADA);
   assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));verifyNoInteractions(catalogo);
+ }
+
+ @Test void bloqueaSaldoSiFaltaUnaHoraAunqueSeaElMismoDia() {
+  var futuro=LocalDateTime.now(ZoneId.of("America/Lima")).plusHours(1);
+  r.setFechaIngreso(futuro.toLocalDate());r.setHoraIngreso(futuro.toLocalTime());
+  r.setFechaSalida(futuro.plusHours(24).toLocalDate());r.setHoraSalida(futuro.toLocalTime());
+  when(repo.findById(3L)).thenReturn(Optional.of(r));
+  assertEquals(409,assertThrows(ResponseStatusException.class,()->service.saldoCheckIn(3L)).getStatusCode().value());
+  verifyNoInteractions(catalogo);
  }
 }

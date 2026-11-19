@@ -18,7 +18,7 @@ describe('Menú lateral contraíble', () => {
       imports: [BusinessLayoutComponent],
       providers: [provideRouter([]), {
         provide: AuthService,
-        useValue: { usuarioActual: signal({ nombre: 'Antonella', email: 'guardian@example.com', rol: 'TRABAJADOR' }) }
+        useValue: { cargarFotoPerfil: vi.fn(), fotoPerfil: signal(null), usuarioActual: signal({ nombre: 'Antonella', email: 'guardian@example.com', rol: 'TRABAJADOR' }) }
       }]
     });
   });
