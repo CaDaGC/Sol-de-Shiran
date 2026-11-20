@@ -1,3 +1,3 @@
 export const API_CONFIG = {
-  baseUrl: 'http://localhost:18061/api/v1'
+  baseUrl: 'http://localhost:8061/api/v1'
 };

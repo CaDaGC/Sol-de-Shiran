@@ -30,7 +30,7 @@ public class PagoServiceImpl implements PagoService {
     private final RestClient mercadoPago;
     private final ObjectMapper objectMapper;
     @Value("${servicios.interno.token}") private String internalToken;
-    @Value("${mercadopago.frontend-url:http://localhost:14200}") private String frontendUrl;
+    @Value("${mercadopago.frontend-url:http://localhost:4200}") private String frontendUrl;
 
     public PagoServiceImpl(TransaccionPagoRepository repository, ReservaInternaClient client,
             RestClient.Builder builder, ObjectMapper mapper,

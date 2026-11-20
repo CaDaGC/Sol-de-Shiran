@@ -1,5 +1,5 @@
 server:
-  port: 18090
+  port: 8090
 
 spring:
   datasource:
@@ -19,6 +19,6 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:18762/eureka/
+      defaultZone: http://localhost:8762/eureka/
   instance:
     prefer-ip-address: true

@@ -3,9 +3,9 @@
 ## Sol de Shirán: entorno local
 
 1. Inicia MySQL y los servicios service-registry, config-server, usuario-service, auth-service, catalogo-service, reservas-service, pagos-service y api-gateway.
-2. Desde `FrontEnd`, ejecuta `npm install` y `npm start`. Abre `http://localhost:14200`.
-3. Para HU19, inicia sesión con una cuenta ADMIN y abre **Métricas** en el menú o visita `http://localhost:14200/admin/metricas`.
-4. El dashboard consulta ingresos, frecuencia de reservas y nombres de cabañas mediante el gateway en `http://localhost:18061/api/v1`. Si una de las tres solicitudes falla, muestra un mensaje de error.
+2. Desde `FrontEnd`, ejecuta `npm install` y `npm start`. Abre `http://localhost:4200`.
+3. Para HU19, inicia sesión con una cuenta ADMIN y abre **Métricas** en el menú o visita `http://localhost:4200/admin/metricas`.
+4. El dashboard consulta ingresos, frecuencia de reservas y nombres de cabañas mediante el gateway en `http://localhost:8061/api/v1`. Si una de las tres solicitudes falla, muestra un mensaje de error.
 
 La [guía de HU19](../docs/HU19-metricas.md) explica los filtros y las pruebas. La [colección Postman](../docs/postman/HU19.postman_collection.json) permite verificar las API y los permisos sin cambiar datos.
 
@@ -19,7 +19,7 @@ To start a local development server, run:
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:14200/`. The application will automatically reload whenever you modify any of the source files.
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
 ## Code scaffolding
 

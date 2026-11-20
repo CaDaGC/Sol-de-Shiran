@@ -28,7 +28,7 @@ public class GestionReservaService {
   @Value("${servicios.interno.token}")
   private String tokenOcupacion;
 
-  @Value("${usuarios.url:http://localhost:18087}")
+  @Value("${usuarios.url:http://localhost:8087}")
   private String usuariosUrl;
 
   @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
