@@ -25,6 +25,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath().replaceFirst("^/api/usuarios/", "/api/v1/usuarios/");
         String method = exchange.getRequest().getMethod().name();
 
+        if ("GET".equals(method) && (path.equals("/actuator/health")
+                || path.equals("/actuator/health/readiness") || path.equals("/actuator/health/liveness"))) {
+            return chain.filter(exchange);
+        }
         if (path.contains("/interno/") || path.endsWith("/interno") || path.startsWith("/internal/")) {
             exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
             return exchange.getResponse().setComplete();

@@ -138,4 +138,16 @@ class JwtPanelReservasTest {
         var anonimo=MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/pagos/reservas/9/comprobante/pdf"));
         filtro.filter(anonimo,chain).block();assertThat(anonimo.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+    @Test
+    void healthchecksNoRequierenSesionPeroLosOtrosEndpointsSiguenProtegidos() {
+        JwtUtil jwt=mock(JwtUtil.class);GatewayFilterChain chain=mock(GatewayFilterChain.class);
+        when(chain.filter(any())).thenReturn(Mono.empty());var filtro=new JwtAuthenticationFilter(jwt);
+        for(String path:List.of("/actuator/health","/actuator/health/readiness","/actuator/health/liveness")) {
+            var exchange=MockServerWebExchange.from(MockServerHttpRequest.get(path));
+            filtro.filter(exchange,chain).block();assertThat(exchange.getResponse().getStatusCode()).isNull();
+        }
+        verify(chain,times(3)).filter(any());verifyNoInteractions(jwt);
+        var restringido=MockServerWebExchange.from(MockServerHttpRequest.get("/actuator/env"));
+        filtro.filter(restringido,chain).block();assertThat(restringido.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

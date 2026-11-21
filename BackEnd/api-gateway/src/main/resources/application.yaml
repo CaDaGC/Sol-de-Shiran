@@ -5,7 +5,7 @@ spring:
   application:
     name: api-gateway
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8089/}"
   cloud:
     config:
       override-none: false

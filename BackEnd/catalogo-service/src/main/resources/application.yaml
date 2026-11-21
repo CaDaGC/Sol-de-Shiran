@@ -10,7 +10,7 @@ spring:
     name: catalogo-service
 
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8089/}"
 
   datasource:
     url: jdbc:mysql://localhost:3307/db_catalogo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
