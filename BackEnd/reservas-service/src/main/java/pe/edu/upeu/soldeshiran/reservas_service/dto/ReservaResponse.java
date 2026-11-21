@@ -20,8 +20,26 @@ Long idReserva,
         EstadoReserva estadoReserva,
         LocalDateTime expiraEn,
         java.time.LocalTime horaIngreso,
-        java.time.LocalTime horaSalida
+        java.time.LocalTime horaSalida,
+        String codigo
 ) {
+  public ReservaResponse(Long idReserva,
+        Long idCabana,
+        Long idUsuario,
+        LocalDate fechaIngreso,
+        LocalDate fechaSalida,
+        Integer cantidadHuespedes,
+        BigDecimal tarifaNocheAplicada,
+        BigDecimal montoTotal,
+        BigDecimal montoAdelanto,
+        BigDecimal saldoPendiente,
+        EstadoReserva estadoReserva,
+        LocalDateTime expiraEn,
+        java.time.LocalTime horaIngreso,
+        java.time.LocalTime horaSalida) {
+    this(idReserva, idCabana, idUsuario, fechaIngreso, fechaSalida, cantidadHuespedes, tarifaNocheAplicada, montoTotal, montoAdelanto, saldoPendiente, estadoReserva, expiraEn, horaIngreso, horaSalida, null);
+  }
+
   public ReservaResponse(Long idReserva,
         Long idCabana,
         Long idUsuario,

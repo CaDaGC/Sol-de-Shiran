@@ -7,6 +7,14 @@
     </div>
     <a class="explore-button" routerLink="/catalogo">⌂ <span>Explorar cabañas</span></a>
   </header>
+  <section class="search-filters" aria-label="Buscar mis reservas">
+    <label>Código de reserva<input type="search" maxlength="32" placeholder="RSS00001" [ngModel]="codigo" (ngModelChange)="codigo = $event; actualizarFiltros(300)"></label>
+    <label>Cabaña<input type="search" maxlength="100" placeholder="Nombre de la cabaña" [ngModel]="cabana" (ngModelChange)="cabana = $event; actualizarFiltros(300)"></label>
+    <label>Estancias desde<input type="date" [ngModel]="desde" (ngModelChange)="desde = $event; actualizarFiltros()"></label>
+    <label>Hasta<input type="date" [min]="desde" [ngModel]="hasta" (ngModelChange)="hasta = $event; actualizarFiltros()"></label>
+    <button class="secondary-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+    <small>Se muestran las estancias que coinciden con el intervalo de fechas.</small>
+  </section>
   <nav class="filters" aria-label="Filtrar mis reservas">
     @for (filtro of filtros; track filtro.valor) {
       <button
@@ -32,28 +40,21 @@
       <div class="message">
         <h2>
           {{
-            grupo() === 'TODAS'
+            grupo() === 'TODAS' && !codigo && !cabana && !desde && !hasta
               ? 'Tu próxima escapada te espera'
-              : 'No hay reservas en esta sección'
+              : 'No se encontraron reservas'
           }}
         </h2>
         <p>Explora nuestras cabañas y encuentra tu espacio para descansar.</p>
         <a routerLink="/catalogo" class="explore-button">Ver cabañas</a>
       </div>
     } @else {
+      <h2 class="history-heading">{{ grupo() === 'TODAS' ? 'Historial de reservas' : 'Reservas' }}</h2>
       <div class="reservation-cards">
-        @for (reserva of activas(); track reserva.idReserva) {
+        @for (reserva of datos()?.content; track reserva.idReserva) {
           <ng-container *ngTemplateOutlet="card; context: { $implicit: reserva }"></ng-container>
         }
       </div>
-      @if (pasadas().length > 0) {
-        <h2 class="history-heading">Historial</h2>
-        <div class="reservation-cards">
-          @for (reserva of pasadas(); track reserva.idReserva) {
-            <ng-container *ngTemplateOutlet="card; context: { $implicit: reserva }"></ng-container>
-          }
-        </div>
-      }
     }
   </div>
   @if (datos(); as pagina) {
@@ -81,7 +82,7 @@
   }
 </section>
 <ng-template #card let-reserva>
-  <article class="reservation-card" [attr.aria-label]="'Reserva #' + reserva.idReserva">
+  <article class="reservation-card" [attr.aria-label]="'Reserva ' + reserva.codigo">
     <div class="thumbnail">
       <span aria-hidden="true">⌂</span>
       @if (reserva.imagenPrincipal) {
@@ -98,7 +99,7 @@
         <div>
           <h2>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h2>
           <p>
-            Reserva #{{ reserva.idReserva }} · {{ reserva.cantidadHuespedes }}
+            Reserva {{ reserva.codigo }} · {{ reserva.cantidadHuespedes }}
             {{ reserva.cantidadHuespedes === 1 ? 'huésped' : 'huéspedes' }}
           </p>
         </div>
@@ -165,7 +166,7 @@
           <button
             type="button"
             class="secondary-button"
-            [attr.aria-label]="'Ver detalle de reserva #' + reserva.idReserva"
+            [attr.aria-label]="'Ver detalle de reserva ' + reserva.codigo"
             (click)="verDetalle(reserva)"
           >
             Ver detalle
@@ -182,7 +183,7 @@
   (click)="cerrarDesdeFondo($event)"
 >
   <header class="dialog-header">
-    <h2 id="my-detail-title">Reserva #{{ detalle()?.idReserva }}</h2>
+    <h2 id="my-detail-title">Reserva {{ detalle()?.codigo }}</h2>
     <button
       type="button"
       class="close-button"
@@ -244,6 +245,9 @@
           </div>
         }
       </dl>
+      @if (reserva.estadoReserva === 'CONFIRMADA' || reserva.estadoReserva === 'OCUPADA' || reserva.estadoReserva === 'FINALIZADA') {
+        <app-comprobante [idReserva]="reserva.idReserva"></app-comprobante>
+      }
     </div>
   }
   <footer class="dialog-footer">

@@ -1,0 +1,26 @@
+<main class="registration"><h1>Crea tu cuenta</h1><p>Regístrate para reservar tu estancia en Sol de Shirán.</p>
+@if (completado()) { <p role="status">Tu cuenta se creó correctamente. Ya puedes iniciar sesión.</p><a routerLink="/login">Iniciar sesión</a> }
+@else {
+<form #form="ngForm" (ngSubmit)="registrar(form)">
+<fieldset [disabled]="ocupado()"><legend>Datos de la cuenta</legend>
+<label>Nombre de usuario<input name="nombreUsuario" [(ngModel)]="nombreUsuario" required maxlength="80" autocomplete="username"></label>
+<label>Correo electrónico<input name="email" type="email" email [(ngModel)]="email" required maxlength="150" autocomplete="email"></label>
+<label>Contraseña<input name="password" type="password" [(ngModel)]="password" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="password-help"></label>
+<small id="password-help">La contraseña debe tener entre 8 y 72 caracteres.</small>
+</fieldset><fieldset [disabled]="ocupado()"><legend>Datos personales</legend><div class="grid">
+<label>Nombres<input name="nombres" [(ngModel)]="persona.nombres" required maxlength="100" autocomplete="given-name"></label>
+<label>Apellidos<input name="apellidos" [(ngModel)]="persona.apellidos" required maxlength="100" autocomplete="family-name"></label>
+<label>Tipo de documento<select name="tipoDocumento" [(ngModel)]="persona.tipoDocumento" required><option value="DNI">DNI</option><option value="CARNET_EXTRANJERIA">Carné de extranjería</option></select></label>
+<label>Número de documento<input name="numeroDocumento" [(ngModel)]="persona.numeroDocumento" required maxlength="20" autocomplete="off"></label>
+<label>Teléfono<input name="telefono" [(ngModel)]="persona.telefono" required maxlength="20" autocomplete="tel" type="tel"></label>
+<label>Dirección<input name="direccion" [(ngModel)]="persona.direccion" required maxlength="255" autocomplete="street-address"></label>
+</div></fieldset>
+@if (form.invalid && (form.dirty || form.submitted)) {
+  <ul class="validation-errors" aria-live="polite">
+    @for (aviso of erroresFormulario(form); track aviso) { <li>{{ aviso }}</li> }
+  </ul>
+}
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+<button type="submit" [disabled]="form.invalid || ocupado()">{{ ocupado() ? 'Creando cuenta…' : 'Crear cuenta' }}</button>
+<p>Todos los campos son obligatorios.</p><a routerLink="/login">Ya tengo una cuenta</a>
+</form> }</main>

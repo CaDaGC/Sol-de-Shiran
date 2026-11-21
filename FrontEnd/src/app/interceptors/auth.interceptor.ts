@@ -6,7 +6,8 @@ import { AuthService } from '../services/auth';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
 
-  const esLogin = req.method === 'POST' && req.url.includes('/api/v1/auth/login');
+  const esLogin = req.method === 'POST' && (req.url.includes('/api/v1/auth/login')
+    || req.url.endsWith('/api/v1/usuarios/register'));
 
   const esConsultaPublica =
     req.method === 'GET' &&
@@ -34,7 +35,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(requestAutenticada).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
-        authService.cerrarSesion();
+        authService.expirarSesion();
       }
 
       return throwError(() => error);

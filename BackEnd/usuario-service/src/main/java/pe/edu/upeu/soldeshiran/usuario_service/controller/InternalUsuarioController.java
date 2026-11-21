@@ -13,6 +13,7 @@ import pe.edu.upeu.soldeshiran.usuario_service.security.Actor;
 @RequiredArgsConstructor
 public class InternalUsuarioController {
   private final UsuarioRepository usuarios;
+  private final pe.edu.upeu.soldeshiran.usuario_service.mapper.UsuarioMapper mapper;
 
   @GetMapping("/{id}")
   public Identity identity(@PathVariable Long id) {
@@ -35,12 +36,9 @@ public class InternalUsuarioController {
   }
 
   @GetMapping("/{id}/perfil")
-  public Perfil perfil(@PathVariable Long id) {
-    Usuario u = find(id);
-    return new Perfil(u.getId(), u.getNombre(), u.getEmail());
+  public pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioResponse perfil(@PathVariable Long id) {
+    return mapper.toResponse(find(id));
   }
-
-  public record Perfil(Long id, String nombre, String email) {}
 
   private Usuario find(Long id) {
     return usuarios
@@ -52,11 +50,10 @@ public class InternalUsuarioController {
     return new Identity(
         u.getId(),
         Actor.normalizar(u.getRol().getNombre()),
-        !Boolean.FALSE.equals(u.getActivo()),
-        u.getDuenoId());
+        !Boolean.FALSE.equals(u.getActivo()));
   }
 
-  public record Identity(Long id, String rol, boolean activo, Long duenoId) {}
+  public record Identity(Long id, String rol, boolean activo) {}
 
   public record Auth(
       Long id, String nombre, String email, String password, String rol, boolean activo) {}

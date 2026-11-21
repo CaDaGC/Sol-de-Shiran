@@ -36,6 +36,7 @@ public class ReservaServiceImpl implements ReservaService {
       List.of(EstadoReserva.CONFIRMADA, EstadoReserva.OCUPADA);
 
   private final ReservaRepository reservaRepository;
+  private final pe.edu.upeu.soldeshiran.reservas_service.service.CodigoReservaService codigos;
   private final CatalogoClient catalogoClient;
   private final org.springframework.jdbc.core.JdbcTemplate jdbc;
   private final pe.edu.upeu.soldeshiran.reservas_service.repository.BloqueoFechaRepository bloqueos;
@@ -54,17 +55,15 @@ public class ReservaServiceImpl implements ReservaService {
   public CotizacionReservaResponse consultarDisponibilidad(Long idCabana, LocalDate fechaIngreso,
       LocalDate fechaSalida, Integer cantidadHuespedes, java.time.LocalTime horaIngreso, java.time.LocalTime horaSalida) {
     validarFechas(fechaIngreso, fechaSalida);
-    if (horaIngreso == null || horaSalida == null)
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecciona la hora de ingreso y salida.");
+
+    horaIngreso = java.time.LocalTime.of(11, 0);
+    horaSalida = java.time.LocalTime.of(13, 0);
     var inicio = fechaIngreso.atTime(horaIngreso);
     var fin = fechaSalida.atTime(horaSalida);
-    if (!fin.equals(inicio.plusHours(24)))
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La reserva debe durar exactamente 24 horas.");
-    if (inicio.isBefore(LocalDateTime.now(java.time.ZoneId.of("America/Lima"))))
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La hora de ingreso no puede estar en el pasado.");
+
     CabanaDetalleClientResponse cabana = obtenerCabanaActiva(idCabana);
     validarAforo(cabana, cantidadHuespedes);
-    long noches = 1;
+    long noches = ChronoUnit.DAYS.between(fechaIngreso, fechaSalida);
     Montos montos = calcularMontos(cabana.tarifaNoche(), noches);
     boolean bloqueada = bloqueos.findByIdCabanaAndActivoTrue(idCabana).stream().anyMatch(b ->
         b.getDesde().atStartOfDay().isBefore(fin) && b.getHasta().plusDays(1).atStartOfDay().isAfter(inicio));
@@ -114,7 +113,6 @@ public class ReservaServiceImpl implements ReservaService {
       LocalDate inicioOcupacion =
           reserva.getFechaIngreso().isAfter(desde) ? reserva.getFechaIngreso() : desde;
 
-      // La fecha de salida no representa una noche ocupada.
       LocalDate finExclusivoOcupacion =
           reserva.getFechaSalida().isBefore(finExclusivoConsulta)
               ? reserva.getFechaSalida()
@@ -143,7 +141,7 @@ public class ReservaServiceImpl implements ReservaService {
   @Override
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public ReservaResponse crearReservaTemporal(Long idUsuario, CrearReservaRequest request) {
-    // A database row lock serializes check-and-insert across requests and service instances.
+
     jdbc.queryForObject("SELECT id FROM cerrojo_reservas WHERE id=1 FOR UPDATE", Long.class);
     validarFechas(request.fechaIngreso(), request.fechaSalida());
 
@@ -170,8 +168,8 @@ public class ReservaServiceImpl implements ReservaService {
     reserva.setIdUsuario(idUsuario);
     reserva.setFechaIngreso(request.fechaIngreso());
     reserva.setFechaSalida(request.fechaSalida());
-    reserva.setHoraIngreso(request.horaIngreso());
-    reserva.setHoraSalida(request.horaSalida());
+    reserva.setHoraIngreso(cotizacion.horaIngreso());
+    reserva.setHoraSalida(cotizacion.horaSalida());
     reserva.setCantidadHuespedes(request.cantidadHuespedes());
     reserva.setTarifaNocheAplicada(cotizacion.tarifaNoche());
     reserva.setMontoTotal(cotizacion.montoTotal());
@@ -180,13 +178,9 @@ public class ReservaServiceImpl implements ReservaService {
     reserva.setEstadoReserva(EstadoReserva.PENDIENTE_PAGO);
     reserva.setExpiraEn(expiraEn);
 
+    reserva.setCodigo(codigos.siguiente());
     Reserva guardada = reservaRepository.save(reserva);
     return toResponse(guardada);
-  }
-
-  private boolean hayBloqueo(Long id, LocalDate entrada, LocalDate salida) {
-    return bloqueos.findByIdCabanaAndActivoTrue(id).stream()
-        .anyMatch(b -> !b.getHasta().isBefore(entrada) && b.getDesde().isBefore(salida));
   }
 
   private void validarRangoConsulta(LocalDate desde, LocalDate hasta) {
@@ -273,7 +267,7 @@ public class ReservaServiceImpl implements ReservaService {
         reserva.getMontoAdelanto(),
         reserva.getSaldoPendiente(),
         reserva.getEstadoReserva(),
-        reserva.getExpiraEn(), reserva.getHoraIngreso(), reserva.getHoraSalida());
+        reserva.getExpiraEn(), reserva.getHoraIngreso(), reserva.getHoraSalida(), reserva.getCodigo());
   }
 
   private record Montos(BigDecimal total, BigDecimal adelanto, BigDecimal saldo) {}

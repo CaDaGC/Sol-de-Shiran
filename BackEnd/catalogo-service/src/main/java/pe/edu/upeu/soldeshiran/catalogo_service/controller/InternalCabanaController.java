@@ -11,6 +11,13 @@ import pe.edu.upeu.soldeshiran.catalogo_service.service.GestionCabanaService;
 public class InternalCabanaController {
   private final GestionCabanaService gestion;
 
+  private final pe.edu.upeu.soldeshiran.catalogo_service.repository.CabanaRepository cabanas;
+
+  @GetMapping("/duenos/{id}/ids")
+  public java.util.List<Long> propias(@PathVariable Long id) {
+    return cabanas.listarIdsDelDueno(id);
+  }
+
   @GetMapping("/{id}/acceso")
   public Access acceso(
       @PathVariable Long id, @RequestParam Long usuarioId, @RequestParam String rol) {

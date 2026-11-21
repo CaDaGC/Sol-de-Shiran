@@ -17,7 +17,7 @@ export class BusinessLayoutComponent {
       try {
         this.contraido.set(localStorage.getItem('sidebar-contraido') === 'true');
       } catch {
-        // El menú funciona aunque el navegador bloquee el almacenamiento local.
+
       }
     });
   }
@@ -27,7 +27,7 @@ export class BusinessLayoutComponent {
     try {
       localStorage.setItem('sidebar-contraido', String(this.contraido()));
     } catch {
-      // Conserva la preferencia durante la navegación de esta sesión.
+
     }
   }
 }

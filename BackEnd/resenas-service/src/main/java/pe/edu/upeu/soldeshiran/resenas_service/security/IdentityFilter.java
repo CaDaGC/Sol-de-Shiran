@@ -20,7 +20,7 @@ public class IdentityFilter extends OncePerRequestFilter {
     private final TokenVerifier tokens;
     private final UsuariosClient usuarios;
 
-    @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+    @Value("${seguridad.internal-key}")
     private String clave;
 
     @Override

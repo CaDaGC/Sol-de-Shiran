@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, ElementRef, viewChild, ChangeDetectorRef, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -7,20 +7,17 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { API_CONFIG } from '../../core/api.config';
 import { imagenUrl } from '../../core/imagen-url';
+import { Cuenta, Persona, nuevaPersona } from '../../models/usuario.model';
+
 type RolCuenta = 'CLIENTE' | 'TRABAJADOR' | 'DUENO' | 'ADMIN';
 
-interface Cuenta {
-  id: number;
-  nombre: string;
+interface FormularioCuenta {
+  id: number | null;
+  nombreUsuario: string;
   email: string;
   rol: string;
-  activo: boolean;
-  duenoId: number | null;
-}
-
-interface FormularioCuenta extends Omit<Cuenta, 'id' | 'activo'> {
-  id: number | null;
   password: string;
+  persona: Persona;
 }
 
 @Component({
@@ -35,6 +32,34 @@ export class GestionComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   readonly url = API_CONFIG.baseUrl;
+  private readonly editorDialog = viewChild.required<ElementRef<HTMLDialogElement>>('editorDialog');
+  private readonly cambios = inject(ChangeDetectorRef);
+  readonly editor = signal<'usuario' | 'cabana' | null>(null);
+  readonly buscarUsuario = signal('');
+  readonly buscarCabana = signal('');
+  readonly usuariosFiltrados = computed(() => {
+    const texto = this.buscarUsuario().trim().toLocaleLowerCase();
+    return this.usuarios().filter(u => (u.nombreUsuario || u.nombre || '').toLocaleLowerCase().includes(texto)
+      || u.email.toLocaleLowerCase().includes(texto));
+  });
+  readonly cabanasFiltradas = computed(() => {
+    const texto = this.buscarCabana().trim().toLocaleLowerCase();
+    return this.cabanas().filter(c => c.nombre.toLocaleLowerCase().includes(texto));
+  });
+
+  crearUsuario(): void { this.usuario = this.nuevoUsuario(); this.abrirEditor('usuario'); }
+  crearCabana(): void { this.nueva(); this.abrirEditor('cabana'); }
+  private abrirEditor(tipo: 'usuario' | 'cabana'): void {
+    this.limpiar(); this.editor.set(tipo); this.cambios.detectChanges();
+    if (!this.editorDialog().nativeElement.open) this.editorDialog().nativeElement.showModal();
+  }
+  cerrarEditor(): void {
+    if (this.ocupado() || this.subiendoFotos()) return;
+    this.editorDialog().nativeElement.close(); this.editor.set(null); this.limpiar();
+  }
+  cerrarFondo(event: MouseEvent): void {
+    if (event.target === this.editorDialog().nativeElement) this.cerrarEditor();
+  }
   readonly perfil = signal<any>(null);
   readonly cabanas = signal<any[]>([]);
   readonly usuarios = signal<Cuenta[]>([]);
@@ -44,8 +69,6 @@ export class GestionComponent implements OnInit {
     { rol: 'DUENO', titulo: 'Dueños', singular: 'dueño' },
     { rol: 'ADMIN', titulo: 'Administradores', singular: 'administrador' },
   ];
-  seccionCuenta = this.seccionesCuentas[0];
-  asignacion: { cabanaId: number; ids: Set<number> } | null = null;
   readonly mensaje = signal('');
   readonly error = signal('');
   readonly ocupado = signal(false);
@@ -75,7 +98,7 @@ export class GestionComponent implements OnInit {
     };
   }
   nuevoUsuario(): FormularioCuenta {
-    return { id: null, nombre: '', email: '', password: '', rol: this.seccionCuenta.rol, duenoId: null };
+    return { id: null, nombreUsuario: '', email: '', password: '', rol: 'CLIENTE', persona: nuevaPersona() };
   }
   rol(): string {
     return this.perfil()?.rol === 'CLIENTE'
@@ -92,7 +115,8 @@ export class GestionComponent implements OnInit {
     }
     this.http.get<any>(this.url + '/usuarios/me').subscribe({
       next: (p) => {
-        this.perfil.set(p);
+        this.perfil.set({ ...p, nombreUsuario: p.nombreUsuario || p.nombre });
+        this.auth.actualizarPerfil(p);
         this.tab = this.es('ADMIN') ? 'cabanas' : 'perfil';
         this.cargar();
       },
@@ -114,7 +138,7 @@ export class GestionComponent implements OnInit {
   editarCabana(c: any): void {
     this.cabana = { ...c };
     this.imagenes = (c.imagenesSecundarias ?? []).join('\n');
-    this.limpiar();
+    this.abrirEditor('cabana');
   }
   nueva(): void {
     this.cabana = this.nuevaCabana();
@@ -179,7 +203,7 @@ export class GestionComponent implements OnInit {
       : this.http.post(this.url + '/cabanas', body);
     req.subscribe({
       next: () => {
-        this.nueva();
+        this.ocupado.set(false); this.cerrarEditor(); this.nueva();
         this.exito('Cabaña guardada.');
       },
       error: (e) => this.fallo(e),
@@ -196,34 +220,8 @@ export class GestionComponent implements OnInit {
       .put(this.url + '/cabanas/' + c.idCabana + '/activar', {})
       .subscribe({ next: () => this.exito('Cabaña activada.'), error: (e) => this.fallo(e) });
   }
-  abrirAsignacion(cabana: { idCabana: number; trabajadores?: number[] }): void {
-    this.asignacion = { cabanaId: cabana.idCabana, ids: new Set(cabana.trabajadores ?? []) };
-    this.limpiar();
-  }
-
-  cambiarAsignacion(id: number, seleccionado: boolean): void {
-    if (!this.asignacion) return;
-    if (seleccionado) this.asignacion.ids.add(id);
-    else this.asignacion.ids.delete(id);
-  }
-
-  guardarAsignacion(): void {
-    if (!this.asignacion || this.ocupado()) return;
-    const { cabanaId, ids } = this.asignacion;
-    this.ocupado.set(true);
-    this.limpiar();
-    this.http.put(this.url + '/cabanas/' + cabanaId + '/trabajadores', [...ids]).subscribe({
-      next: () => {
-        this.asignacion = null;
-        this.exito('Trabajadores asignados.');
-      },
-      error: (e) => this.fallo(e),
-    });
-  }
-
-  abrirCuentas(seccion: (typeof this.seccionesCuentas)[number]): void {
+  abrirCuentas(): void {
     this.tab = 'cuentas';
-    this.seccionCuenta = seccion;
     this.usuario = this.nuevoUsuario();
     this.limpiar();
   }
@@ -247,37 +245,24 @@ export class GestionComponent implements OnInit {
     return this.cuentasDe('DUENO').filter((cuenta) => cuenta.activo);
   }
 
-  trabajadoresDe(cabana: { duenoId: number | null; trabajadores?: number[] }): Cuenta[] {
-    return this.cuentasDe('TRABAJADOR').filter((cuenta) =>
-      (cuenta.activo && (cuenta.duenoId ?? null) === (cabana.duenoId ?? null))
-      || cabana.trabajadores?.includes(cuenta.id),
-    );
-  }
-
   nombreCuenta(id: number): string {
     return this.usuarios().find((cuenta) => cuenta.id === id)?.nombre ?? '#' + id;
   }
 
-  nombresTrabajadores(ids: number[]): string {
-    return ids.map((id) => this.nombreCuenta(id)).join(', ');
-  }
-
-  cabanasDe(cuenta: Cuenta): string {
-    return this.cabanas()
-      .filter((cabana) => cabana.duenoId === cuenta.id || cabana.trabajadores?.includes(cuenta.id))
-      .map((cabana) => cabana.nombre)
-      .join(', ');
-  }
-
   editarUsuario(cuenta: Cuenta): void {
-    this.usuario = { ...cuenta, rol: this.rolCuenta(cuenta), password: '' };
-    this.limpiar();
+    this.usuario = { ...cuenta, nombreUsuario: cuenta.nombreUsuario || cuenta.nombre,
+      persona: cuenta.persona ? { ...cuenta.persona } : nuevaPersona(), rol: this.rolCuenta(cuenta), password: '' };
+    this.abrirEditor('usuario');
   }
 
   guardarUsuario(): void {
     if (this.ocupado()) return;
-    const { id, nombre, email, password, rol, duenoId } = this.usuario;
-    const datos = { nombre: nombre.trim(), email: email.trim(), rol, duenoId };
+    const { id, nombreUsuario, email, password, rol, persona } = this.usuario;
+    if (!nombreUsuario.trim() || (rol !== 'ADMIN' && Object.values(persona).some(v => !String(v).trim()))) {
+      this.error.set('Completa los campos obligatorios de la cuenta y de la persona.'); return;
+    }
+    const datos = { nombreUsuario: nombreUsuario.trim(), email: email.trim(), rol,
+      ...(rol !== 'ADMIN' ? { persona } : {}) };
     const req = id
       ? this.http.put(this.url + '/usuarios/' + id, datos)
       : this.http.post(this.url + '/usuarios', { ...datos, password });
@@ -285,6 +270,7 @@ export class GestionComponent implements OnInit {
     this.limpiar();
     req.subscribe({
       next: () => {
+        this.ocupado.set(false); this.cerrarEditor();
         this.usuario = this.nuevoUsuario();
         this.exito('Cuenta guardada.');
       },
@@ -294,23 +280,13 @@ export class GestionComponent implements OnInit {
 
   eliminarUsuario(cuenta: Cuenta): void {
     if (this.ocupado()) return;
-    const desactivar = this.rolCuenta(cuenta) === 'ADMIN';
-    const pregunta = desactivar
-      ? '¿Desactivar la cuenta de ' + cuenta.email + '?'
-      : '¿Eliminar definitivamente la cuenta de ' + cuenta.email
-        + '? No podrás recuperarla. Se conservará el historial de reservas.'
-        + (this.rolCuenta(cuenta) === 'DUENO'
-          ? ' Sus trabajadores quedarán sin dueño y sus cabañas pasarán a administración.'
-          : this.rolCuenta(cuenta) === 'TRABAJADOR'
-            ? ' Se retirarán sus asignaciones a cabañas.'
-            : '');
-    if (!confirm(pregunta)) return;
+    if (!cuenta.activo || !confirm('¿Desactivar la cuenta de ' + cuenta.email + '? Se conservarán sus datos e historial.')) return;
     this.ocupado.set(true);
     this.limpiar();
     this.http.delete(this.url + '/usuarios/' + cuenta.id).subscribe({
       next: () => {
         if (this.usuario.id === cuenta.id) this.usuario = this.nuevoUsuario();
-        this.exito(desactivar ? 'Cuenta desactivada.' : 'Cuenta eliminada definitivamente.');
+        this.exito('Cuenta desactivada.');
       },
       error: (e) => this.fallo(e),
     });
@@ -348,12 +324,14 @@ export class GestionComponent implements OnInit {
     this.cancelarFotoPerfil();
     this.limpiar();
     this.archivoFotoPerfil = archivo;
-    this.vistaFotoPerfil.set(URL.createObjectURL(archivo));
+    const lector = new FileReader();
+    lector.onload = () => {
+      if (this.archivoFotoPerfil === archivo) this.vistaFotoPerfil.set(lector.result as string);
+    };
+    lector.readAsDataURL(archivo);
   }
 
   cancelarFotoPerfil(): void {
-    const anterior = this.vistaFotoPerfil();
-    if (anterior) URL.revokeObjectURL(anterior);
     this.vistaFotoPerfil.set(null);
     this.archivoFotoPerfil = null;
   }
@@ -361,12 +339,13 @@ export class GestionComponent implements OnInit {
   guardarFotoPerfil(): void {
     if (!this.archivoFotoPerfil || this.guardandoFotoPerfil()) return;
     const datos = new FormData();
-    datos.append('archivo', this.archivoFotoPerfil);
+    datos.append('file', this.archivoFotoPerfil);
     this.guardandoFotoPerfil.set(true);
     this.limpiar();
-    this.http.put(this.url + '/usuarios/me/foto', datos).subscribe({
-      next: () => {
-        this.auth.cargarFotoPerfil();
+    this.http.post<Cuenta>(this.url + '/usuarios/' + this.perfil().id + '/foto', datos).subscribe({
+      next: (perfil) => {
+        this.perfil.set(perfil);
+        this.auth.actualizarPerfil(perfil);
         this.cancelarFotoPerfil();
         this.guardandoFotoPerfil.set(false);
         this.mensaje.set('Foto de perfil guardada.');
@@ -393,9 +372,10 @@ export class GestionComponent implements OnInit {
   ngOnDestroy(): void { this.cancelarFotoPerfil(); }
   guardarPerfil(): void {
     const p = this.perfil();
-    this.http.put(this.url + '/usuarios/' + p.id, { nombre: p.nombre, email: p.email }).subscribe({
-      next: (x) => {
+    this.http.put(this.url + '/usuarios/' + p.id, { nombreUsuario: p.nombreUsuario, email: p.email, ...(p.persona ? { persona: p.persona } : {}) }).subscribe({
+      next: (x: any) => {
         this.perfil.set(x);
+        this.auth.actualizarPerfil(x);
         this.mensaje.set('Perfil guardado. Inicia sesión nuevamente si cambiaste el correo.');
       },
       error: (e) => this.fallo(e),

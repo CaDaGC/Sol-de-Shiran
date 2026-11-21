@@ -14,6 +14,8 @@ import pe.edu.upeu.soldeshiran.usuario_service.service.FotoPerfilService;
 @RequiredArgsConstructor
 public class FotoPerfilController {
   private final FotoPerfilService fotos;
+  @org.springframework.beans.factory.annotation.Value("${usuarios.fotos.directorio:uploads/perfiles}")
+  private String directorio;
 
   @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -26,10 +28,17 @@ public class FotoPerfilController {
     var usuario = fotos.obtener(Actor.desde(req));
     if (usuario.getFotoPerfil() == null)
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Todavía no tienes foto de perfil.");
+    byte[] contenido;
+    try {
+      String nombre = usuario.getFotoPerfil().substring(usuario.getFotoPerfil().lastIndexOf('/') + 1);
+      contenido = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(directorio).resolve(nombre));
+    } catch (java.io.IOException e) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Foto no encontrada.");
+    }
     return ResponseEntity.ok().cacheControl(CacheControl.noStore())
         .header("X-Content-Type-Options", "nosniff")
-        .contentType(MediaType.parseMediaType(usuario.getTipoFotoPerfil()))
-        .body(usuario.getFotoPerfil());
+        .contentType(usuario.getFotoPerfil().endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG)
+        .body(contenido);
   }
 
   @DeleteMapping

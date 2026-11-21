@@ -19,7 +19,7 @@ public class IdentityFilter extends OncePerRequestFilter {
   private final TokenVerifier verifier;
   private final pe.edu.upeu.soldeshiran.usuario_service.repository.UsuarioRepository usuarios;
 
-  @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+  @Value("${seguridad.internal-key}")
   private String internalKey;
 
   private Actor cargar(Long id) {
@@ -43,7 +43,7 @@ public class IdentityFilter extends OncePerRequestFilter {
           res.sendError(403);
           return;
         }
-      } else if (path.startsWith("/api/v1/") && !publica(req)) {
+      } else if ((path.startsWith("/api/v1/") || path.startsWith("/api/usuarios/")) && !publica(req)) {
         req.setAttribute("actor", cargar(verifier.verificar(req.getHeader("Authorization"))));
       }
     } catch (IllegalArgumentException ex) {
@@ -58,7 +58,8 @@ public class IdentityFilter extends OncePerRequestFilter {
 
   private boolean publica(HttpServletRequest r) {
     String p = r.getRequestURI();
-    return "OPTIONS".equals(r.getMethod())
+    return ("GET".equals(r.getMethod()) && p.matches("/api/v1/usuarios/fotos/(?:[a-f0-9-]{36}|migrada-[0-9]+)\\.(png|jpg)"))
+        || "OPTIONS".equals(r.getMethod())
         || ("POST".equals(r.getMethod()) && p.equals("/api/v1/usuarios/register"))
         || ("GET".equals(r.getMethod())
             && (p.equals("/api/v1/cabanas")

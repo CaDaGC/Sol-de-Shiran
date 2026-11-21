@@ -27,6 +27,9 @@ public class Reserva {
   @Column(name = "id_reserva")
   private Long idReserva;
 
+  @Column(name = "codigo", unique = true, length = 32, updatable = false)
+  private String codigo;
+
   @Version private Long version;
 
   @Embedded

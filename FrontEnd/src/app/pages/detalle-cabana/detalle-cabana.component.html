@@ -88,7 +88,7 @@
           <p class="price-label">Tarifa por noche</p>
           <p class="price">{{ formatearTarifa(detalle.tarifaNoche) }}</p>
 
-          <!-- Este botón queda habilitado para reabrir el calendario. -->
+
           <button
             class="reserve-button"
             type="button"
@@ -187,7 +187,7 @@
                 fechaOcupada(dia.fecha) || rangoNoDisponible(dia.fecha)
               "
               [disabled]="
-                  dia.pasado || !dia.mesActual || !!reservaCreada() || cargandoFechasOcupadas() || !!mensajeFechasOcupadas()
+                  dia.pasado || !dia.mesActual || fechaOcupada(dia.fecha) || !!reservaCreada() || cargandoFechasOcupadas() || !!mensajeFechasOcupadas()
               "
               [attr.aria-label]="etiquetaDia(dia)"
               [attr.title]="etiquetaDia(dia)"
@@ -200,25 +200,18 @@
           <div class="calendar-legend">
             <span><i class="legend-dot selected"></i> Entrada o salida</span>
             <span><i class="legend-dot stay"></i> Tu estadía</span>
-            <span><i class="legend-dot unavailable"></i> Horario ocupado</span>
+            <span><i class="legend-dot unavailable"></i> Fecha no disponible</span>
           </div>
 
-          <label>Hora de ingreso (hora de Perú)
-            <input type="time" step="60" [value]="horaIngreso()" [disabled]="!!reservaCreada()"
-              (change)="cambiarHora($any($event.target).value)" />
-          </label>
-          <p>Duración fija: 24 horas. La salida será al día siguiente a la misma hora.</p>
-          <details><summary>Ver horarios ocupados</summary>
-            @for (r of intervalos(); track $index) { <p>{{ r.inicio.replace('T',' ') }} → {{ r.fin.replace('T',' ') }}</p> }
-          </details>
+          <p class="fixed-schedule">Horario fijo: ingreso a las 11:00 a. m. y salida a la 1:00 p. m. (hora de Perú).</p>
           <div class="selected-dates">
             <p>
               <strong>Entrada:</strong>
-              {{ formatearFecha(fechaIngreso()) }} {{ horaIngreso() }}
+              {{ formatearFecha(fechaIngreso()) }} · 11:00 a. m.
             </p>
             <p>
               <strong>Salida:</strong>
-              {{ formatearFecha(fechaSalida()) }} {{ horaIngreso() }}
+              {{ formatearFecha(fechaSalida()) }} · 1:00 p. m.
             </p>
           </div>
         </section>
@@ -290,7 +283,7 @@
             </p>
             <p>
               <span>Noches seleccionadas</span>
-              <strong>{{ cotizacion()?.noches ?? '—' }}</strong>
+              <strong>{{ nochesSeleccionadas() || '—' }}</strong>
             </p>
             <p>
               <span>Total de la estadía</span>
@@ -366,7 +359,7 @@
     </section>
   </div>
 
-  <!-- La confirmación se superpone; al cerrarla, el calendario permanece abierto. -->
+
   <div
     class="confirmation-backdrop"
     *ngIf="confirmacionReservaAbierta()"

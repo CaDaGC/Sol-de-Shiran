@@ -59,21 +59,38 @@ class DisponibilidadEstanciaTest {
         assertTrue(servicio.consultarDisponibilidad(8888L,entrada,entrada.plusDays(1),2).disponible());
     }
 
-    @Test void soloAceptaExactamente24HorasYRespetaElAforo() {
-        assertThrows(ResponseStatusException.class,()->servicio.consultarDisponibilidad(8888L,entrada,entrada.plusDays(2),2,LocalTime.NOON,LocalTime.NOON));
-        assertThrows(ResponseStatusException.class,()->servicio.consultarDisponibilidad(8888L,entrada,entrada.plusDays(1),2,LocalTime.NOON,LocalTime.of(11,59)));
-        assertThrows(ResponseStatusException.class,()->servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),9,LocalTime.NOON,LocalTime.NOON)));
+    @Test void aplicaHorarioFijoSinConfiarEnHorasDelClienteYRespetaElAforo() {
         var cot=servicio.consultarDisponibilidad(8888L,entrada,entrada.plusDays(1),8,LocalTime.NOON,LocalTime.NOON);
+        assertEquals(LocalTime.of(11,0),cot.horaIngreso());
+        assertEquals(LocalTime.of(13,0),cot.horaSalida());
         assertEquals(new BigDecimal("250.00"),cot.montoTotal());
+        assertThrows(ResponseStatusException.class,()->servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),9)));
     }
-    @Test void reservaDeOtroClienteBloqueaHorasPeroPermiteIngresoAlTerminar() {
-        var primera=servicio.crearReservaTemporal(99L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),2,LocalTime.of(14,0),LocalTime.of(14,0)));
-        assertFalse(servicio.consultarDisponibilidad(8888L,entrada.plusDays(1),entrada.plusDays(2),2,LocalTime.of(13,59),LocalTime.of(13,59)).disponible());
-        var conflicto=assertThrows(ResponseStatusException.class,()->servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),2,LocalTime.of(15,0),LocalTime.of(15,0))));
+    @Test void otroClienteVeElBloqueoEnCalendarioYNoPuedeCrearLaMismaEstancia() {
+        var primera=servicio.crearReservaTemporal(99L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),2));
+        assertEquals(LocalTime.of(11,0),primera.horaIngreso());
+        assertEquals(LocalTime.of(13,0),primera.horaSalida());
+        var calendario=servicio.consultarFechasOcupadas(8888L,entrada.minusDays(1),entrada.plusDays(4));
+        assertTrue(calendario.fechasOcupadas().contains(entrada));
+        assertEquals(entrada.atTime(11,0),calendario.intervalos().getFirst().inicio());
+        assertFalse(servicio.consultarDisponibilidad(8888L,entrada,entrada.plusDays(1),2).disponible());
+        var conflicto=assertThrows(ResponseStatusException.class,()->servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada,entrada.plusDays(1),2)));
         assertEquals(409,conflicto.getStatusCode().value());
-        var siguiente=servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada.plusDays(1),entrada.plusDays(2),8,LocalTime.of(14,0),LocalTime.of(14,0)));
+
+        assertFalse(servicio.consultarDisponibilidad(8888L,entrada.plusDays(1),entrada.plusDays(2),2).disponible());
+        var siguiente=servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,entrada.plusDays(2),entrada.plusDays(3),2));
         assertNotEquals(primera.idReserva(),siguiente.idReserva());
-        assertEquals(LocalTime.of(14,0),siguiente.horaIngreso());
-        assertEquals(2,servicio.consultarFechasOcupadas(8888L,entrada,entrada.plusDays(3)).intervalos().size());
+    }
+    @Test void permiteCotizarYCrearParaHoyAunqueHayaPasadoElHorarioDeIngreso() {
+        var hoy = LocalDate.now(ZoneId.of("America/Lima"));
+        var cotizacion = servicio.consultarDisponibilidad(8888L,hoy,hoy.plusDays(2),2);
+        assertTrue(cotizacion.disponible());
+        assertEquals(2,cotizacion.noches());
+        assertEquals(new BigDecimal("500.00"),cotizacion.montoTotal());
+        var creada = servicio.crearReservaTemporal(100L,new CrearReservaRequest(8888L,hoy,hoy.plusDays(2),2));
+        assertEquals(LocalTime.of(11,0),creada.horaIngreso());
+        assertEquals(LocalTime.of(13,0),creada.horaSalida());
+        assertEquals(new BigDecimal("500.00"),creada.montoTotal());
+        assertFalse(servicio.consultarDisponibilidad(8888L,hoy,hoy.plusDays(1),2).disponible());
     }
 }

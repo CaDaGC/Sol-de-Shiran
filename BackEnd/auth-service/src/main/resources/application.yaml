@@ -7,15 +7,6 @@ spring:
   config:
     import: "optional:configserver:http://localhost:8089/"
 
-  datasource:
-    url: jdbc:mysql://localhost:3307/usuario_db
-    username: root
-    password: mysql123
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
 
 eureka:
   client:
@@ -25,5 +16,5 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
 jwt:
-  secret: ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456
-  expiration: 86400000
+  secret: ${JWT_SECRET}
+  expiration: 3600000

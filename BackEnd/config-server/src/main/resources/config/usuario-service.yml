@@ -34,3 +34,7 @@ management:
       show-details: always
 
 
+
+usuarios:
+  fotos:
+    directorio: ${USUARIOS_FOTOS_DIRECTORIO:uploads/perfiles}

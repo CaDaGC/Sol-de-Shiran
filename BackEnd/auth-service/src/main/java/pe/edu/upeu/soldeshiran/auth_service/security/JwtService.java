@@ -19,12 +19,13 @@ public class JwtService {
     private Long expiration;
 
     public String generateToken(UsuarioResponse usuario) {
+        Date emitido = new Date();
         return Jwts.builder()
                 .subject(usuario.getEmail())
                 .claim("userId", usuario.getId())
                 .claim("rol", usuario.getRol())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .issuedAt(emitido)
+                .expiration(new Date(emitido.getTime() + Math.min(expiration, 3_600_000L)))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)))
                 .compact();
     }

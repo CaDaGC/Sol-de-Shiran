@@ -37,6 +37,9 @@ public class PanelReservasClient {
                 .body(new org.springframework.core.ParameterizedTypeReference<List<CabanaResumen>>() {});
     }
 
-    public record UsuarioResumen(Long id, String nombre, String email) { }
+    public record UsuarioResumen(Long id, String nombre, String email, String nombreUsuario,
+            String fotoPerfil, pe.edu.upeu.soldeshiran.reservas_service.dto.PersonaClienteResponse persona) {
+        public UsuarioResumen(Long id,String nombre,String email) {this(id,nombre,email,nombre,null,null);}
+    }
     public record CabanaResumen(Long idCabana, String nombre) { }
 }

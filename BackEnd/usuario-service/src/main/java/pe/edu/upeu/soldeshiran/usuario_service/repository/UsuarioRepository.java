@@ -16,23 +16,32 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     List<Usuario> findAllByRol(pe.edu.upeu.soldeshiran.usuario_service.model.Rol rol);
     boolean existsByEmail(String email);
+    Optional<Usuario> findByNombre(String nombre);
 
-    boolean existsByDuenoId(Long duenoId);
 
-    List<Usuario> findAllByDuenoId(Long duenoId);
 
     @Query("""
-            SELECT new pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioResumenResponse(u.id, u.nombre, u.email)
+            SELECT u
             FROM Usuario u
             WHERE LOWER(u.nombre) LIKE :patron ESCAPE '!'
                OR LOWER(u.email) LIKE :patron ESCAPE '!'
             """)
-    List<UsuarioResumenResponse> buscarResumen(@Param("patron") String patron);
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "persona")
+    List<Usuario> buscarEntidadesResumen(@Param("patron") String patron);
+
+    default List<UsuarioResumenResponse> buscarResumen(String patron) {
+      return buscarEntidadesResumen(patron).stream().map(UsuarioResumenResponse::desde).toList();
+    }
 
     @Query("""
-            SELECT new pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioResumenResponse(u.id, u.nombre, u.email)
+            SELECT u
             FROM Usuario u WHERE u.id IN :ids
             """)
-    List<UsuarioResumenResponse> resumirPorIds(@Param("ids") List<Long> ids);
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "persona")
+    List<Usuario> resumirEntidadesPorIds(@Param("ids") List<Long> ids);
+
+    default List<UsuarioResumenResponse> resumirPorIds(List<Long> ids) {
+      return resumirEntidadesPorIds(ids).stream().map(UsuarioResumenResponse::desde).toList();
+    }
 
 }

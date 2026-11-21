@@ -23,8 +23,6 @@ public class PagoRestanteService {
     @Value("${servicios.interno.token}")
     private String token;
 
-    // Cada saveAndFlush confirma una transacción local antes de invocar otro servicio.
-    // Si la respuesta remota se pierde, se conserva el registro y se reintenta su misma referencia.
     public TransaccionPago registrar(Long trabajador, Long idReserva, RegistrarPagoRestanteRequest request) {
         String operacion = request.numeroOperacion() == null ? null : request.numeroOperacion().trim();
         if (operacion != null && operacion.isEmpty()) operacion = null;
@@ -56,7 +54,7 @@ public class PagoRestanteService {
         try {
             saldo = reservas.saldoCheckIn(idReserva, token);
         } catch (FeignException e) {
-            // Otra solicitud puede haber completado el check-in mientras consultábamos el saldo.
+
             TransaccionPago concurrente = repository.findByReservaPagoRestante(idReserva).orElse(null);
             if (concurrente != null) return concurrente;
             throw remoto(e);
@@ -77,7 +75,7 @@ public class PagoRestanteService {
         try {
             return repository.saveAndFlush(pago);
         } catch (DataIntegrityViolationException e) {
-            // La restricción UNIQUE de reserva arbitra incluso entre distintas instancias de pagos.
+
             return repository.findByReservaPagoRestante(idReserva).orElseThrow(() ->
                     new ResponseStatusException(HttpStatus.CONFLICT, "La clave ya identifica otro pago."));
         }
@@ -103,7 +101,7 @@ public class PagoRestanteService {
                         .readTree(e.contentUTF8()).path("detail").asText("");
                 if (!detalle.isBlank()) return new ResponseStatusException(HttpStatus.valueOf(e.status()), detalle);
             } catch (java.io.IOException ignored) {
-                // Compatibilidad con servicios que todavía no devuelven el detalle estructurado.
+
             }
             return new ResponseStatusException(HttpStatus.CONFLICT,
                     "No se puede completar el check-in: verifica fechas, estado y ocupación de la cabaña. El registro existente se conserva.");

@@ -103,4 +103,39 @@ class JwtPanelReservasTest {
         verify(chain, times(4)).filter(any());
         verifyNoInteractions(jwt);
     }
+    @Test
+    void consultaPorCodigoExigeSesionYRolesAutorizados() {
+        JwtUtil jwt = mock(JwtUtil.class);
+        when(jwt.isValid("token")).thenReturn(true);
+        when(jwt.getUserId("token")).thenReturn(5L);
+        var filtro = new JwtAuthenticationFilter(jwt);
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String path="/api/v1/reservas/codigo/RSS00001";
+        var anonimo=MockServerWebExchange.from(MockServerHttpRequest.get(path));
+        filtro.filter(anonimo,chain).block();
+        assertThat(anonimo.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        for(String rol:List.of("CLIENTE","ADMIN","TRABAJADOR","DUENO")) {
+            when(jwt.getRol("token")).thenReturn(rol);
+            var exchange=MockServerWebExchange.from(MockServerHttpRequest.get(path)
+                    .header("Authorization","Bearer token"));
+            filtro.filter(exchange,chain).block();
+            assertThat(exchange.getResponse().getStatusCode())
+                    .isEqualTo(rol.equals("DUENO")?HttpStatus.FORBIDDEN:null);
+        }
+        verify(chain,times(3)).filter(any());
+    }
+    @Test
+    void comprobantesRequierenSesionYNoPermitenDueno() {
+        JwtUtil jwt=mock(JwtUtil.class);when(jwt.isValid("token")).thenReturn(true);when(jwt.getUserId("token")).thenReturn(5L);
+        GatewayFilterChain chain=mock(GatewayFilterChain.class);when(chain.filter(any())).thenReturn(Mono.empty());
+        var filtro=new JwtAuthenticationFilter(jwt);
+        for(String rol:List.of("CLIENTE","ADMIN","TRABAJADOR","DUENO")) {
+            when(jwt.getRol("token")).thenReturn(rol);
+            var exchange=MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/pagos/reservas/9/comprobante").header("Authorization","Bearer token"));
+            filtro.filter(exchange,chain).block();assertThat(exchange.getResponse().getStatusCode()).isEqualTo(rol.equals("DUENO")?HttpStatus.FORBIDDEN:null);
+        }
+        var anonimo=MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/pagos/reservas/9/comprobante/pdf"));
+        filtro.filter(anonimo,chain).block();assertThat(anonimo.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

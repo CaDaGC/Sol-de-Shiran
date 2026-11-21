@@ -15,7 +15,6 @@ public class PagoReconciliationScheduler {
     private final TransaccionPagoRepository transacciones;
     private final PagoService pagos;
 
-    // Recupera pagos acreditados cuando el comprador no vuelve al sitio o el webhook no llega.
     @Scheduled(initialDelayString = "${pagos.reconciliacion-inicio-ms:30000}",
             fixedDelayString = "${pagos.reconciliacion-cada-ms:120000}")
     public void reconciliarPendientes() {

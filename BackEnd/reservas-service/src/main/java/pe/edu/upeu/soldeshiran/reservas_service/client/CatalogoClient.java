@@ -13,12 +13,16 @@ import java.util.List;
 public interface CatalogoClient {
     @org.springframework.web.bind.annotation.PostMapping("/api/v1/cabanas/interno/{idCabana}/ocupacion/{idReserva}")
     void ocupar(@PathVariable Long idCabana, @PathVariable Long idReserva,
-        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Service-Token") String token);
+        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Key") String token);
 
 
     @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/cabanas/interno/{idCabana}/ocupacion/{idReserva}")
     void liberar(@PathVariable Long idCabana, @PathVariable Long idReserva,
-        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Service-Token") String token);
+        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Key") String token);
+
+    @GetMapping("/internal/cabanas/duenos/{id}/ids")
+    List<Long> listarPropias(@PathVariable("id") Long id,
+        @org.springframework.web.bind.annotation.RequestHeader("X-Internal-Key") String key);
 
     @GetMapping("/internal/cabanas/resumen")
     List<CabanaResumenCliente> consultarResumen(@RequestParam("ids") List<Long> ids,

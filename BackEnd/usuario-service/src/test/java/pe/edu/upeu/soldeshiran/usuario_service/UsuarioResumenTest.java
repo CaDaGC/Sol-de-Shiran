@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest(properties = {"spring.cloud.config.enabled=false", "spring.config.import="})
 class UsuarioResumenTest {
     @Autowired UsuarioRepository repository;
+    @Autowired pe.edu.upeu.soldeshiran.usuario_service.repository.RolRepository roles;
 
     @Test
     void buscaNombreOCorreoSinDistinguirMayusculasYEscapaComodines() {
@@ -38,6 +39,11 @@ class UsuarioResumenTest {
 
     private Usuario guardar(String nombre, String email) {
         Usuario usuario = new Usuario();
+        var rol = roles.findByNombre("CLIENTE").orElseGet(() -> {
+          var r=new pe.edu.upeu.soldeshiran.usuario_service.model.Rol();
+          r.setNombre("CLIENTE"); return roles.save(r);
+        });
+        usuario.setRol(rol);
         usuario.setNombre(nombre);
         usuario.setEmail(email);
         usuario.setPassword("hash-no-incluido-en-resumen");

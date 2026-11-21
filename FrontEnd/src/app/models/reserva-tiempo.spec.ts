@@ -11,4 +11,10 @@ describe('Estancia fija de 24 horas',()=> {
   expect(cruzaHorario('2026-11-30','14:01',r)).toBe(true);
  });
  it('no admite una hora incompleta',()=>expect(cruzaHorario('2026-12-01','25:00',[])).toBe(true));
+ it('respeta ingreso fijo 11:00 y salida 13:00 sin permitir el cruce entre clientes',()=>{
+   const ocupada=[{inicio:'2026-12-01T11:00:00',fin:'2026-12-02T13:00:00'}];
+   expect(cruzaHorario('2026-12-01','11:00',ocupada,'13:00')).toBe(true);
+   expect(cruzaHorario('2026-12-02','11:00',ocupada,'13:00')).toBe(true);
+   expect(cruzaHorario('2026-12-03','11:00',ocupada,'13:00')).toBe(false);
+ });
 });

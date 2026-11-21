@@ -6,7 +6,9 @@ import pe.edu.upeu.soldeshiran.usuario_service.dto.UsuarioResponse;
 import pe.edu.upeu.soldeshiran.usuario_service.model.Usuario;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class UsuarioMapper {
+  private final PersonaMapper personas;
 
   public Usuario toEntity(UsuarioRequest request) {
     Usuario usuario = new Usuario();
@@ -22,9 +24,11 @@ public class UsuarioMapper {
 
     response.setId(usuario.getId());
     response.setNombre(usuario.getNombre());
+    response.setNombreUsuario(usuario.getNombre());
+    response.setFotoPerfil(usuario.getFotoPerfil());
+    response.setPersona(personas.toResponse(usuario.getPersona()));
     response.setEmail(usuario.getEmail());
     response.setActivo(!Boolean.FALSE.equals(usuario.getActivo()));
-    response.setDuenoId(usuario.getDuenoId());
     response.setRol(pe.edu.upeu.soldeshiran.usuario_service.security.Actor.normalizar(usuario.getRol().getNombre()));
     return response;
   }

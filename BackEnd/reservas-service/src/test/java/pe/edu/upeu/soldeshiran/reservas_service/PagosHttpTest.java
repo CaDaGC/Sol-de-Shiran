@@ -143,7 +143,7 @@ class PagosHttpTest {
     var mac = javax.crypto.Mac.getInstance("HmacSHA256");
     mac.init(
         new javax.crypto.spec.SecretKeySpec(
-            "ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456"
+            "test-only-jwt-key-not-for-production-1234567890"
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8),
             "HmacSHA256"));
     return "Bearer "

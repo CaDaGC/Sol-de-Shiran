@@ -22,7 +22,7 @@ public class PagoDanioScheduler {
     @Scheduled(fixedDelayString = "${reservas.exportar-danos-cada-ms:10000}",
             initialDelayString = "${reservas.exportar-danos-cada-ms:10000}")
     public void exportar() {
-        // La consulta solo ve check-outs confirmados. Los históricos también se exportan.
+
         for (var cobro : reservas.listarCobrosDaniosPendientes()) {
             try {
                 pagos.registrar(cobro.getIdReserva(), token, new PagoDanioClient.Cobro(

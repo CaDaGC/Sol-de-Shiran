@@ -30,6 +30,7 @@ class MisReservasControllerTest {
     @Autowired ReservaRepository repository;
     CatalogoClient catalogo;
     MockMvc mvc;
+    int codigo;
 
     @BeforeEach
     void preparar() {
@@ -64,18 +65,28 @@ class MisReservasControllerTest {
     }
 
     @Test
-    void confirmadasExcluyeEstanciasPasadas() throws Exception {
+    void confirmadasSeFiltraPorEstadoIndependienteDeLaFecha() throws Exception {
         mvc.perform(get("/api/v1/reservas/mis-reservas?grupo=CONFIRMADAS").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "USUARIO")))
-                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(1))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(2))
                 .andExpect(jsonPath("content[0].pagoDisponible").value(false));
     }
 
     @Test
-    void historialIncluyeFinalizadasEstanciasPasadasYPendientesVencidas() throws Exception {
-        mvc.perform(get("/api/v1/reservas/mis-reservas?grupo=PASADAS").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "USUARIO")))
-                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(3))
-                .andExpect(jsonPath("content[*].pagoDisponible", everyItem(is(false))))
-                .andExpect(jsonPath("content[*].estadoReserva", hasItem("EXPIRADA")));
+    void finalizadasSoloIncluyeCheckouts() throws Exception {
+        mvc.perform(get("/api/v1/reservas/mis-reservas?grupo=FINALIZADAS").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(1))
+                .andExpect(jsonPath("content[*].estadoReserva", everyItem(is("FINALIZADA"))));
+    }
+
+    @Test
+    void enEstanciaSoloIncluyeOcupadasYNoLasMezclaConConfirmadas() throws Exception {
+        guardar(5L, EstadoReserva.OCUPADA, -2, false);
+        guardar(9L, EstadoReserva.OCUPADA, -2, false);
+        repository.flush();
+        mvc.perform(get("/api/v1/reservas/mis-reservas?grupo=EN_ESTANCIA").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(1))
+                .andExpect(jsonPath("content[0].grupo").value("EN_ESTANCIA"))
+                .andExpect(jsonPath("content[0].estadoReserva").value("OCUPADA"));
     }
 
     @Test
@@ -103,9 +114,32 @@ class MisReservasControllerTest {
                 .andExpect(status().isServiceUnavailable());
     }
 
+    @Test
+    void codigoParcialSeFiltraAntesDePaginarSinIncluirOtrosClientes() throws Exception {
+        mvc.perform(get("/api/v1/reservas/mis-reservas?codigo=rss000&size=1").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(5))
+                .andExpect(jsonPath("totalPages").value(5)).andExpect(jsonPath("content.length()").value(1));
+        mvc.perform(get("/api/v1/reservas/mis-reservas?codigo=RSS00006").requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(0));
+    }
+
+    @Test
+    void combinaCabanaFechasEstadoYCodigoYValidaElIntervalo() throws Exception {
+        var dia = LocalDateTime.now(ZoneId.of("America/Lima")).toLocalDate().plusDays(11).toString();
+        mvc.perform(get("/api/v1/reservas/mis-reservas").param("cabana","fami").param("codigo","rss00")
+                .param("desde",dia).param("hasta",dia).param("grupo","CONFIRMADAS")
+                .requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isOk()).andExpect(jsonPath("totalElements").value(1))
+                .andExpect(jsonPath("content[0].codigo").value("RSS00002"));
+        mvc.perform(get("/api/v1/reservas/mis-reservas?desde=2027-02-10&hasta=2027-02-01")
+                .requestAttr("actor", new pe.edu.upeu.soldeshiran.reservas_service.security.Actor(5L, "CLIENTE")))
+                .andExpect(status().isBadRequest());
+    }
+
     private void guardar(Long usuario, EstadoReserva estado, int dias, boolean vencida) {
         var ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
         var r = new Reserva();
+        r.setCodigo(String.format("RSS%05d", ++codigo));
         r.setIdUsuario(usuario); r.setIdCabana(1L);
         r.setFechaIngreso(ahora.toLocalDate().plusDays(dias)); r.setFechaSalida(r.getFechaIngreso().plusDays(2));
         r.setCantidadHuespedes(2); r.setTarifaNocheAplicada(new BigDecimal("100.00"));

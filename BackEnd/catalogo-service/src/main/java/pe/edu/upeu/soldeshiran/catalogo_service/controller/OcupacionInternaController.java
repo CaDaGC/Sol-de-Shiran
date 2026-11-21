@@ -9,10 +9,10 @@ import pe.edu.upeu.soldeshiran.catalogo_service.service.OcupacionService;
 @RequestMapping("/api/v1/cabanas/interno")
 public class OcupacionInternaController {
  private final OcupacionService service;
- @Value("${servicios.interno.token}") private String token;
+ @Value("${seguridad.internal-key}") private String token;
  @PostMapping("/{idCabana}/ocupacion/{idReserva}")
  public String ocupar(@PathVariable Long idCabana, @PathVariable Long idReserva,
-   @RequestHeader("X-Internal-Service-Token") String recibido) {
+   @RequestHeader("X-Internal-Key") String recibido) {
   validarToken(recibido);
   if(idReserva<=0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Reserva inválida.");
   return service.ocupar(idCabana,idReserva);
@@ -20,7 +20,7 @@ public class OcupacionInternaController {
     @DeleteMapping("/{idCabana}/ocupacion/{idReserva}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void liberar(@PathVariable Long idCabana, @PathVariable Long idReserva,
-            @RequestHeader("X-Internal-Service-Token") String recibido) {
+            @RequestHeader("X-Internal-Key") String recibido) {
         validarToken(recibido);
         service.liberar(idCabana, idReserva);
     }

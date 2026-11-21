@@ -13,6 +13,7 @@ import { clienteGuard } from './guards/cliente.guard';
 class InicioDuenoComponent {}
 
 export const routes: Routes = [
+  { path: 'registro', loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },
   { path: 'pago/resultado', canActivate: [pagoGuard], component: PagoResultadoComponent },
   {
     path: 'login',

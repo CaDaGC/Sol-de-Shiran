@@ -26,14 +26,23 @@ export class ReservasService {
 
   constructor(private readonly http: HttpClient) {}
 
-  consultarMisReservas(grupo: GrupoReservasCliente, page: number): Observable<MisReservasPaginaResponse> {
-    const params = new HttpParams().set('grupo', grupo).set('page', page).set('size', 20);
+  consultarMisReservas(grupo: GrupoReservasCliente, page: number, filtros: { codigo: string; cabana: string; desde: string; hasta: string } = { codigo: '', cabana: '', desde: '', hasta: '' }): Observable<MisReservasPaginaResponse> {
+    let params = new HttpParams().set('grupo', grupo).set('page', page).set('size', 20);
+    for (const clave of ['codigo', 'cabana', 'desde', 'hasta'] as const) {
+      const valor = filtros[clave].trim();
+      if (valor) params = params.set(clave, valor);
+    }
     return this.http.get<MisReservasPaginaResponse>(`${this.url}/mis-reservas`, { params })
       .pipe(timeout({ first: 15000 }));
   }
 
   listarCabanasDelPanel(): Observable<{ idCabana: number; nombre: string }[]> {
     return this.http.get<{ idCabana: number; nombre: string }[]>(`${this.url}/panel/cabanas`)
+      .pipe(timeout({ first: 15000 }));
+  }
+
+  buscarPorCodigo(codigo: string): Observable<ReservaResponse> {
+    return this.http.get<ReservaResponse>(`${this.url}/codigo/${encodeURIComponent(codigo.trim())}`)
       .pipe(timeout({ first: 15000 }));
   }
 
@@ -60,7 +69,7 @@ export class ReservasService {
     fechaIngreso: string,
     fechaSalida: string,
     cantidadHuespedes: number,
-    horaIngreso = "14:00", horaSalida = horaIngreso
+    horaIngreso = "11:00", horaSalida = "13:00"
   ): Observable<CotizacionReservaResponse> {
     const params = new HttpParams()
       .set('fechaIngreso', fechaIngreso)

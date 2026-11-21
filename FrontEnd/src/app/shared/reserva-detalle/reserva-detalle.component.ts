@@ -1,3 +1,4 @@
+import { ComprobanteComponent } from '../comprobante/comprobante.component';
 import { FormsModule } from '@angular/forms';
 import { PagosService, PagoRestanteRequest } from '../../services/pagos.service';
 import { CommonModule } from '@angular/common';
@@ -12,7 +13,7 @@ import { ReservasService } from '../../services/reservas.service';
 @Component({
   selector: 'app-reserva-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ComprobanteComponent],
   templateUrl: './reserva-detalle.component.html',
   styleUrl: './reserva-detalle.component.css'
 })
@@ -91,7 +92,7 @@ export class ReservaDetalleComponent implements OnInit {
           ? error.error?.detail ?? (error.status === 403 ? 'Tu cuenta no tiene permiso para registrar el check-in.'
             : 'No se pudo completar la operación. Reintenta: el pago no se duplicará.')
           : 'La operación tardó demasiado. Reintenta: el pago no se duplicará.');
-        // Bloquea la edición tras un resultado incierto; el reintento conserva los mismos datos.
+
         this.registroExistente.set(!(error instanceof HttpErrorResponse) || error.status === 0 || error.status >= 500 || error.status === 409);
         this.consultarPago(false);
       }

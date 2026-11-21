@@ -17,9 +17,13 @@ public class MisReservasController {
             jakarta.servlet.http.HttpServletRequest request,
             @RequestParam(defaultValue = "TODAS") GrupoReservasCliente grupo,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String codigo,
+            @RequestParam(required = false) String cabana,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate desde,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate hasta) {
         var actor = pe.edu.upeu.soldeshiran.reservas_service.security.Actor.desde(request);
         actor.exigir("CLIENTE");
-        return service.consultar(actor.id(), grupo, page, size);
+        return service.consultar(actor.id(), grupo, page, size, codigo, cabana, desde, hasta);
     }
 }

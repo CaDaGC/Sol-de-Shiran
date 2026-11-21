@@ -1,13 +1,13 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Cabana } from '../../models/cabana.model';
 import { CabanaService } from '../../services/cabana.service';
 
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink],
   templateUrl: './catalogo.component.html',
   styleUrl: './catalogo.component.css'
 })
@@ -21,7 +21,7 @@ export class CatalogoComponent implements OnInit {
   constructor(private readonly cabanaService: CabanaService) {}
 
   ngOnInit(): void {
-    // Evita hacer la petición al API durante el prerenderizado del servidor.
+
     if (isPlatformBrowser(this.platformId)) {
       this.cargarCabanas();
     }

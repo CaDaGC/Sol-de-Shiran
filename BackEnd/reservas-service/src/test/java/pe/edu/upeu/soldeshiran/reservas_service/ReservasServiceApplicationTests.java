@@ -106,7 +106,7 @@ class ReservasServiceApplicationTests {
             verifyNoInteractions(catalogo);
 
             doThrow(mock(FeignException.class)).doNothing()
-                    .when(catalogo).liberar(12L, id, "test-internal-token");
+                    .when(catalogo).liberar(12L, id, "test-only-internal-key");
             mvc.perform(salida.content(cuerpo)).andExpect(status().isServiceUnavailable());
             var ocupada = reservas.findById(id).orElseThrow();
             assertEquals(EstadoReserva.OCUPADA, ocupada.getEstadoReserva());
@@ -131,7 +131,7 @@ class ReservasServiceApplicationTests {
             mvc.perform(salida.content(cuerpo))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.checkout.fecha").value(fechaOriginal));
-            verify(catalogo, times(2)).liberar(12L, id, "test-internal-token");
+            verify(catalogo, times(2)).liberar(12L, id, "test-only-internal-key");
             var cobro = new pe.edu.upeu.soldeshiran.reservas_service.client.PagoDanioClient.Cobro(
                     1L, "Toalla dañada", new BigDecimal("25.50"), "YAPE", finalizada.getCheckout().fecha());
             doThrow(mock(FeignException.class)).doNothing()

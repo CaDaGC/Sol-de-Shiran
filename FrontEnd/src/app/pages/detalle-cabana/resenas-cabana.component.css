@@ -54,3 +54,5 @@ button:disabled { opacity: .65; cursor: default; }
 .reviews-list { list-style: none; padding: 0; }
 .reviews-list li { border-top: 1px solid #dce5de; padding-block: 1rem; }
 .reviews-list p { white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 0; }
+
+.review-author{display:flex;align-items:center;gap:12px}.review-author img,.review-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover}.review-avatar{display:grid;place-items:center;background:#e7eee3;color:#245439;font-weight:600}

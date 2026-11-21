@@ -37,7 +37,7 @@ class OrdersFlowTests {
         repo = mock(TransaccionPagoRepository.class);
         reservas = mock(ReservaInternaClient.class);
         RestClient.Builder builder = RestClient.builder();
-        // El constructor fija timeouts antes del binding del servidor de prueba.
+
         service = new PagoServiceImpl(repo, reservas, builder, new ObjectMapper(), "test-token");
         server = MockRestServiceServer.bindTo(builder).build();
         ReflectionTestUtils.setField(service, "mercadoPago", builder.build());
@@ -83,7 +83,7 @@ class OrdersFlowTests {
             .andExpect(request -> content().string(original[0]).match(request))
             .andRespond(withSuccess("{\"id\":\"ORDTST123\",\"checkout_url\":\"https://www.mercadopago.com.pe/checkout/test\"}",MediaType.APPLICATION_JSON));
         assertThrows(ResponseStatusException.class, () -> service.crearPreferencia(2L,3L,new CrearPreferenciaRequest("buyer@example.com")));
-        // Captura el registro durable con el cuerpo original para simular una nueva solicitud HTTP.
+
         var guardados=org.mockito.ArgumentCaptor.forClass(TransaccionPago.class);
         verify(repo,times(2)).saveAndFlush(guardados.capture());
         TransaccionPago incierto=guardados.getValue();
@@ -197,5 +197,4 @@ class OrdersFlowTests {
         verify(reservas).confirmarPago(3L,"internal",new ConfirmarPagoRequest("ORDTST123",new BigDecimal("100.00")));
         server.verify();
     }}
-
 

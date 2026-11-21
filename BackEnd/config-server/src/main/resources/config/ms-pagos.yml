@@ -4,8 +4,8 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3307/db_pagos?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:mysql123}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -16,7 +16,7 @@ spring:
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456}
+  secret: ${JWT_SECRET}
 
 mercadopago:
   frontend-url: ${MP_FRONTEND_URL:http://localhost:4200}
@@ -26,7 +26,7 @@ mercadopago:
 
 servicios:
   interno:
-    token: ${INTERNAL_SERVICE_TOKEN:sol-de-shiran-local-internal-token-change-me}
+    token: ${INTERNAL_SERVICE_TOKEN}
 
 eureka:
   client:
@@ -37,3 +37,7 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+
+comprobantes:
+  directorio: ${COMPROBANTES_DIRECTORIO:uploads/comprobantes}
+  reintento-ms: 60000

@@ -28,6 +28,8 @@ public class PagoServiceImpl implements PagoService {
     private final TransaccionPagoRepository transaccionRepository;
     private final ReservaInternaClient reservaClient;
     private final RestClient mercadoPago;
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.context.ApplicationEventPublisher eventos;
     private final ObjectMapper objectMapper;
     @Value("${servicios.interno.token}") private String internalToken;
     @Value("${mercadopago.frontend-url:http://localhost:4200}") private String frontendUrl;
@@ -52,7 +54,6 @@ public class PagoServiceImpl implements PagoService {
                 "Esta aplicación utiliza Checkout Pro con Orders. Inicia el checkout de la reserva.");
     }
 
-    // Se mantiene el endpoint anterior como alias para clientes existentes.
     @Override
     public PreferenciaResponse crearPreferencia(Long usuario, Long idReserva, CrearPreferenciaRequest request) {
         ReservaPagoResponse reserva = validarReserva(usuario, idReserva);
@@ -152,7 +153,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoResponse consultarEstado(Long usuario, Long idTransaccion) {
-        // Validar que la transacción exista y pertenezca al usuario
+
         TransaccionPago tx = transaccionRepository.findById(idTransaccion)
                 .filter(pago -> TransaccionPago.ONLINE_ADELANTO.equals(pago.getTipoPago()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe la transacción."));
@@ -187,7 +188,7 @@ public class PagoServiceImpl implements PagoService {
     private JsonNode crearOrdenConReintento(TransaccionPago tx, String body) {
         String clave = tx.getClaveIdempotenciaCheckout() == null
                 ? "orden-" + tx.getIdTransaccion() : tx.getClaveIdempotenciaCheckout();
-        // Un conflicto transitorio se recupera con el MISMO cuerpo y clave; nunca se crea otra transacción.
+
         for (int intento = 0; ; intento++) {
             try {
                 return mercadoPago.post().uri("/v1/orders")
@@ -247,8 +248,9 @@ public class PagoServiceImpl implements PagoService {
             }
             tx.setEstadoTransaccion(EstadoTransaccion.APROBADA);
             transaccionRepository.saveAndFlush(tx);
-            // Confirmación idempotente: si reservas falla, el reenvío del webhook vuelve a intentarlo.
+
             reservaClient.confirmarPago(tx.getIdReserva(), internalToken, new ConfirmarPagoRequest(id, tx.getMonto()));
+            if (eventos != null) eventos.publishEvent(new pe.edu.upeu.soldeshiran.pagos_service.service.AdelantoAprobado(tx.getIdTransaccion()));
         } else if (tx.getEstadoTransaccion() != EstadoTransaccion.APROBADA) {
             tx.setEstadoTransaccion(Set.of("failed", "canceled", "cancelled", "expired").contains(status)
                     ? EstadoTransaccion.RECHAZADA : EstadoTransaccion.PENDIENTE);
@@ -350,5 +352,4 @@ public class PagoServiceImpl implements PagoService {
                 : causa.getClass().getSimpleName() + ": " + mensaje;
     }
 }
-
 

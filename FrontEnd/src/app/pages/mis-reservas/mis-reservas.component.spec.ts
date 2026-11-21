@@ -11,7 +11,7 @@ describe('Mis reservas del cliente', () => {
   let fixture: ComponentFixture<MisReservasComponent>;
   let http: HttpTestingController;
   const reserva: MiReservaResponse = {
-    idReserva: 24, idCabana: 2, idUsuario: 5, nombreCabana: 'Jardín', imagenPrincipal: '/jardin.jpg',
+    idReserva: 24, codigo: 'RSS00024', idCabana: 2, idUsuario: 5, nombreCabana: 'Jardín', imagenPrincipal: '/jardin.jpg',
     fechaIngreso: '2026-12-01', fechaSalida: '2026-12-03', cantidadHuespedes: 2,
     tarifaNocheAplicada: 100, montoTotal: 200, montoAdelanto: 100, saldoPendiente: 100,
     estadoReserva: 'CONFIRMADA', expiraEn: '2026-12-01T12:00:00', grupo: 'CONFIRMADAS', pagoDisponible: false
@@ -61,7 +61,7 @@ describe('Mis reservas del cliente', () => {
     const siguiente = solicitud();
     expect(siguiente.request.params.get('page')).toBe('1');
     siguiente.flush(respuesta([reserva], 1, 21));
-    fixture.componentInstance.filtrar('PASADAS');
+    fixture.componentInstance.filtrar('FINALIZADAS');
     const historial = solicitud();
     expect(historial.request.params.get('page')).toBe('0');
     historial.flush(respuesta([]));
@@ -70,7 +70,7 @@ describe('Mis reservas del cliente', () => {
   it('ofrece continuar pago únicamente cuando el backend indica que está disponible', () => {
     solicitud().flush(respuesta([
       { ...reserva, idReserva: 26, estadoReserva: 'PENDIENTE_PAGO', grupo: 'PENDIENTES', pagoDisponible: true },
-      { ...reserva, idReserva: 18, estadoReserva: 'EXPIRADA', grupo: 'PASADAS' },
+      { ...reserva, idReserva: 18, estadoReserva: 'EXPIRADA', grupo: 'TODAS' },
       reserva
     ]));
     fixture.detectChanges();
@@ -83,7 +83,7 @@ describe('Mis reservas del cliente', () => {
   it('abre y cierra el detalle de una reserva propia sin consultar el endpoint del guardián', () => {
     solicitud().flush(respuesta([reserva]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('[aria-label="Ver detalle de reserva #24"]').click();
+    fixture.nativeElement.querySelector('[aria-label="Ver detalle de reserva RSS00024"]').click();
     fixture.detectChanges();
     const dialog = fixture.nativeElement.querySelector('dialog') as HTMLDialogElement;
     expect(dialog.open).toBe(true);
@@ -104,5 +104,29 @@ describe('Mis reservas del cliente', () => {
     solicitud().flush(respuesta([reserva]));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Jardín');
+  });
+  it('combina código parcial, cabaña y fechas, reiniciando la página', async () => {
+    solicitud().flush(respuesta([reserva]));
+    const c = fixture.componentInstance;
+    c.codigo='rss00'; c.cabana='Luna'; c.desde='2026-12-01'; c.hasta='2026-12-03';
+    c.actualizarFiltros(300);
+    http.expectNone(r => r.url.endsWith('/mis-reservas'));
+    await new Promise(resolve => setTimeout(resolve, 330));
+    const req=solicitud();
+    expect(req.request.params.get('codigo')).toBe('rss00');
+    expect(req.request.params.get('cabana')).toBe('Luna');
+    expect(req.request.params.get('desde')).toBe('2026-12-01');
+    expect(req.request.params.get('hasta')).toBe('2026-12-03');
+    expect(req.request.params.get('page')).toBe('0');
+    expect(req.request.params.has('idUsuario')).toBe(false);
+    req.flush(respuesta([reserva]));
+    c.limpiarFiltros();const limpia=solicitud();expect(limpia.request.params.has('codigo')).toBe(false);limpia.flush(respuesta([]));
+  });
+
+  it('ofrece los cinco estados y no envía intervalos inválidos', () => {
+    solicitud().flush(respuesta([]));const c=fixture.componentInstance;
+    expect(c.filtros.map(f=>f.valor)).toEqual(['TODAS','PENDIENTES','CONFIRMADAS','EN_ESTANCIA','FINALIZADAS']);
+    c.desde='2026-12-10';c.hasta='2026-12-01';c.actualizarFiltros();
+    http.expectNone(r=>r.url.endsWith('/mis-reservas'));expect(c.error()).toContain('fecha desde');
   });
 });

@@ -1,9 +1,11 @@
+import { ComprobanteComponent } from '../../shared/comprobante/comprobante.component';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { BehaviorSubject, catchError, finalize, of, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, of, switchMap, timer } from 'rxjs';
 import { ESTADOS_RESERVA, GrupoReservasCliente, MiReservaResponse, MisReservasPaginaResponse } from '../../models/reserva.model';
 import { ReservasService } from '../../services/reservas.service';
 import { PagoModalComponent } from '../../shared/pago-modal/pago-modal.component';
@@ -11,13 +13,13 @@ import { PagoModalComponent } from '../../shared/pago-modal/pago-modal.component
 @Component({
   selector: 'app-mis-reservas',
   standalone: true,
-  imports: [CommonModule, RouterLink, PagoModalComponent],
+  imports: [CommonModule, RouterLink, FormsModule, PagoModalComponent, ComprobanteComponent],
   templateUrl: './mis-reservas.component.html',
   styleUrl: './mis-reservas.component.css'
 })
 export class MisReservasComponent {
   private readonly service = inject(ReservasService);
-  private readonly consultas = new BehaviorSubject({ grupo: 'TODAS' as GrupoReservasCliente, page: 0 });
+  private readonly consultas = new BehaviorSubject({ grupo: 'TODAS' as GrupoReservasCliente, page: 0, codigo: '', cabana: '', desde: '', hasta: '', espera: 0 });
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('detalleDialog');
 
   readonly grupo = signal<GrupoReservasCliente>('TODAS');
@@ -29,10 +31,12 @@ export class MisReservasComponent {
   readonly estados = ESTADOS_RESERVA;
   readonly filtros: { valor: GrupoReservasCliente; etiqueta: string }[] = [
     { valor: 'TODAS', etiqueta: 'Todas' }, { valor: 'PENDIENTES', etiqueta: 'Pendientes' },
-    { valor: 'CONFIRMADAS', etiqueta: 'Confirmadas' }, { valor: 'PASADAS', etiqueta: 'Pasadas' }
+    { valor: 'CONFIRMADAS', etiqueta: 'Confirmadas' }, { valor: 'EN_ESTANCIA', etiqueta: 'En estancia' }, { valor: 'FINALIZADAS', etiqueta: 'Finalizadas' }
   ];
-  readonly activas = computed(() => this.datos()?.content.filter(r => r.grupo !== 'PASADAS') ?? []);
-  readonly pasadas = computed(() => this.datos()?.content.filter(r => r.grupo === 'PASADAS') ?? []);
+  codigo = '';
+  cabana = '';
+  desde = '';
+  hasta = '';
 
   constructor() {
     this.consultas.pipe(
@@ -40,7 +44,11 @@ export class MisReservasComponent {
         this.cargando.set(true);
         this.error.set('');
         this.datos.set(null);
-        return this.service.consultarMisReservas(consulta.grupo, consulta.page).pipe(
+        if (consulta.desde && consulta.hasta && consulta.desde > consulta.hasta) {
+          this.error.set('La fecha desde debe ser anterior o igual a hasta.'); this.cargando.set(false); return of(null);
+        }
+        return (consulta.espera ? timer(consulta.espera) : of(0)).pipe(
+          switchMap(() => this.service.consultarMisReservas(consulta.grupo, consulta.page, consulta)),
           catchError((error: unknown) => {
             this.error.set(error instanceof HttpErrorResponse && error.status === 401
               ? 'Tu sesión expiró. Inicia sesión nuevamente.' : 'No se pudieron cargar tus reservas. Intenta nuevamente.');
@@ -58,8 +66,15 @@ export class MisReservasComponent {
     this.cargar();
   }
 
-  cargar(): void {
-    this.consultas.next({ grupo: this.grupo(), page: this.pagina() });
+  cargar(espera = 0): void {
+    this.consultas.next({ grupo: this.grupo(), page: this.pagina(), codigo: this.codigo,
+      cabana: this.cabana, desde: this.desde, hasta: this.hasta, espera });
+  }
+
+  actualizarFiltros(espera = 0): void { this.pagina.set(0); this.cargar(espera); }
+  limpiarFiltros(): void {
+    this.codigo = ''; this.cabana = ''; this.desde = ''; this.hasta = '';
+    this.grupo.set('TODAS'); this.actualizarFiltros();
   }
 
   cambiarPagina(page: number): void {

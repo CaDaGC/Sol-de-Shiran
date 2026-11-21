@@ -21,7 +21,7 @@ public class IdentityFilter extends OncePerRequestFilter {
   @Value("${usuarios.url:http://localhost:8087}")
   private String identityUrl;
 
-  @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+  @Value("${seguridad.internal-key}")
   private String internalKey;
 
   private Actor cargar(Long id) {

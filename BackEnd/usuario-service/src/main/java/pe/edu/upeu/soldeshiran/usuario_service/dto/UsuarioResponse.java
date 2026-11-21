@@ -7,8 +7,10 @@ public class UsuarioResponse {
 
   private Long id;
   private String nombre;
+  private String nombreUsuario;
+  private String fotoPerfil;
+  private PersonaResponse persona;
   private String email;
   private Boolean activo;
-  private Long duenoId;
   private String rol;
 }

@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
@@ -7,7 +9,7 @@ import { PagoResultadoComponent } from './pago-resultado.component';
 import { AuthService } from '../../services/auth';
 import { PagosService } from '../../services/pagos.service';
 
-const reserva = { idReserva: 8, idCabana: 3, idUsuario: 1, fechaIngreso: '2026-12-01', fechaSalida: '2026-12-02',
+const reserva = { idReserva: 8, codigo: 'RSS00008', idCabana: 3, idUsuario: 1, fechaIngreso: '2026-12-01', fechaSalida: '2026-12-02',
   cantidadHuespedes: 2, tarifaNocheAplicada: 250, montoTotal: 250, montoAdelanto: 125, saldoPendiente: 125,
   estadoReserva: 'PENDIENTE_PAGO', expiraEn: '2099-12-01T12:00:00' };
 const contexto = (): CheckoutRetorno => ({ transaccion: 7, reserva, nombreCabana: 'Familiar', url: '/catalogo/3?adultos=2',
@@ -56,6 +58,7 @@ describe('Retorno de Mercado Pago', () => {
     expect(confirmed).toHaveBeenCalledOnce();
     expect(fixture.nativeElement.querySelector('button.pay-button').textContent).toContain('Ver confirmación de pago');
     expect(fixture.nativeElement.textContent).toContain('¡Tu reserva está confirmada!');
+    expect(fixture.nativeElement.textContent).toContain('RSS00008');
     expect(fixture.nativeElement.querySelector('svg.success-mark')).not.toBeNull(); fixture.destroy();
   });
   it('un pago de otra reserva nunca activa la confirmación', async () => {
@@ -70,11 +73,15 @@ describe('Retorno de Mercado Pago', () => {
   });
   it('un retorno sin contexto sigue consultando el servidor y no confía en la URL', async () => {
     const consultar = vi.fn().mockReturnValue(of({ idReserva: 8, idTransaccion: 7, monto: 125, estado: 'PENDIENTE' }));
-    TestBed.configureTestingModule({ providers: [
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(),
       { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: new Map([['transaccion','7'],['status','approved']]) } } },
       { provide: Router, useValue: {} }, { provide: PagosService, useValue: { consultarEstado: consultar } }
     ] });
     const component=TestBed.runInInjectionContext(() => new PagoResultadoComponent(TestBed.inject(ActivatedRoute),TestBed.inject(PagosService)));
-    await component.consultar(); expect(consultar).toHaveBeenCalledWith(7); expect(component.estado()).toBe('PENDIENTE');component.ngOnDestroy();
+    const consulta = component.consultar(); await Promise.resolve();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(r => r.url.endsWith('/reservas/8')).flush({ ...reserva, codigo: 'RSS00008' });
+    await consulta; expect(consultar).toHaveBeenCalledWith(7); expect(component.estado()).toBe('PENDIENTE');
+    expect(component.codigoReserva()).toBe('RSS00008'); http.verify(); component.ngOnDestroy();
   });
 });

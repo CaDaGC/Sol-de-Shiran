@@ -11,11 +11,11 @@ public record Actor(Long id, String rol) {
 
   public static String normalizar(String rol) {
     if (rol == null) return "";
-    return switch (rol.trim().toUpperCase(java.util.Locale.ROOT)) {
+    return switch (rol.trim().toUpperCase(java.util.Locale.ROOT).replaceFirst("^ROLE_", "")) {
       case "USUARIO" -> "CLIENTE";
       case "DUEÑO", "PROPIETARIO" -> "DUENO";
       case "EMPLEADO", "GUARDIAN" -> "TRABAJADOR";
-      default -> rol.trim().toUpperCase(java.util.Locale.ROOT);
+      default -> rol.trim().toUpperCase(java.util.Locale.ROOT).replaceFirst("^ROLE_", "");
     };
   }
 

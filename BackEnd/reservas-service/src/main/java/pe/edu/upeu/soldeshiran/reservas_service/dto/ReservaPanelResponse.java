@@ -11,8 +11,18 @@ Long idReserva, Long idUsuario, String nombreUsuario, String emailUsuario,
         Integer cantidadHuespedes, BigDecimal montoTotal, BigDecimal montoAdelanto,
         BigDecimal saldoPendiente, EstadoReserva estadoReserva,
         java.time.LocalTime horaIngreso,
-        java.time.LocalTime horaSalida
+        java.time.LocalTime horaSalida,
+        String codigo
 ) {
+  public ReservaPanelResponse(Long idReserva, Long idUsuario, String nombreUsuario, String emailUsuario,
+        Long idCabana, String nombreCabana, LocalDate fechaIngreso, LocalDate fechaSalida,
+        Integer cantidadHuespedes, BigDecimal montoTotal, BigDecimal montoAdelanto,
+        BigDecimal saldoPendiente, EstadoReserva estadoReserva,
+        java.time.LocalTime horaIngreso,
+        java.time.LocalTime horaSalida) {
+    this(idReserva, idUsuario, nombreUsuario, emailUsuario, idCabana, nombreCabana, fechaIngreso, fechaSalida, cantidadHuespedes, montoTotal, montoAdelanto, saldoPendiente, estadoReserva, horaIngreso, horaSalida, null);
+  }
+
   public ReservaPanelResponse(Long idReserva, Long idUsuario, String nombreUsuario, String emailUsuario,
         Long idCabana, String nombreCabana, LocalDate fechaIngreso, LocalDate fechaSalida,
         Integer cantidadHuespedes, BigDecimal montoTotal, BigDecimal montoAdelanto,

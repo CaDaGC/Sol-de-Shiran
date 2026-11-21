@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
-/** El importe se obtiene de reservas; la clave identifica los reintentos del mismo pago. */
 public record RegistrarPagoRestanteRequest(
         @NotNull MetodoPago metodoPago,
         @Size(max = 100) String numeroOperacion,

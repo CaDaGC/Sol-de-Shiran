@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "MS-RESERVAS")
 public interface ReservaInternaClient {
+    @GetMapping("/api/v1/reservas/interno/{idReserva}/comprobante")
+    pe.edu.upeu.soldeshiran.pagos_service.dto.DatosReservaComprobante datosComprobante(@PathVariable Long idReserva,
+        @RequestHeader("X-Internal-Service-Token") String token);
+
     @GetMapping("/api/v1/reservas/panel/{idReserva}/acceso")
     void exigirAccesoOperativo(@PathVariable Long idReserva,
         @RequestHeader("Authorization") String authorization);

@@ -61,7 +61,6 @@ public class MigracionPagoRestante implements ApplicationRunner {
             }
         });
 
-        // En MySQL DROP TABLE confirma implícitamente. La copia ya fue verificada y confirmada.
         if (retirarTabla) jdbc.execute("DROP TABLE pago_restante");
     }
 

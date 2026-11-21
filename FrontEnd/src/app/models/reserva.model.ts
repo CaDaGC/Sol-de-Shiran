@@ -1,3 +1,4 @@
+import { Persona } from './usuario.model';
 export interface CotizacionReservaResponse {
   idCabana: number;
   nombreCabana: string;
@@ -34,6 +35,7 @@ export interface CrearReservaRequest {
 
 export interface ReservaResponse {
   idReserva: number;
+  codigo?: string;
   idCabana: number;
   idUsuario: number;
   fechaIngreso: string;
@@ -49,7 +51,7 @@ export interface ReservaResponse {
   expiraEn: string;
 }
 
-export type GrupoReservasCliente = 'TODAS' | 'PENDIENTES' | 'CONFIRMADAS' | 'PASADAS';
+export type GrupoReservasCliente = 'TODAS' | 'PENDIENTES' | 'CONFIRMADAS' | 'EN_ESTANCIA' | 'FINALIZADAS';
 
 export interface MiReservaResponse extends ReservaResponse {
   nombreCabana: string | null;
@@ -68,6 +70,7 @@ export interface MisReservasPaginaResponse {
 
 export interface ReservaPanelResponse {
   idReserva: number;
+  codigo?: string;
   idUsuario: number;
   nombreUsuario: string | null;
   emailUsuario: string | null;
@@ -116,6 +119,8 @@ export interface CheckoutResponse {
 }
 
 export interface ReservaDetalleResponse extends ReservaPanelResponse {
+  persona?: Persona | null;
+  fotoPerfilUsuario?: string | null;
   checkout?: CheckoutResponse['checkout'] | null;
   tarifaNocheAplicada: number;
   expiraEn: string;

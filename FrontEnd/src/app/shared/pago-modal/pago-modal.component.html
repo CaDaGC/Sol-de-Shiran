@@ -8,7 +8,7 @@
     </header>
     @if (estadoPago()) {
       <app-pago-estado [estado]="estadoPago()" [mensaje]="mensaje()" [monto]="montoVerificado() ?? reserva.montoAdelanto"
-        [idReserva]="reserva.idReserva" [transaccion]="transaccionRetorno"></app-pago-estado>
+        [codigoReserva]="reserva.codigo" [idReserva]="reserva.idReserva" [transaccion]="transaccionRetorno"></app-pago-estado>
       @if (estadoPago() !== 'APROBADA') {
         <button class="pay-button" type="button" [disabled]="enviandoPago()" (click)="verificarRetorno()">{{ enviandoPago() ? 'Verificando…' : 'Actualizar estado' }}</button>
       } @else {

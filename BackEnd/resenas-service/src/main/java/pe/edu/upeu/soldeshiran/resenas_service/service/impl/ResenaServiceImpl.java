@@ -30,7 +30,7 @@ public class ResenaServiceImpl implements ResenaService {
     private final ReservasClient reservas;
     private final ResenaMapper mapper;
 
-    @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+    @Value("${seguridad.internal-key}")
     private String clave;
 
     @Override
@@ -40,8 +40,8 @@ public class ResenaServiceImpl implements ResenaService {
         try {
             var ids = filas.stream().map(Resena::getIdUsuario).distinct().toList();
             var autores = usuarios.autores(ids, clave).stream()
-                    .collect(Collectors.toMap(AutorResenaResponse::id, AutorResenaResponse::nombre));
-            return new ResenasPaginaResponse(filas.stream().map(r -> mapper.toResponse(r, autores.getOrDefault(r.getIdUsuario(), "Cliente"))).toList(), filas.hasNext());
+                    .collect(Collectors.toMap(AutorResenaResponse::id, java.util.function.Function.identity()));
+            return new ResenasPaginaResponse(filas.stream().map(r -> mapper.toResponse(r, autores.get(r.getIdUsuario()))).toList(), filas.hasNext());
         } catch (FeignException e) {
             throw indisponible(e);
         }

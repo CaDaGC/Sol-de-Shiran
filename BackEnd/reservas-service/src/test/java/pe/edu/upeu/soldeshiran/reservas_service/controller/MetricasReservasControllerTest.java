@@ -18,7 +18,8 @@ class MetricasReservasControllerTest {
         var jdbc = new JdbcTemplate(db);
         jdbc.execute("CREATE TABLE reserva (id_cabana BIGINT, estado_reserva VARCHAR(30), fecha_ingreso DATE)");
         jdbc.update("INSERT INTO reserva VALUES (1, 'CONFIRMADA', '2026-11-02'), (1, 'FINALIZADA', '2026-11-03'), (2, 'OCUPADA', '2026-11-03'), (2, 'CANCELADA', '2026-11-03'), (3, 'CONFIRMADA', '2026-10-31')");
-        var controller = new MetricasReservasController(jdbc);
+        var alcance = org.mockito.Mockito.mock(pe.edu.upeu.soldeshiran.reservas_service.service.AlcanceReportesService.class);
+        var controller = new MetricasReservasController(jdbc, alcance);
         var solicitud = new MockHttpServletRequest();
         solicitud.setAttribute("actor", new Actor(1L, "ADMIN"));
 
@@ -27,6 +28,13 @@ class MetricasReservasControllerTest {
         assertEquals(3, resultado.totalReservas());
         assertEquals(1L, resultado.ranking().getFirst().idCabana());
         assertEquals(2, resultado.ranking().getFirst().reservas());
+        solicitud.setAttribute("actor", new Actor(10L, "DUENO"));
+        org.mockito.Mockito.when(alcance.cabanas(10L)).thenReturn(java.util.List.of(2L));
+        var propio = controller.frecuencia(solicitud, LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-03"));
+        assertEquals(1, propio.totalReservas());
+        assertEquals(2L, propio.ranking().getFirst().idCabana());
+        org.mockito.Mockito.when(alcance.cabanas(10L)).thenReturn(java.util.List.of());
+        assertEquals(0, controller.frecuencia(solicitud, LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-03")).totalReservas());
         solicitud.setAttribute("actor", new Actor(2L, "CLIENTE"));
         assertThrows(ResponseStatusException.class,
                 () -> controller.frecuencia(solicitud, LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-03")));

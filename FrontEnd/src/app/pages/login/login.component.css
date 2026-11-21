@@ -14,7 +14,7 @@
   border-radius: 18px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   width: min(440px, 100%);
-  border-top: 5px solid #1b4d3e; /* Verde corporativo institucional */
+  border-top: 5px solid #1b4d3e;
 }
 
 .login-header {
@@ -85,7 +85,7 @@
 .btn-submit {
   width: 100%;
   padding: 12px;
-  background-color: #d4a373; /* Tono cálido / madera del complejo */
+  background-color: #d4a373;
   color: white;
   border: none;
   border-radius: 6px;

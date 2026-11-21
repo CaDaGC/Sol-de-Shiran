@@ -23,10 +23,6 @@ public class Cabana {
 
   private Long duenoId;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name = "cabana_trabajadores", joinColumns = @JoinColumn(name = "id_cabana"))
-  @Column(name = "trabajador_id")
-  private java.util.Set<Long> trabajadores = new java.util.HashSet<>();
 
   @Column(nullable = false, length = 100)
   private String nombre;

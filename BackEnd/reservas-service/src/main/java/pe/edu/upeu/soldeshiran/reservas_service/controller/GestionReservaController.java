@@ -30,6 +30,11 @@ public class GestionReservaController {
     return gestion.listar(Actor.desde(q), idCabana, desde, hasta);
   }
 
+  @GetMapping("/codigo/{codigo}")
+  public Reserva buscarPorCodigo(@PathVariable String codigo, HttpServletRequest request) {
+    return gestion.buscarPorCodigo(codigo, Actor.desde(request));
+  }
+
   @GetMapping("/{id}")
   public Map<String, Object> obtener(@PathVariable Long id, HttpServletRequest q) {
     return gestion.detalle(id, Actor.desde(q));

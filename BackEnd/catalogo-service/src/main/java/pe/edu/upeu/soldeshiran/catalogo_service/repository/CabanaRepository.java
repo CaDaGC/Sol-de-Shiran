@@ -26,8 +26,9 @@ public interface CabanaRepository extends JpaRepository<Cabana, Long> {
 
     boolean existsByDuenoId(Long duenoId);
 
-    @Query("select count(c) from Cabana c where :id member of c.trabajadores")
-    long contarAsignaciones(@Param("id") Long trabajadorId);
+    @Query("select c.idCabana from Cabana c where c.duenoId = :dueno")
+    List<Long> listarIdsDelDueno(@Param("dueno") Long dueno);
+
 
     @Query("""
             SELECT DISTINCT c

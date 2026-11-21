@@ -12,8 +12,17 @@ import pe.edu.upeu.soldeshiran.reservas_service.model.EstadoReserva;
 import pe.edu.upeu.soldeshiran.reservas_service.model.Reserva;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpecificationExecutor<Reserva> {
+  @Query("select distinct r.idCabana from Reserva r where r.idUsuario=:usuario")
+  List<Long> listarCabanasDeUsuario(@Param("usuario") Long usuario);
+
+  java.util.Optional<Reserva> findByCodigo(String codigo);
+  java.util.Optional<Reserva> findByCodigoAndIdUsuario(String codigo, Long idUsuario);
+
   @Query("select distinct r.idCabana from Reserva r")
   List<Long> listarCabanasConReservas();
+
+  @Query("select r.idReserva from Reserva r where r.idCabana in :cabanas")
+  List<Long> listarIdsDeCabanas(@Param("cabanas") List<Long> cabanas);
 
   @Query("""
       select r.idReserva from Reserva r

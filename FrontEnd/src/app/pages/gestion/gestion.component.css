@@ -155,3 +155,8 @@ nav button[aria-pressed='true'] {
 .editor-foto-perfil { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; }
 .editor-foto-perfil > img, .perfil-inicial { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
 .perfil-inicial { display: grid; place-items: center; background: #e2bf76; color: #213e2b; font-size: 48px; }
+.management-toolbar{position:sticky;top:0;z-index:2;display:flex;align-items:center;flex-wrap:wrap;gap:16px;background:#f8f8f0;padding:14px 0;border-bottom:1px solid #dee5d8}
+.management-toolbar h2{margin-right:auto}.management-toolbar label{font-size:.85rem;min-width:240px}.management-toolbar input{margin-top:5px}
+.management-dialog{width:min(1000px,calc(100vw - 36px));max-height:90vh;box-sizing:border-box;padding:24px;border:1px solid #dee5d8;border-radius:16px;background:#f8f8f0;color:#213e2b;overflow:auto}
+.management-dialog::backdrop{background:#11291dcc}.modal-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.modal-heading h2{margin:0}.modal-heading button{font-size:24px}.management-dialog form{margin-bottom:0}.management-dialog .error{position:sticky;top:0;z-index:1;background:#fff0ec;padding:12px;border-radius:8px}
+@media(max-width:600px){.management-dialog{padding:16px}.management-toolbar label{width:100%;min-width:0}.management-toolbar .primary{order:1}}

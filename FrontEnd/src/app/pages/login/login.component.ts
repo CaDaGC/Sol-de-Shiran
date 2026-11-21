@@ -32,6 +32,10 @@ export class LoginComponent {
     private readonly router: Router,
     private readonly route: ActivatedRoute
   ) {
+    if (this.route.snapshot.queryParamMap.get('sesion') === 'expirada'
+        || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('sesionExpirada') === 'true')) {
+      this.errorMessage.set('Tu sesión expiró. Inicia sesión nuevamente.');
+    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]

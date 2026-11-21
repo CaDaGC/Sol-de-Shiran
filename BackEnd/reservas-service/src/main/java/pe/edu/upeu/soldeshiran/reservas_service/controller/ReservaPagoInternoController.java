@@ -22,6 +22,12 @@ public class ReservaPagoInternoController {
     @Value("${servicios.interno.token}")
     private String internalToken;
 
+    @GetMapping("/{idReserva}/comprobante")
+    public pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaComprobanteInternoResponse datosComprobante(@PathVariable Long idReserva,
+            @RequestHeader("X-Internal-Service-Token") String token) {
+        validarToken(token); return service.datosComprobante(idReserva);
+    }
+
     @GetMapping("/{idReserva}")
     public ReservaPagoInternoResponse consultar(
             @PathVariable Long idReserva,

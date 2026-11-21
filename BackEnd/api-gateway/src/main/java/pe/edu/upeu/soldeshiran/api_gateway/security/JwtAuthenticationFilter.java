@@ -22,7 +22,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             ServerWebExchange exchange,
             GatewayFilterChain chain
     ) {
-        String path = exchange.getRequest().getURI().getPath();
+        String path = exchange.getRequest().getURI().getPath().replaceFirst("^/api/usuarios/", "/api/v1/usuarios/");
         String method = exchange.getRequest().getMethod().name();
 
         if (path.contains("/interno/") || path.endsWith("/interno") || path.startsWith("/internal/")) {
@@ -64,7 +64,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             ServerHttpRequest request = exchange.getRequest()
                     .mutate()
                     .headers(headers -> {
-                        // No se permite que el cliente suplante el ID del usuario.
+
                         headers.remove("X-User-Id");
                         headers.set("X-User-Id", userId.toString());
                         headers.set("X-User-Role", rol);
@@ -89,7 +89,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     || path.equals("/api/v1/pagos/webhook");
         }
         return "GET".equals(method) && (path.matches("/api/v1/resenas/cabanas/[0-9]+")
-                || path.matches("/api/v1/cabanas/fotos/[a-f0-9-]{36}"));
+                || path.matches("/api/v1/cabanas/fotos/[a-f0-9-]{36}")
+                || path.matches("/api/v1/usuarios/fotos/(?:[a-f0-9-]{36}|migrada-[0-9]+)\\.(png|jpg)"));
     }
 
     private boolean isCatalogo(String path, String method) {
@@ -114,8 +115,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 && java.util.Set.of("GET", "PUT", "DELETE").contains(method);
         if (path.equals("/api/v1/reservas/mis-reservas")) return "CLIENTE".equals(rol);
         if (path.startsWith("/api/v1/resenas/")) return "CLIENTE".equals(rol);
+        if ("GET".equals(method) && path.matches("/api/v1/reservas/codigo/[^/]+"))
+            return java.util.Set.of("ADMIN", "TRABAJADOR", "CLIENTE").contains(rol);
+        if (path.matches("/api/v1/pagos/reservas/[0-9]+/comprobante(?:/pdf)?"))
+            return java.util.Set.of("ADMIN","CLIENTE","TRABAJADOR").contains(rol)
+                && (("POST".equals(method) && path.endsWith("/comprobante")) || ("GET".equals(method) && path.endsWith("/pdf")));
         if ("ADMIN".equals(rol)) return true;
-        boolean cuenta = path.equals("/api/v1/usuarios/me")
+        if ("DUENO".equals(rol)) return "GET".equals(method)
+                && (path.equals("/api/v1/reservas/metricas/frecuencia")
+                    || path.equals("/api/v1/pagos/metricas/ingresos")
+                    || path.equals("/api/v1/reservas/reportes"));
+        boolean foto = "POST".equals(method) && path.matches("/api/v1/usuarios/[0-9]+/foto");
+        boolean cuenta = foto || path.equals("/api/v1/usuarios/me")
                 || path.matches("/api/v1/usuarios/[0-9]+(/password)?")
                     && ("GET".equals(method) || "PUT".equals(method));
         if ("TRABAJADOR".equals(rol)) {

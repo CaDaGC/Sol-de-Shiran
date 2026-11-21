@@ -27,11 +27,12 @@ public class GestionUsuarioService {
   private final RolRepository roles;
   private final UsuarioMapper mapper;
   private final PasswordEncoder passwords;
+  private final PersonaService personas;
 
   @Value("${catalogo.url:http://localhost:8086}")
   private String catalogoUrl;
 
-  @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+  @Value("${seguridad.internal-key}")
   private String internalKey;
 
   public UsuarioResponse crear(UsuarioRequest r, Actor actor, boolean publico) {
@@ -43,13 +44,16 @@ public class GestionUsuarioService {
     }
     if (usuarios.existsByEmail(r.getEmail().trim().toLowerCase()))
       conflicto("El correo ya estÃ¡ registrado");
+    if (usuarios.findByNombre(r.getNombre().strip()).isPresent())
+      conflicto("El nombre de usuario ya existe");
     Usuario u = mapper.toEntity(r);
     u.setEmail(r.getEmail().trim().toLowerCase());
-    if (r.getPassword() == null || r.getPassword().length() < 8)
+    if (r.getPassword() == null || (r.getPassword().length() < 8 || r.getPassword().length() > 72))
       malo("La contraseÃ±a debe tener al menos 8 caracteres");
     u.setPassword(passwords.encode(r.getPassword()));
     u.setRol(rol(rol));
-    if (!publico && rol.equals("TRABAJADOR")) u.setDuenoId(validarDueno(r.getDuenoId()));
+    if (!rol.equals("ADMIN") || r.getPersona() != null)
+      u.setPersona(personas.preparar(null, r.getPersona()));
     return mapper.toResponse(usuarios.save(u));
   }
 
@@ -77,20 +81,16 @@ public class GestionUsuarioService {
     String rolActual = Actor.normalizar(u.getRol().getNombre());
     String nuevoRol = r.getRol() == null || r.getRol().isBlank()
         ? rolActual : Actor.normalizar(r.getRol());
-    Long nuevoDueno = u.getDuenoId();
-    if (a.es("ADMIN") && r.getRol() != null)
-      nuevoDueno = nuevoRol.equals("TRABAJADOR") ? r.getDuenoId() : null;
-    else if (r.getDuenoId() != null)
-      nuevoDueno = r.getDuenoId();
-    if (!rolActual.equals(nuevoRol) || !Objects.equals(nuevoDueno, u.getDuenoId())) {
+    if (!rolActual.equals(nuevoRol)) {
       a.exigir("ADMIN");
-      if (id.equals(a.id())) malo("No puedes cambiar tu propio rol o asignación");
-      if (nuevoDueno != null && !nuevoRol.equals("TRABAJADOR"))
-        malo("Solo un trabajador puede estar vinculado a un dueño");
+      if (id.equals(a.id())) malo("No puedes cambiar tu propio rol");
       exigirSinVinculos(u);
-      if (!rolActual.equals(nuevoRol)) u.setRol(rol(nuevoRol));
-      u.setDuenoId(validarDueno(nuevoDueno));
+      u.setRol(rol(nuevoRol));
     }
+    if (r.getPersona() != null || (!nuevoRol.equals("ADMIN") && !rolActual.equals(nuevoRol)))
+      u.setPersona(personas.preparar(u.getPersona(), r.getPersona()));
+    usuarios.findByNombre(r.getNombre().strip()).filter(otro -> !otro.getId().equals(id))
+        .ifPresent(otro -> conflicto("El nombre de usuario ya existe"));
     u.setNombre(r.getNombre().trim());
     u.setEmail(r.getEmail().trim().toLowerCase());
     return mapper.toResponse(u);
@@ -100,40 +100,13 @@ public class GestionUsuarioService {
     a.exigir("ADMIN");
     Usuario u = find(id);
     if (id.equals(a.id())) malo("No puedes eliminar ni desactivar tu propia cuenta");
-    if ("ADMIN".equals(Actor.normalizar(u.getRol().getNombre()))) {
-      u.setActivo(false);
-      return;
-    }
-    String rolActual = Actor.normalizar(u.getRol().getNombre());
-    if (List.of("DUENO", "TRABAJADOR").contains(rolActual)) {
-      desvincularEnCatalogo(id);
-      if (rolActual.equals("DUENO")) {
-        usuarios.findAllByDuenoId(id).forEach(trabajador -> trabajador.setDuenoId(null));
-      }
-    }
-    usuarios.delete(u);
-  }
 
-  private void desvincularEnCatalogo(Long id) {
-    try {
-      var factory = new JdkClientHttpRequestFactory(
-          HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
-      factory.setReadTimeout(Duration.ofSeconds(5));
-      RestClient.builder().baseUrl(catalogoUrl).requestFactory(factory).build()
-          .delete().uri("/internal/cabanas/asignaciones/{id}", id)
-          .header("X-Internal-Key", internalKey)
-          .retrieve().toBodilessEntity();
-    } catch (RestClientException e) {
-      throw new ResponseStatusException(
-          HttpStatus.SERVICE_UNAVAILABLE, "No se pudieron retirar las asignaciones de cabañas", e);
-    }
+    u.setActivo(false);
   }
 
   private void exigirSinVinculos(Usuario u) {
     String rolActual = Actor.normalizar(u.getRol().getNombre());
-    if (!List.of("DUENO", "TRABAJADOR").contains(rolActual)) return;
-    if (rolActual.equals("DUENO") && usuarios.existsByDuenoId(u.getId()))
-      conflicto("Reasigna los trabajadores de este dueño antes de continuar.");
+    if (!rolActual.equals("DUENO")) return;
 
     Boolean asignado;
     try {
@@ -171,14 +144,6 @@ public class GestionUsuarioService {
       prohibido();
   }
 
-  private Long validarDueno(Long id) {
-    if (id == null) return null;
-    Usuario u = find(id);
-    if (!Actor.normalizar(u.getRol().getNombre()).equals("DUENO")
-        || Boolean.FALSE.equals(u.getActivo())) malo("DueÃ±o invÃ¡lido");
-    return id;
-  }
-
   private Rol rol(String nombre) {
     if (!List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE").contains(nombre)) malo("Rol invÃ¡lido");
     return roles
@@ -199,7 +164,9 @@ public class GestionUsuarioService {
   private void validar(UsuarioRequest r) {
     if (r.getNombre() == null
         || r.getNombre().isBlank()
+        || r.getNombre().strip().length() > 80
         || r.getEmail() == null
+        || r.getEmail().length() > 150
         || !r.getEmail().matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
       malo("Nombre y correo vÃ¡lido obligatorios");
   }

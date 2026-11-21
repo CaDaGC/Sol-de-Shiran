@@ -44,9 +44,4 @@ public class GestionCabanaController {
     return gestion.activar(id, Actor.desde(q));
   }
 
-  @PutMapping("/{id}/trabajadores")
-  public Map<String, Object> asignar(
-      @PathVariable Long id, @RequestBody Set<Long> ids, HttpServletRequest q) {
-    return gestion.asignar(id, ids, Actor.desde(q));
-  }
 }

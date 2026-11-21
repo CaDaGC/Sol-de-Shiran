@@ -14,9 +14,8 @@ spring:
 
   datasource:
       url: jdbc:mysql://localhost:3307/usuario_db
-      username: root
-      password: mysql123
-
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -29,3 +28,7 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+
+usuarios:
+  fotos:
+    directorio: ${USUARIOS_FOTOS_DIRECTORIO:uploads/perfiles}

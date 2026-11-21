@@ -17,7 +17,7 @@ public class TokenVerifier {
 
   public TokenVerifier(
       ObjectMapper json,
-      @Value("${jwt.secret:ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456}")
+      @Value("${jwt.secret}")
           String secret) {
     this.json = json;
     this.secret = secret;

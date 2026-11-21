@@ -75,7 +75,7 @@
     <div class="account-profile" [attr.title]="contraido() ? usuario.nombre + ' · ' + usuario.rol : null" [attr.aria-label]="usuario.nombre + ' · ' + usuario.rol">
       <div class="avatar" aria-hidden="true">
                 @if (fotoPerfil()) {
-          <img [src]="fotoPerfil()" alt="" />
+          <img [src]="fotoPerfil()" alt="" (error)="fotoPerfil.set(null)" />
         } @else {
           {{ usuario.nombre.charAt(0).toUpperCase() }}
         }

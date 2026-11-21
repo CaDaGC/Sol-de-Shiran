@@ -220,7 +220,6 @@
   }
 }
 
-/* Modal */
 .modal-backdrop,
 .confirmation-backdrop {
   position: fixed;
@@ -438,7 +437,6 @@
   -webkit-text-fill-color: #fff !important;
 }
 
-/* Rojo indica una noche ya ocupada o un rango rechazado por el backend. */
 .calendar-day.unavailable-day {
   color: #fff !important;
   background: #bd5548;
@@ -676,7 +674,6 @@
   font-weight: 400;
 }
 
-/* Confirmación sobre el modal de calendario */
 .confirmation-modal {
   position: relative;
   width: min(440px, 100%);

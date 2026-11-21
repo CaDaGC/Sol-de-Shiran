@@ -94,6 +94,19 @@ class CatalogoHttpTest {
   }
 
   @Test
+  void ocupacionUsaLaMismaClaveDeLasConsultasInternasYRechazaCredencialesInvalidas() throws Exception {
+    mvc.perform(post("/api/v1/cabanas/interno/"+id+"/ocupacion/31")
+        .header("X-Internal-Key","incorrecta")).andExpect(status().isUnauthorized());
+    mvc.perform(post("/api/v1/cabanas/interno/"+id+"/ocupacion/31")
+        .header("X-Internal-Key","test-only-internal-key")).andExpect(status().isOk());
+
+    mvc.perform(post("/api/v1/cabanas/interno/"+id+"/ocupacion/31")
+        .header("X-Internal-Key","test-only-internal-key")).andExpect(status().isOk());
+    mvc.perform(delete("/api/v1/cabanas/interno/"+id+"/ocupacion/31")
+        .header("X-Internal-Key","test-only-internal-key")).andExpect(status().isNoContent());
+  }
+
+  @Test
   void catalogoPublicoFunciona() throws Exception {
     mvc.perform(get("/api/v1/cabanas"))
         .andExpect(status().isOk())
@@ -187,30 +200,6 @@ class CatalogoHttpTest {
         .andExpect(status().isForbidden());
   }
 
-  @Test
-  void consultaInternaDetectaPropiedadYAsignacionDeTrabajador() throws Exception {
-    String url = "/internal/cabanas/asignaciones/";
-    mvc.perform(put("/api/v1/cabanas/" + id + "/trabajadores")
-            .header("Authorization", token(1))
-            .contentType(MediaType.APPLICATION_JSON).content("[20]"))
-        .andExpect(status().isOk());
-    mvc.perform(get(url + "20")).andExpect(status().isForbidden());
-    for (long cuenta : new long[] {10, 20}) {
-      mvc.perform(get(url + cuenta)
-              .header("X-Internal-Key", "sol-shiran-interno-desarrollo-cambiar"))
-          .andExpect(status().isOk())
-          .andExpect(content().string("true"));
-    }
-    mvc.perform(put("/api/v1/cabanas/" + id + "/trabajadores")
-            .header("Authorization", token(1))
-            .contentType(MediaType.APPLICATION_JSON).content("[]"))
-        .andExpect(status().isOk());
-    mvc.perform(get(url + "20")
-            .header("X-Internal-Key", "sol-shiran-interno-desarrollo-cambiar"))
-        .andExpect(status().isOk())
-        .andExpect(content().string("false"));
-  }
-
   private String token(long id) throws Exception {
     var encoder = java.util.Base64.getUrlEncoder().withoutPadding();
     String header =
@@ -227,7 +216,7 @@ class CatalogoHttpTest {
     var mac = javax.crypto.Mac.getInstance("HmacSHA256");
     mac.init(
         new javax.crypto.spec.SecretKeySpec(
-            "ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456"
+            "test-only-jwt-key-not-for-production-1234567890"
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8),
             "HmacSHA256"));
     return "Bearer "

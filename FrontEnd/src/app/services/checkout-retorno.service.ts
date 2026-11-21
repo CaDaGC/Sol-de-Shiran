@@ -8,7 +8,7 @@ export interface CheckoutRetorno {
 @Injectable({ providedIn: 'root' })
 export class CheckoutRetornoService {
   guardar(contexto: CheckoutRetorno): void {
-    try { sessionStorage.setItem('checkout-retorno-' + contexto.transaccion, JSON.stringify(contexto)); } catch { /* El retorno sin contexto sigue disponible. */ }
+    try { sessionStorage.setItem('checkout-retorno-' + contexto.transaccion, JSON.stringify(contexto)); } catch {                                                 }
   }
   obtener(id: number): CheckoutRetorno | null {
     try {

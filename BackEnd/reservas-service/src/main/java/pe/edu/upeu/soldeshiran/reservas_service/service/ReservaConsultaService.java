@@ -31,7 +31,7 @@ public class ReservaConsultaService {
     private final ReservaRepository reservaRepository;
     private final PanelReservasClient panelClient;
 
-    @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+    @Value("${seguridad.internal-key}")
     private String internalKey;
 
     public ReservaDetalleResponse consultarDetalle(Actor actor, Long idReserva) {
@@ -53,7 +53,8 @@ public class ReservaConsultaService {
                     reserva.getFechaIngreso(), reserva.getFechaSalida(), reserva.getCantidadHuespedes(),
                     reserva.getTarifaNocheAplicada(), reserva.getMontoTotal(), reserva.getMontoAdelanto(),
                     reserva.getSaldoPendiente(), reserva.getEstadoReserva(), reserva.getExpiraEn(),
-                    reserva.getFechaCreacion(), reserva.getCheckout(), reserva.getHoraIngreso(), reserva.getHoraSalida());
+                    reserva.getFechaCreacion(), reserva.getCheckout(), reserva.getHoraIngreso(), reserva.getHoraSalida(),
+                    usuario == null ? null : usuario.persona(), usuario == null ? null : usuario.fotoPerfil(), reserva.getCodigo());
         } catch (FeignException | org.springframework.web.client.RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "No se pudieron consultar los datos del detalle de reserva. Intenta nuevamente.", exception);
@@ -91,18 +92,19 @@ public class ReservaConsultaService {
             if (buscar != null && !buscar.isBlank()) {
                 usuarios = panelClient.consultarUsuarios(internalKey, buscar.strip(), null).stream()
                         .collect(Collectors.toMap(UsuarioResumen::id, Function.identity()));
-                if (usuarios.isEmpty()) {
-                    return ReservasPaginaResponse.from(Page.empty(pageable));
-                }
                 var idsUsuarios = List.copyOf(usuarios.keySet());
-                filtro = filtro.and((root, query, cb) -> root.get("idUsuario").in(idsUsuarios));
+                var texto = "%" + buscar.strip().toUpperCase(java.util.Locale.ROOT)
+                        .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+                filtro = filtro.and((root, query, cb) -> cb.or(
+                        cb.like(root.get("codigo"), texto, '\\'), root.get("idUsuario").in(idsUsuarios)));
+
             }
             Page<Reserva> reservas = reservaRepository.findAll(filtro, pageable);
             if (reservas.isEmpty()) {
                 return new ReservasPaginaResponse(List.of(), page, size,
                         reservas.getTotalElements(), reservas.getTotalPages());
             }
-            if (usuarios == null) {
+            if (usuarios == null || !usuarios.keySet().containsAll(reservas.stream().map(Reserva::getIdUsuario).toList())) {
                 var ids = reservas.stream().map(Reserva::getIdUsuario).distinct().toList();
                 usuarios = panelClient.consultarUsuarios(internalKey, null, ids).stream()
                         .collect(Collectors.toMap(UsuarioResumen::id, Function.identity()));
@@ -118,7 +120,7 @@ public class ReservaConsultaService {
                         usuario == null ? null : usuario.nombre(), usuario == null ? null : usuario.email(),
                         r.getIdCabana(), cabana == null ? null : cabana.nombre(),
                         r.getFechaIngreso(), r.getFechaSalida(), r.getCantidadHuespedes(),
-                        r.getMontoTotal(), r.getMontoAdelanto(), r.getSaldoPendiente(), r.getEstadoReserva(), r.getHoraIngreso(), r.getHoraSalida());
+                        r.getMontoTotal(), r.getMontoAdelanto(), r.getSaldoPendiente(), r.getEstadoReserva(), r.getHoraIngreso(), r.getHoraSalida(), r.getCodigo());
             }));
         } catch (FeignException | org.springframework.web.client.RestClientException exception) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,

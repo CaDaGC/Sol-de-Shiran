@@ -5,7 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { API_CONFIG } from '../../core/api.config';
 import { AuthService } from '../../services/auth';
 
+import { imagenUrl } from '../../core/imagen-url';
+
 interface Opinion {
+  nombreUsuario?: string;
+  fotoPerfil?: string | null;
   id: number;
   autor: string;
   puntuacion: number;
@@ -25,6 +29,7 @@ interface Pagina {
 })
 export class ResenasCabanaComponent {
   readonly idCabana = input.required<number>();
+  readonly imagenUrl = imagenUrl;
   readonly estrellas = [1, 2, 3, 4, 5];
   readonly cliente = () => this.auth.usuarioActual()?.rol === 'CLIENTE';
   readonly opiniones = signal<Opinion[]>([]);

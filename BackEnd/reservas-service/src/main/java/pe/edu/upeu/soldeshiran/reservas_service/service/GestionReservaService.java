@@ -25,13 +25,10 @@ public class GestionReservaService {
   private final BloqueoFechaRepository bloqueos;
   private final pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient catalogo;
 
-  @Value("${servicios.interno.token}")
-  private String tokenOcupacion;
-
   @Value("${usuarios.url:http://localhost:8087}")
   private String usuariosUrl;
 
-  @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+  @Value("${seguridad.internal-key}")
   private String key;
 
   public record BloqueoRequest(
@@ -72,6 +69,19 @@ public class GestionReservaService {
         .toList();
   }
 
+  public Reserva buscarPorCodigo(String codigo, Actor actor) {
+    actor.exigir("ADMIN", "TRABAJADOR", "CLIENTE");
+    String normalizado = codigo.strip().toUpperCase(java.util.Locale.ROOT);
+    if (!normalizado.matches("RSS[0-9]{5,19}")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Código de reserva inválido");
+    }
+
+    return (actor.es("CLIENTE")
+        ? reservas.findByCodigoAndIdUsuario(normalizado, actor.id())
+        : reservas.findByCodigo(normalizado))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
+  }
+
   public Reserva obtener(Long id, Actor a) {
     Reserva r = find(id, false);
     exigirVer(r, a);
@@ -90,7 +100,7 @@ public class GestionReservaService {
               .retrieve()
               .body(JsonNode.class);
     } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-      // La reserva conserva su ID de huésped aunque la cuenta se haya eliminado.
+
     } catch (org.springframework.web.client.RestClientException e) {
       throw new ResponseStatusException(
           HttpStatus.SERVICE_UNAVAILABLE, "No se pudo consultar el perfil del huésped");
@@ -147,7 +157,7 @@ public class GestionReservaService {
         LocalDateTime.now(ZoneId.of("America/Lima")).truncatedTo(ChronoUnit.SECONDS),
         a.id(), descripcion, monto, medio));
     r.setEstadoReserva(EstadoReserva.FINALIZADA);
-    // Si catálogo falla, la transacción revierte el registro y permite reintentar.
+
     reservas.saveAndFlush(r);
     actualizarOcupacion(r, false);
     return r;
@@ -156,9 +166,9 @@ public class GestionReservaService {
   private void actualizarOcupacion(Reserva reserva, boolean ocupar) {
     try {
       if (ocupar) {
-        catalogo.ocupar(reserva.getIdCabana(), reserva.getIdReserva(), tokenOcupacion);
+        catalogo.ocupar(reserva.getIdCabana(), reserva.getIdReserva(), key);
       } else {
-        catalogo.liberar(reserva.getIdCabana(), reserva.getIdReserva(), tokenOcupacion);
+        catalogo.liberar(reserva.getIdCabana(), reserva.getIdReserva(), key);
       }
     } catch (feign.FeignException exception) {
       if (exception.status() == 409) conflicto("La cabaña ya está ocupada");
@@ -221,9 +231,12 @@ public class GestionReservaService {
   }
 
   public Map<String, Object> reporte(Actor a) {
-    a.exigir("ADMIN");
-    var lista =
-        listar(a, null, null, null);
+    a.exigir("ADMIN", "DUENO");
+    var lista = reservas.findAll();
+    if (a.es("DUENO")) {
+      var propias = catalogo.listarPropias(a.id(), key);
+      lista = lista.stream().filter(r -> propias.contains(r.getIdCabana())).toList();
+    }
     BigDecimal cobrado =
         lista.stream()
             .map(r -> r.getTotalPagado() == null ? BigDecimal.ZERO : r.getTotalPagado())

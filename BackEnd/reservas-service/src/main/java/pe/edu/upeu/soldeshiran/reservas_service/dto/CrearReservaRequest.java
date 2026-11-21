@@ -26,18 +26,18 @@ public record CrearReservaRequest(
         java.time.LocalTime horaSalida
 ) {
   public CrearReservaRequest(
-        
+
         Long idCabana,
 
-        
-        
+
+
         LocalDate fechaIngreso,
 
-        
+
         LocalDate fechaSalida,
 
-        
-        
+
+
         Integer cantidadHuespedes) {
     this(idCabana, fechaIngreso, fechaSalida, cantidadHuespedes, java.time.LocalTime.MIDNIGHT, java.time.LocalTime.MIDNIGHT);
   }

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 @DataJpaTest(properties = {"spring.cloud.config.enabled=false", "spring.config.import="})
 class ReservaConsultaServiceTest {
     @Autowired ReservaRepository repository;
+    @Autowired jakarta.persistence.EntityManager em;
     PanelReservasClient client;
     ReservaConsultaService service;
 
@@ -78,6 +79,21 @@ class ReservaConsultaServiceTest {
         var resultado = service.consultar(new Actor(1L, "ADMIN"), "   ", 1L, 0, 20);
         assertThat(resultado.totalElements()).isEqualTo(2);
         assertThat(resultado.content()).allMatch(r -> r.idCabana().equals(1L));
+    }
+
+    @Test
+    void buscaCodigoAunqueNoCoincidaConNombreYConservaFiltroCabana() {
+        var reserva = repository.findAll().getFirst();
+        reserva.setCodigo("RSS00001");
+
+        em.createNativeQuery("UPDATE reserva SET codigo='RSS00001' WHERE id_reserva=:id")
+                .setParameter("id", reserva.getIdReserva()).executeUpdate();
+        em.clear();
+        when(client.consultarUsuarios("test-key", "rss00", null)).thenReturn(List.of());
+        var resultado=service.consultar(new Actor(3L,"TRABAJADOR"), "rss00", reserva.getIdCabana(),0,20);
+        assertThat(resultado.content()).hasSize(1);
+        assertThat(resultado.content().getFirst().codigo()).isEqualTo("RSS00001");
+        assertThat(resultado.content().getFirst().nombreUsuario()).isNotNull();
     }
 
     @Test

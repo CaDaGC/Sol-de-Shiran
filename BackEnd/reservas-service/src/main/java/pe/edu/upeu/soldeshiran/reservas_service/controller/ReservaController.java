@@ -57,8 +57,8 @@ public class ReservaController {
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaIngreso,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaSalida,
       @RequestParam @Min(1) Integer cantidadHuespedes,
-      @RequestParam(defaultValue="00:00") @DateTimeFormat(iso=DateTimeFormat.ISO.TIME) java.time.LocalTime horaIngreso,
-      @RequestParam(defaultValue="00:00") @DateTimeFormat(iso=DateTimeFormat.ISO.TIME) java.time.LocalTime horaSalida) {
+      @RequestParam(defaultValue="11:00") @DateTimeFormat(iso=DateTimeFormat.ISO.TIME) java.time.LocalTime horaIngreso,
+      @RequestParam(defaultValue="13:00") @DateTimeFormat(iso=DateTimeFormat.ISO.TIME) java.time.LocalTime horaSalida) {
     return ResponseEntity.ok()
         .cacheControl(org.springframework.http.CacheControl.noStore())
         .contentType(MediaType.APPLICATION_JSON)

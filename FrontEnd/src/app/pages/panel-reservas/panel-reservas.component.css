@@ -147,7 +147,7 @@ h2 {
 }
 .reservation-row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: max-content minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -442,7 +442,7 @@ dd {
     grid-row: 1;
   }
   .reservation-row {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-columns: max-content minmax(0, 1fr) auto;
   }
   .row-summary {
     grid-column: auto;

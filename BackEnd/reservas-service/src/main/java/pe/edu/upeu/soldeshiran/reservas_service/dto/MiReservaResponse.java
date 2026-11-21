@@ -12,8 +12,19 @@ Long idReserva, Long idCabana, Long idUsuario, String nombreCabana, String image
         BigDecimal saldoPendiente, EstadoReserva estadoReserva, LocalDateTime expiraEn,
         GrupoReservasCliente grupo, boolean pagoDisponible,
         java.time.LocalTime horaIngreso,
-        java.time.LocalTime horaSalida
+        java.time.LocalTime horaSalida,
+        String codigo
 ) {
+  public MiReservaResponse(Long idReserva, Long idCabana, Long idUsuario, String nombreCabana, String imagenPrincipal,
+        LocalDate fechaIngreso, LocalDate fechaSalida, Integer cantidadHuespedes,
+        BigDecimal tarifaNocheAplicada, BigDecimal montoTotal, BigDecimal montoAdelanto,
+        BigDecimal saldoPendiente, EstadoReserva estadoReserva, LocalDateTime expiraEn,
+        GrupoReservasCliente grupo, boolean pagoDisponible,
+        java.time.LocalTime horaIngreso,
+        java.time.LocalTime horaSalida) {
+    this(idReserva, idCabana, idUsuario, nombreCabana, imagenPrincipal, fechaIngreso, fechaSalida, cantidadHuespedes, tarifaNocheAplicada, montoTotal, montoAdelanto, saldoPendiente, estadoReserva, expiraEn, grupo, pagoDisponible, horaIngreso, horaSalida, null);
+  }
+
   public MiReservaResponse(Long idReserva, Long idCabana, Long idUsuario, String nombreCabana, String imagenPrincipal,
         LocalDate fechaIngreso, LocalDate fechaSalida, Integer cantidadHuespedes,
         BigDecimal tarifaNocheAplicada, BigDecimal montoTotal, BigDecimal montoAdelanto,

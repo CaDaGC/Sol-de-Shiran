@@ -5,6 +5,9 @@ import { firstValueFrom } from 'rxjs';
 import { CheckoutRetornoService } from '../../services/checkout-retorno.service';
 import { PagoEstadoComponent } from './pago-estado.component';
 import { PagoResponse } from '../../models/pago.model';
+import { HttpClient } from '@angular/common/http';
+import { API_CONFIG } from '../../core/api.config';
+import { ReservaResponse } from '../../models/reserva.model';
 import { PagosService } from '../../services/pagos.service';
 
 @Component({
@@ -14,7 +17,7 @@ import { PagosService } from '../../services/pagos.service';
       class="result-logo">
     <h1>Estado de tu pago</h1>
     <app-pago-estado [estado]="estado()" [mensaje]="mensaje()" [monto]="pago()?.monto ?? null"
-      [idReserva]="pago()?.idReserva ?? 0" [transaccion]="pago()?.idTransaccion ?? 0"></app-pago-estado>
+      [codigoReserva]="codigoReserva()" [idReserva]="pago()?.idReserva ?? 0" [transaccion]="pago()?.idTransaccion ?? 0"></app-pago-estado>
     <button type="button" class="primary-button" [disabled]="cargando()" (click)="consultar()">{{ cargando() ? 'Consultando…' : 'Actualizar estado' }}</button>
     <p><a routerLink="/catalogo">Volver al catálogo</a></p>
   </main>`,
@@ -27,6 +30,8 @@ import { PagosService } from '../../services/pagos.service';
   `
 })
 export class PagoResultadoComponent implements OnInit, OnDestroy {
+  private readonly http = inject(HttpClient);
+  readonly codigoReserva = signal<string | null>(null);
   readonly estado = signal('PENDIENTE');
   readonly pago = signal<PagoResponse | null>(null);
   private readonly retorno = inject(CheckoutRetornoService);
@@ -59,10 +64,16 @@ export class PagoResultadoComponent implements OnInit, OnDestroy {
     this.intentos++;
     this.cargando.set(true);
     try {
-      // El resultado de la URL nunca se usa como comprobante de pago.
+
       const pago = await firstValueFrom(this.pagos.consultarEstado(id));
       if (this.destruido) return;
       this.pago.set(pago); this.estado.set(pago.estado);
+      if (!this.codigoReserva() && pago.idReserva) {
+        try {
+          const reserva = await firstValueFrom(this.http.get<ReservaResponse>(API_CONFIG.baseUrl + '/reservas/' + pago.idReserva));
+          if (!this.destruido) this.codigoReserva.set(reserva.codigo ?? null);
+        } catch {                                                                                }
+      }
       this.mensaje.set(pago.estado === 'APROBADA' ? 'Pago aprobado. Tu reserva quedó confirmada.'
         : pago.estado === 'RECHAZADA' ? 'La operación no se completó. Revisa el estado en Mercado Pago.'
         : 'Tu pago sigue pendiente. Puedes actualizar su estado en unos momentos.');

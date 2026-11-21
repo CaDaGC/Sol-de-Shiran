@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class ReservaPagoInternoService {
     private final ReservaRepository reservaRepository;
     private final pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient catalogo;
-    @org.springframework.beans.factory.annotation.Value("${servicios.interno.token}") private String token;
+    @org.springframework.beans.factory.annotation.Value("${seguridad.internal-key}") private String token;
 
     @Transactional(readOnly=true)
     public pe.edu.upeu.soldeshiran.reservas_service.dto.SaldoCheckInResponse saldoCheckIn(Long id) {
@@ -49,7 +49,7 @@ public class ReservaPagoInternoService {
         catch(feign.FeignException e) {
             if (e.status() == 401 || e.status() == 403)
                 throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                        "Catálogo rechazó la credencial interna. Configura el mismo INTERNAL_SERVICE_TOKEN en catálogo, reservas y pagos. El pago registrado se conserva.");
+                        "Catálogo rechazó la credencial interna. Verifica la configuración interna entre Catálogo y Reservas. El pago registrado se conserva.");
             if (e.status() == 409) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, detalleOcupacion(e), e);
             }
@@ -78,7 +78,15 @@ public class ReservaPagoInternoService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly=true)
+    public pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaComprobanteInternoResponse datosComprobante(Long idReserva) {
+        var r = reservaRepository.findById(idReserva).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var c = catalogo.obtenerDetalle(r.getIdCabana());
+        return new pe.edu.upeu.soldeshiran.reservas_service.dto.ReservaComprobanteInternoResponse(
+            r.getIdReserva(),r.getIdUsuario(),r.getCodigo(),c.nombre(),r.getFechaIngreso(),r.getFechaSalida(),r.getMontoTotal(),r.getEstadoReserva().name());
+    }
+
+    @Transactional(readOnly=true)
     public ReservaPagoInternoResponse consultar(Long idReserva) {
         Reserva reserva = reservaRepository.findById(idReserva)
                 .orElseThrow(() -> new ResponseStatusException(

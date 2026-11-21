@@ -22,15 +22,14 @@ public class GestionCabanaService {
   @Value("${usuarios.url:http://localhost:8087}")
   private String usuariosUrl;
 
-  @Value("${seguridad.internal-key:sol-shiran-interno-desarrollo-cambiar}")
+  @Value("${seguridad.internal-key}")
   private String key;
 
   @Transactional(readOnly = true)
   public boolean tieneAsignaciones(Long usuarioId) {
-    return cabanas.existsByDuenoId(usuarioId) || cabanas.contarAsignaciones(usuarioId) > 0;
+    return cabanas.existsByDuenoId(usuarioId);
   }
 
-  /** Quita las referencias a una cuenta sin borrar ni desactivar las cabañas. */
   public void desvincularCuenta(Long usuarioId) {
     cabanas.findAll().forEach(c -> {
       boolean cambio = false;
@@ -38,7 +37,6 @@ public class GestionCabanaService {
         c.setDuenoId(null);
         cambio = true;
       }
-      if (c.getTrabajadores().remove(usuarioId)) cambio = true;
       if (cambio) cabanas.save(c);
     });
   }
@@ -53,9 +51,7 @@ public class GestionCabanaService {
   public boolean puedeVer(Cabana c, Actor a) {
     return a.es("ADMIN")
         || (a.es("DUENO") && Objects.equals(c.getDuenoId(), a.id()))
-        || (a.es("TRABAJADOR")
-            && c.getTrabajadores().contains(a.id())
-            && perteneceAlDuenoActual(c, a));
+        || a.es("TRABAJADOR");
   }
 
   public void exigirGestion(Cabana c, Actor a) {
@@ -80,7 +76,6 @@ public class GestionCabanaService {
     exigirGestion(c, a);
     if (!Objects.equals(c.getDuenoId(), r.duenoId())) {
       c.setDuenoId(validarDueno(r.duenoId()));
-      c.getTrabajadores().clear();
     }
     aplicar(c, r);
     return view(c);
@@ -97,31 +92,6 @@ public class GestionCabanaService {
     exigirGestion(c, a);
     c.setEstado(EstadoCabana.ACTIVA);
     return view(c);
-  }
-
-  public Map<String, Object> asignar(Long id, Set<Long> ids, Actor a) {
-    Cabana c = obtener(id);
-    exigirGestion(c, a);
-    if (ids == null || ids.size() > 100)
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Asignación inválida");
-    for (Long uid : ids) {
-      JsonNode u = identidad(uid);
-      if (!u.path("activo").asBoolean()
-          || !Actor.normalizar(u.path("rol").asText()).equals("TRABAJADOR"))
-        throw new ResponseStatusException(
-            HttpStatus.BAD_REQUEST, "Solo se asignan trabajadores activos");
-      Long duenoTrabajador = u.path("duenoId").isNumber() ? u.path("duenoId").asLong() : null;
-      if (!Objects.equals(c.getDuenoId(), duenoTrabajador))
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Trabajador de otro dueño");
-    }
-    c.setTrabajadores(new HashSet<>(ids));
-    return view(c);
-  }
-
-  private boolean perteneceAlDuenoActual(Cabana c, Actor a) {
-    var u = identidad(a.id());
-    Long actual = u.path("duenoId").isNumber() ? u.path("duenoId").asLong() : null;
-    return java.util.Objects.equals(actual, c.getDuenoId());
   }
 
   private JsonNode identidad(Long id) {
@@ -183,7 +153,6 @@ public class GestionCabanaService {
     m.put("estado", c.getEstado());
     m.put("estadoOcupacion", c.getEstadoOcupacion());
     m.put("duenoId", c.getDuenoId());
-    m.put("trabajadores", c.getTrabajadores());
     m.put("imagenesSecundarias", c.getImagenes().stream().map(CabanaImagen::getUrlImagen).toList());
     return m;
   }

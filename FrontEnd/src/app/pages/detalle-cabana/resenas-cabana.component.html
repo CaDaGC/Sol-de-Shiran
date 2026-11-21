@@ -38,7 +38,12 @@
   <ul class="reviews-list">
     @for (opinion of opiniones(); track opinion.id) {
       <li>
-        <strong>{{ opinion.autor }}</strong>
+        <div class="review-author">
+          @if (opinion.fotoPerfil) {
+            <img [src]="imagenUrl(opinion.fotoPerfil)" alt="" (error)="opinion.fotoPerfil = null">
+          } @else { <span class="review-avatar" aria-hidden="true">{{ (opinion.nombreUsuario || opinion.autor || 'U').charAt(0).toUpperCase() }}</span> }
+          <strong>{{ opinion.nombreUsuario || opinion.autor }}</strong>
+        </div>
         <div class="rating" [attr.aria-label]="opinion.puntuacion + ' de 5 estrellas'">
           <span aria-hidden="true">{{ '★'.repeat(opinion.puntuacion) }}{{ '☆'.repeat(5 - opinion.puntuacion) }}</span>
         </div>

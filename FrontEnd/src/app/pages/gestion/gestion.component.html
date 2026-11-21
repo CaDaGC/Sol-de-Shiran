@@ -2,26 +2,171 @@
   <header>
     <p class="eyebrow">SOL DE SHIRÁN</p>
     <h1>Gestión y cuenta</h1>
-    <p *ngIf="perfil()">{{ perfil().nombre }} · {{ rol() }}</p>
+    <p *ngIf="perfil()">{{ perfil().nombreUsuario }} · {{ rol() }}</p>
   </header>
   <nav aria-label="Secciones de gestión">
     <button *ngIf="es('ADMIN')" (click)="tab = 'cabanas'">Cabañas</button>
-    <ng-container *ngFor="let seccion of seccionesCuentas">
-      <button
-        *ngIf="es('ADMIN')"
-        [attr.aria-pressed]="tab === 'cuentas' && seccionCuenta.rol === seccion.rol"
-        (click)="abrirCuentas(seccion)"
-      >{{ seccion.titulo }}</button>
-    </ng-container>
+    <button *ngIf="es('ADMIN')" [attr.aria-pressed]="tab === 'cuentas'" (click)="abrirCuentas()">Usuarios</button>
     <button *ngIf="es('ADMIN')" (click)="tab = 'bloqueos'">Bloquear fechas</button>
     <button (click)="tab = 'perfil'">Mi perfil</button>
   </nav>
   <p class="success" role="status" *ngIf="mensaje()">{{ mensaje() }}</p>
   <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
   <section *ngIf="tab === 'cabanas' && es('ADMIN')">
-    <h2>Cabañas {{ es('ADMIN') ? 'del centro' : 'asignadas a tu cuenta' }}</h2>
-    <form *ngIf="es('ADMIN')" (ngSubmit)="guardarCabana()" #cf="ngForm">
-      <h3>{{ cabana.idCabana ? 'Editar cabaña' : 'Nueva cabaña' }}</h3>
+    <div class="management-toolbar"><h2>Cabañas</h2>
+      <label>Buscar cabañas<input type="search" placeholder="Nombre de la cabaña" [ngModel]="buscarCabana()" (ngModelChange)="buscarCabana.set($event)"></label>
+      <button class="primary" type="button" (click)="crearCabana()">Crear cabaña</button></div>
+
+    <div class="cards">
+      <article *ngFor="let c of cabanasFiltradas()">
+        <img [src]="c.imagenPrincipal" [alt]="c.nombre" />
+        <h3>{{ c.nombre }}</h3>
+        <p>{{ c.estado }} · Hasta {{ c.aforoMaximo }} huéspedes</p>
+        <p>S/ {{ c.tarifaNoche | number: '1.2-2' }} por noche</p>
+        <p>
+          Dueño: {{ c.duenoId ? nombreCuenta(c.duenoId) : 'Administración' }}
+        </p>
+        <div *ngIf="es('ADMIN')">
+          <button [disabled]="subiendoFotos() || ocupado()" (click)="editarCabana(c)">Editar</button
+          ><button *ngIf="c.estado !== 'INACTIVA'" class="danger" (click)="desactivarCabana(c)">
+            Desactivar</button
+          ><button *ngIf="c.estado === 'INACTIVA'" (click)="activar(c)">Activar</button>
+        </div>
+
+      </article>
+    </div>
+    <p *ngIf="!cabanasFiltradas().length">No se encontraron cabañas.</p>
+  </section>
+  <section *ngIf="tab === 'cuentas' && es('ADMIN')">
+    <div class="management-toolbar"><h2>Usuarios</h2>
+      <label>Buscar usuarios<input type="search" placeholder="Nombre de usuario o correo" [ngModel]="buscarUsuario()" (ngModelChange)="buscarUsuario.set($event)"></label>
+      <button class="primary" type="button" (click)="crearUsuario()">Crear usuario</button></div>
+
+    <div class="table">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre / correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cuenta of usuariosFiltrados()">
+            <td>{{ cuenta.id }}</td>
+            <td>{{ cuenta.nombreUsuario || cuenta.nombre }}<br />{{ cuenta.email }}</td>
+
+            <td>{{ rolCuenta(cuenta) }}</td>
+
+            <td>{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</td>
+            <td>
+              <button [disabled]="ocupado()" (click)="editarUsuario(cuenta)">Editar</button>
+              <button *ngIf="cuenta.id !== perfil()?.id && cuenta.activo"
+                class="danger" [disabled]="ocupado()" (click)="eliminarUsuario(cuenta)">
+                Desactivar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p *ngIf="!usuariosFiltrados().length">No se encontraron usuarios.</p>
+  </section>
+  <section *ngIf="tab === 'bloqueos' && es('ADMIN')">
+    <h2>Bloquear disponibilidad</h2>
+    <form (ngSubmit)="bloquear()" #bf="ngForm">
+      <div class="grid">
+        <label
+          >Cabaña<select
+            name="bcab"
+            [(ngModel)]="bloqueo.idCabana"
+            required
+            (ngModelChange)="consultarBloqueos()"
+          >
+            <option [ngValue]="0">Seleccionar</option>
+            <option *ngFor="let c of cabanas()" [ngValue]="c.idCabana">{{ c.nombre }}</option>
+          </select></label
+        ><label>Desde<input name="bdesde" type="date" [(ngModel)]="bloqueo.desde" required /></label
+        ><label
+          >Hasta (inclusive)<input
+            name="bhasta"
+            type="date"
+            [(ngModel)]="bloqueo.hasta"
+            required /></label
+        ><label
+          >Motivo<input name="bmotivo" [(ngModel)]="bloqueo.motivo" required maxlength="200"
+        /></label>
+      </div>
+      <button class="primary" [disabled]="bf.invalid || !bloqueo.idCabana">Bloquear fechas</button>
+    </form>
+    <article *ngFor="let b of bloqueos()">
+      {{ b.desde }} a {{ b.hasta }} · {{ b.motivo }}
+      <button (click)="desbloquear(b)">Retirar bloqueo</button>
+    </article>
+  </section>
+  <section *ngIf="tab === 'perfil' && perfil()">
+    <h2>Mi perfil</h2>
+    <article class="editor-foto-perfil">
+      <img *ngIf="vistaFotoPerfil() || auth.fotoPerfil(); else sinFotoPerfil"
+        [src]="vistaFotoPerfil() || auth.fotoPerfil()" alt="Tu foto de perfil" (error)="auth.fotoPerfil.set(null); vistaFotoPerfil.set(null)" />
+      <ng-template #sinFotoPerfil><div class="perfil-inicial" aria-label="Sin foto de perfil">{{ (perfil().nombreUsuario || 'U').charAt(0).toUpperCase() }}</div></ng-template>
+      <div>
+        <h3>Foto de perfil</h3>
+        <p>JPG o PNG, hasta 2 MB y 16 megapíxeles.</p>
+        <label>Seleccionar foto<input type="file" accept="image/*"
+          [disabled]="guardandoFotoPerfil()" (change)="seleccionarFotoPerfil($event)" /></label>
+        <button type="button" class="primary" [disabled]="!archivoFotoPerfil || guardandoFotoPerfil()"
+          (click)="guardarFotoPerfil()">Guardar foto</button>
+        <button type="button" *ngIf="archivoFotoPerfil" [disabled]="guardandoFotoPerfil()" (click)="cancelarFotoPerfil()">Cancelar</button>
+        <button type="button" *ngIf="auth.fotoPerfil()" [disabled]="guardandoFotoPerfil()"
+          (click)="quitarFotoPerfil()">Quitar foto</button>
+        <p *ngIf="guardandoFotoPerfil()" role="status">Guardando foto…</p>
+      </div>
+    </article>
+    <form #pf="ngForm" (ngSubmit)="pf.valid && guardarPerfil()">
+      <label>Nombre de usuario<input name="mnombre" [(ngModel)]="perfil().nombreUsuario" required maxlength="80" /></label
+      ><label
+        >Correo<input name="memail" type="email" email [(ngModel)]="perfil().email" required maxlength="150" /></label
+      >
+      <ng-container *ngIf="perfil().persona as persona">
+        <label>Teléfono<input name="mtelefono" type="tel" [(ngModel)]="persona.telefono" required maxlength="20"></label>
+        <label>Dirección<input name="mdireccion" [(ngModel)]="persona.direccion" required maxlength="255"></label>
+      </ng-container>
+      <button class="primary" [disabled]="pf.invalid">Guardar perfil</button>
+    </form>
+    <form (ngSubmit)="cambiarPassword()">
+      <h3>Cambiar contraseña</h3>
+      <label
+        >Contraseña actual<input
+          name="actual"
+          type="password"
+          [(ngModel)]="passwordActual"
+          required
+          autocomplete="current-password" /></label
+      ><label
+        >Nueva contraseña<input
+          name="nueva"
+          type="password"
+          [(ngModel)]="passwordNueva"
+          required
+          minlength="8"
+          autocomplete="new-password" /></label
+      ><button class="primary">Cambiar contraseña</button>
+    </form>
+  </section>
+</main>
+
+<dialog #editorDialog class="management-dialog" aria-labelledby="editor-title"
+  (cancel)="$event.preventDefault(); cerrarEditor()" (click)="cerrarFondo($event)">
+  <header class="modal-heading"><h2 id="editor-title">{{ editor() === 'usuario' ? (usuario.id ? 'Editar usuario' : 'Crear usuario') : (cabana.idCabana ? 'Editar cabaña' : 'Crear cabaña') }}</h2>
+    <button type="button" aria-label="Cerrar formulario" [disabled]="ocupado() || subiendoFotos()" (click)="cerrarEditor()">×</button>
+  </header>
+  <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
+  @if (editor() === 'cabana') {
+    <form *ngIf="es('ADMIN')" (ngSubmit)="cf.valid && guardarCabana()" #cf="ngForm">
+
       <div class="grid">
         <label
           >Nombre<input name="nombre" [(ngModel)]="cabana.nombre" required maxlength="100"
@@ -99,56 +244,19 @@
       <button class="primary" [disabled]="cf.invalid || ocupado() || subiendoFotos()">Guardar cabaña</button
       ><button type="button" [disabled]="subiendoFotos() || ocupado()" (click)="nueva()">Limpiar formulario</button>
     </form>
-    <div class="cards">
-      <article *ngFor="let c of cabanas()">
-        <img [src]="c.imagenPrincipal" [alt]="c.nombre" />
-        <h3>{{ c.nombre }}</h3>
-        <p>{{ c.estado }} · Hasta {{ c.aforoMaximo }} huéspedes</p>
-        <p>S/ {{ c.tarifaNoche | number: '1.2-2' }} por noche</p>
-        <p>
-          Dueño: {{ c.duenoId ? nombreCuenta(c.duenoId) : 'Administración' }} · Trabajadores:
-          {{ nombresTrabajadores(c.trabajadores ?? []) || 'Sin asignar' }}
-        </p>
-        <div *ngIf="es('ADMIN')">
-          <button [disabled]="subiendoFotos() || ocupado()" (click)="editarCabana(c)">Editar</button
-          ><button [disabled]="ocupado()" (click)="abrirAsignacion(c)">Asignar trabajadores</button
-          ><button *ngIf="c.estado !== 'INACTIVA'" class="danger" (click)="desactivarCabana(c)">
-            Desactivar</button
-          ><button *ngIf="c.estado === 'INACTIVA'" (click)="activar(c)">Activar</button>
-        </div>
-        <ng-container *ngIf="asignacion as seleccion">
-          <fieldset class="asignaciones" *ngIf="seleccion.cabanaId === c.idCabana">
-            <legend>Trabajadores de {{ c.nombre }}</legend>
-            <label class="opcion-trabajador" *ngFor="let trabajador of trabajadoresDe(c)">
-              <input
-                #opcion type="checkbox" [checked]="seleccion.ids.has(trabajador.id)"
-                [disabled]="ocupado() || (!trabajador.activo && !seleccion.ids.has(trabajador.id))"
-                (change)="cambiarAsignacion(trabajador.id, opcion.checked)"
-              />
-              <span>{{ trabajador.nombre }} · {{ trabajador.email }}{{ trabajador.activo ? '' : ' (inactivo)' }}</span>
-            </label>
-            <p *ngIf="!trabajadoresDe(c).length">No hay trabajadores disponibles para esta cabaña.</p>
-            <button class="primary" [disabled]="ocupado()" (click)="guardarAsignacion()">Guardar asignación</button>
-            <button [disabled]="ocupado()" (click)="asignacion = null">Cancelar</button>
-          </fieldset>
-        </ng-container>
-      </article>
-    </div>
-    <p *ngIf="!cabanas().length">No hay cabañas para tu cuenta.</p>
-  </section>
-  <section *ngIf="tab === 'cuentas' && es('ADMIN')">
-    <h2>{{ seccionCuenta.titulo }}</h2>
-    <form (ngSubmit)="guardarUsuario()" #uf="ngForm">
-      <h3>{{ usuario.id ? 'Editar' : 'Agregar' }} {{ seccionCuenta.singular }}</h3>
+  }
+  @if (editor() === 'usuario') {
+    <form (ngSubmit)="uf.valid && guardarUsuario()" #uf="ngForm">
+
       <div class="grid">
-        <label>Nombre<input name="unombre" [(ngModel)]="usuario.nombre" required /></label>
-        <label>Correo<input name="uemail" type="email" [(ngModel)]="usuario.email" required /></label>
+        <label>Nombre de usuario<input name="unombre" [(ngModel)]="usuario.nombreUsuario" required maxlength="80" /></label>
+        <label>Correo<input name="uemail" type="email" email [(ngModel)]="usuario.email" required maxlength="150" /></label>
         <label *ngIf="!usuario.id">
           Contraseña inicial
           <input name="upass" type="password" [(ngModel)]="usuario.password"
-            minlength="8" required autocomplete="new-password" />
+            minlength="8" maxlength="72" required autocomplete="new-password" />
         </label>
-        <label *ngIf="es('ADMIN') && usuario.id && usuario.id !== perfil()?.id">
+        <label *ngIf="es('ADMIN') && usuario.id !== perfil()?.id">
           Rol
           <select name="urol" [(ngModel)]="usuario.rol">
             <option *ngFor="let seccion of seccionesCuentas" [ngValue]="seccion.rol">
@@ -156,132 +264,20 @@
             </option>
           </select>
         </label>
-        <label *ngIf="es('ADMIN') && usuario.rol === 'TRABAJADOR'">
-          Dueño del trabajador
-          <select name="ujefe" [(ngModel)]="usuario.duenoId">
-            <option [ngValue]="null">Administración del centro</option>
-            <option *ngFor="let dueno of duenosActivos()" [ngValue]="dueno.id">
-              {{ dueno.nombre }} · {{ dueno.email }}
-            </option>
-          </select>
-        </label>
+
       </div>
-      <button class="primary" [disabled]="uf.invalid || ocupado()">Guardar {{ seccionCuenta.singular }}</button>
-      <button type="button" [disabled]="ocupado()" (click)="usuario = nuevoUsuario()">
-        {{ usuario.id ? 'Cancelar edición' : 'Limpiar' }}
+<fieldset *ngIf="usuario.rol !== 'ADMIN'"><legend>Datos personales obligatorios</legend><div class="grid">
+<label>Nombres<input name="unombres" [(ngModel)]="usuario.persona.nombres" required maxlength="100" autocomplete="given-name"></label>
+<label>Apellidos<input name="uapellidos" [(ngModel)]="usuario.persona.apellidos" required maxlength="100" autocomplete="family-name"></label>
+<label>Tipo de documento<select name="utipoDocumento" [(ngModel)]="usuario.persona.tipoDocumento" required><option value="DNI">DNI</option><option value="CARNET_EXTRANJERIA">Carné de extranjería</option></select></label>
+<label>Número de documento<input name="unumeroDocumento" [(ngModel)]="usuario.persona.numeroDocumento" required maxlength="20" autocomplete="off"></label>
+<label>Teléfono<input name="utelefono" [(ngModel)]="usuario.persona.telefono" required maxlength="20" autocomplete="tel"></label>
+<label>Dirección<input name="udireccion" [(ngModel)]="usuario.persona.direccion" required maxlength="255" autocomplete="street-address"></label>
+</div></fieldset>
+      <button class="primary" [disabled]="uf.invalid || ocupado()">Guardar usuario</button>
+      <button type="button" [disabled]="ocupado()" (click)="cerrarEditor()">
+        Cancelar
       </button>
     </form>
-    <div class="table">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre / correo</th>
-            <th *ngIf="seccionCuenta.rol === 'TRABAJADOR' && es('ADMIN')">Dueño</th>
-            <th *ngIf="seccionCuenta.rol === 'TRABAJADOR' || seccionCuenta.rol === 'DUENO'">Cabañas</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let cuenta of cuentasDe(seccionCuenta.rol)">
-            <td>{{ cuenta.id }}</td>
-            <td>{{ cuenta.nombre }}<br />{{ cuenta.email }}</td>
-            <td *ngIf="seccionCuenta.rol === 'TRABAJADOR' && es('ADMIN')">
-              {{ cuenta.duenoId ? nombreCuenta(cuenta.duenoId) : 'Administración' }}
-            </td>
-            <td *ngIf="seccionCuenta.rol === 'TRABAJADOR' || seccionCuenta.rol === 'DUENO'">
-              {{ cabanasDe(cuenta) || 'Sin asignar' }}
-            </td>
-            <td>{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</td>
-            <td>
-              <button [disabled]="ocupado()" (click)="editarUsuario(cuenta)">Editar</button>
-              <button *ngIf="cuenta.id !== perfil()?.id && (seccionCuenta.rol !== 'ADMIN' || cuenta.activo)"
-                class="danger" [disabled]="ocupado()" (click)="eliminarUsuario(cuenta)">
-                {{ seccionCuenta.rol === 'ADMIN' ? 'Desactivar' : 'Eliminar' }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p *ngIf="!cuentasDe(seccionCuenta.rol).length">Todavía no hay cuentas en esta sección.</p>
-  </section>
-  <section *ngIf="tab === 'bloqueos' && es('ADMIN')">
-    <h2>Bloquear disponibilidad</h2>
-    <form (ngSubmit)="bloquear()" #bf="ngForm">
-      <div class="grid">
-        <label
-          >Cabaña<select
-            name="bcab"
-            [(ngModel)]="bloqueo.idCabana"
-            required
-            (ngModelChange)="consultarBloqueos()"
-          >
-            <option [ngValue]="0">Seleccionar</option>
-            <option *ngFor="let c of cabanas()" [ngValue]="c.idCabana">{{ c.nombre }}</option>
-          </select></label
-        ><label>Desde<input name="bdesde" type="date" [(ngModel)]="bloqueo.desde" required /></label
-        ><label
-          >Hasta (inclusive)<input
-            name="bhasta"
-            type="date"
-            [(ngModel)]="bloqueo.hasta"
-            required /></label
-        ><label
-          >Motivo<input name="bmotivo" [(ngModel)]="bloqueo.motivo" required maxlength="200"
-        /></label>
-      </div>
-      <button class="primary" [disabled]="bf.invalid || !bloqueo.idCabana">Bloquear fechas</button>
-    </form>
-    <article *ngFor="let b of bloqueos()">
-      {{ b.desde }} a {{ b.hasta }} · {{ b.motivo }}
-      <button (click)="desbloquear(b)">Retirar bloqueo</button>
-    </article>
-  </section>
-  <section *ngIf="tab === 'perfil' && perfil()">
-    <h2>Mi perfil</h2>
-    <article class="editor-foto-perfil">
-      <img *ngIf="vistaFotoPerfil() || auth.fotoPerfil(); else sinFotoPerfil"
-        [src]="vistaFotoPerfil() || auth.fotoPerfil()" alt="Tu foto de perfil" />
-      <ng-template #sinFotoPerfil><div class="perfil-inicial" aria-label="Sin foto de perfil">{{ perfil().nombre.charAt(0).toUpperCase() }}</div></ng-template>
-      <div>
-        <h3>Foto de perfil</h3>
-        <p>JPG o PNG, hasta 2 MB y 16 megapíxeles.</p>
-        <label>Seleccionar foto<input type="file" accept="image/jpeg,image/png"
-          [disabled]="guardandoFotoPerfil()" (change)="seleccionarFotoPerfil($event)" /></label>
-        <button type="button" class="primary" [disabled]="!archivoFotoPerfil || guardandoFotoPerfil()"
-          (click)="guardarFotoPerfil()">Guardar foto</button>
-        <button type="button" *ngIf="archivoFotoPerfil" [disabled]="guardandoFotoPerfil()" (click)="cancelarFotoPerfil()">Cancelar</button>
-        <button type="button" *ngIf="auth.fotoPerfil()" [disabled]="guardandoFotoPerfil()"
-          (click)="quitarFotoPerfil()">Quitar foto</button>
-        <p *ngIf="guardandoFotoPerfil()" role="status">Guardando foto…</p>
-      </div>
-    </article>
-    <form (ngSubmit)="guardarPerfil()">
-      <label>Nombre<input name="mnombre" [(ngModel)]="perfil().nombre" required /></label
-      ><label
-        >Correo<input name="memail" type="email" [(ngModel)]="perfil().email" required /></label
-      ><button class="primary">Guardar perfil</button>
-    </form>
-    <form (ngSubmit)="cambiarPassword()">
-      <h3>Cambiar contraseña</h3>
-      <label
-        >Contraseña actual<input
-          name="actual"
-          type="password"
-          [(ngModel)]="passwordActual"
-          required
-          autocomplete="current-password" /></label
-      ><label
-        >Nueva contraseña<input
-          name="nueva"
-          type="password"
-          [(ngModel)]="passwordNueva"
-          required
-          minlength="8"
-          autocomplete="new-password" /></label
-      ><button class="primary">Cambiar contraseña</button>
-    </form>
-  </section>
-</main>
+  }
+</dialog>

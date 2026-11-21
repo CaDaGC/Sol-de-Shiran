@@ -9,14 +9,14 @@
   </header>
   <section class="filters" aria-label="Buscar reservas">
     <div class="search-field">
-      <label class="sr-only" for="buscar-reserva">Usuario o correo electrónico</label>
+      <label class="sr-only" for="buscar-reserva">Código de reserva, usuario o correo electrónico</label>
       <span aria-hidden="true">⌕</span
       ><input
         id="buscar-reserva"
         type="search"
         maxlength="100"
         autocomplete="off"
-        placeholder="Buscar por nombre o correo"
+        placeholder="Código RSS00001, nombre o correo"
         [ngModel]="buscar()"
         (ngModelChange)="actualizarBusqueda($event)"
       />
@@ -77,10 +77,10 @@
                 class="reservation-row"
                 [class.selected]="seleccionada()?.idReserva === reserva.idReserva"
                 [attr.aria-pressed]="seleccionada()?.idReserva === reserva.idReserva"
-                [attr.aria-label]="'Seleccionar reserva #' + reserva.idReserva"
+                [attr.aria-label]="'Seleccionar reserva ' + reserva.codigo"
                 (click)="idSeleccionada.set(reserva.idReserva)"
               >
-                <span class="reservation-id">#{{ reserva.idReserva }}</span>
+                <span class="reservation-id">{{ reserva.codigo }}</span>
                 <span class="row-guest"
                   ><strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong>
                   <span class="secondary">{{
@@ -109,7 +109,7 @@
               <p>
                 {{
                   hayFiltros()
-                    ? 'Prueba con otro nombre, correo o cabaña.'
+                    ? 'Prueba con otro código, nombre, correo o cabaña.'
                     : 'Las reservas se mostrarán en este registro.'
                 }}
               </p>
@@ -156,7 +156,7 @@
         </div>
         <h2 id="selected-title">{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h2>
         <p class="detail-subtitle">
-          Reserva #{{ reserva.idReserva }} · {{ reserva.cantidadHuespedes }}
+          Reserva {{ reserva.codigo }} · {{ reserva.cantidadHuespedes }}
           {{ reserva.cantidadHuespedes === 1 ? 'persona' : 'personas' }}
         </p>
         <div class="stay-strip">
@@ -211,7 +211,7 @@
         <button
           type="button"
           class="primary-button manage-button"
-          [attr.aria-label]="'Administrar reserva #' + reserva.idReserva"
+          [attr.aria-label]="'Administrar reserva ' + reserva.codigo"
           (click)="idDetalle.set(reserva.idReserva)"
         >
           Administrar reserva <span aria-hidden="true">→</span>

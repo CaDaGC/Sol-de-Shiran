@@ -63,6 +63,7 @@ class PermisosUsuariosTest {
   @Autowired MockMvc mvc;
   @Autowired UsuarioRepository usuarios;
   @Autowired RolRepository roles;
+  @Autowired PersonaRepository personas;
   @Autowired pe.edu.upeu.soldeshiran.usuario_service.security.RoleInitializer inicializador;
   long admin, cliente, dueno;
 
@@ -82,6 +83,7 @@ class PermisosUsuariosTest {
   @BeforeEach
   void preparar() {
     usuarios.deleteAll();
+    personas.deleteAll();
     admin = crear("ADMIN", "admin@test.local");
     cliente = crear("CLIENTE", "user@test.local");
     dueno = crear("DUENO", "dueno@test.local");
@@ -89,7 +91,7 @@ class PermisosUsuariosTest {
 
   long crear(String rol, String email) {
     Usuario u = new Usuario();
-    u.setNombre("Prueba");
+    u.setNombre(email.split("@")[0]);
     u.setEmail(email);
     u.setPassword("hash-no-publico");
     u.setRol(roles.findByNombre(rol).orElseThrow());
@@ -127,7 +129,8 @@ class PermisosUsuariosTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"nombre\":\"DueÃ±o"
-                        + " nuevo\",\"email\":\"nuevo@test.local\",\"password\":\"Password123!\",\"rol\":\"DUENO\"}"))
+                        + " nuevo\",\"email\":\"nuevo@test.local\",\"password\":\"Password123!\",\"rol\":\"DUENO\","
+                        + "\"persona\":{\"nombres\":\"Ana\",\"apellidos\":\"Perez\",\"tipoDocumento\":\"DNI\",\"numeroDocumento\":\"12345678\",\"telefono\":\"999999999\",\"direccion\":\"Lima\"}}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.rol").value("DUENO"))
         .andExpect(jsonPath("$.password").doesNotExist());
@@ -139,7 +142,7 @@ class PermisosUsuariosTest {
             post("/api/v1/usuarios/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    "{\"nombre\":\"Registro\",\"email\":\"registro@test.local\",\"password\":\"Password123!\",\"rol\":\"ADMIN\"}"))
+                    "{\"nombre\":\"Registro\",\"email\":\"registro@test.local\",\"password\":\"Password123!\",\"rol\":\"ADMIN\",\"persona\":{\"nombres\":\"Ana\",\"apellidos\":\"Perez\",\"tipoDocumento\":\"DNI\",\"numeroDocumento\":\"12345678\",\"telefono\":\"999999999\",\"direccion\":\"Lima\"}}"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.rol").value("CLIENTE"));
   }
@@ -182,7 +185,7 @@ class PermisosUsuariosTest {
             put("/api/v1/usuarios/" + cliente)
                 .header("Authorization", token(cliente))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Prueba\",\"email\":\"user@test.local\",\"rol\":\"ADMIN\"}"))
+                .content("{\"nombre\":\"Prueba\",\"email\":\"user@test.local\",\"rol\":\"ADMIN\",\"persona\":{\"nombres\":\"Ana\",\"apellidos\":\"Perez\",\"tipoDocumento\":\"DNI\",\"numeroDocumento\":\"12345678\",\"telefono\":\"999999999\",\"direccion\":\"Lima\"}}"))
         .andExpect(status().isForbidden());
   }
 
@@ -203,10 +206,11 @@ class PermisosUsuariosTest {
   }
 
   @Test
-  void adminEliminaUsuarioDefinitivamenteYElTokenDejaDeServir() throws Exception {
+  void adminDesactivaUsuarioConservandoLaCuentaYElTokenDejaDeServir() throws Exception {
     mvc.perform(delete("/api/v1/usuarios/" + cliente).header("Authorization", token(admin)))
         .andExpect(status().isNoContent());
-    Assertions.assertFalse(usuarios.existsById(cliente));
+    Assertions.assertTrue(usuarios.existsById(cliente));
+    Assertions.assertFalse(usuarios.findById(cliente).orElseThrow().getActivo());
     mvc.perform(get("/api/v1/usuarios/me").header("Authorization", token(cliente)))
         .andExpect(status().isUnauthorized());
   }
@@ -222,27 +226,76 @@ class PermisosUsuariosTest {
   }
 
   @Test
-  void adminPuedeEliminarDuenoYDesvinculaTrabajadores() throws Exception {
+  void adminDesactivaDuenoSinEliminarSuCuentaNiTrabajadores() throws Exception {
     Usuario trabajador = usuarios.findById(crear("TRABAJADOR", "trabajador@test.local"))
         .orElseThrow();
-    trabajador.setDuenoId(dueno);
     usuarios.save(trabajador);
     mvc.perform(delete("/api/v1/usuarios/" + dueno).header("Authorization", token(admin)))
         .andExpect(status().isNoContent());
-    Assertions.assertFalse(usuarios.existsById(dueno));
-    Assertions.assertNull(usuarios.findById(trabajador.getId()).orElseThrow().getDuenoId());
+    Assertions.assertTrue(usuarios.existsById(dueno));
+    Assertions.assertFalse(usuarios.findById(dueno).orElseThrow().getActivo());
+    Assertions.assertTrue(usuarios.existsById(trabajador.getId()));
   }
 
   @Test
   void duenoNoPuedeEliminarTrabajadorPropio() throws Exception {
     Usuario trabajador = usuarios.findById(crear("TRABAJADOR", "propio@test.local"))
         .orElseThrow();
-    trabajador.setDuenoId(dueno);
     usuarios.save(trabajador);
     mvc.perform(delete("/api/v1/usuarios/" + trabajador.getId())
         .header("Authorization", token(dueno)))
         .andExpect(status().isForbidden());
     Assertions.assertTrue(usuarios.existsById(trabajador.getId()));
+  }
+
+  @Test
+  void registroPublicoExigePersonaPeroAdminPuedeCrearCuentaSinPersona() throws Exception {
+    String cuerpo = """
+        {"nombreUsuario":"nuevo-alias","email":"alias@test.local","password":"Password123!","rol":"ROLE_ADMIN"}
+        """;
+    mvc.perform(post("/api/v1/usuarios/register").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        .andExpect(status().isBadRequest());
+    Assertions.assertFalse(usuarios.existsByEmail("alias@test.local"));
+    Assertions.assertEquals(0, personas.count());
+    mvc.perform(post("/api/v1/usuarios/admin").header("Authorization",token(admin))
+        .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.nombreUsuario").value("nuevo-alias"))
+        .andExpect(jsonPath("$.persona").isEmpty())
+        .andExpect(jsonPath("$.rol").value("ADMIN"));
+  }
+
+  @Test
+  void documentoRepetidoRevierteLaCuentaYElAliasEsUnico() throws Exception {
+    String cuerpo = """
+        {"nombreUsuario":"cliente-uno","email":"uno@test.local","password":"Password123!",
+         "persona":{"nombres":"Ana","apellidos":"Pérez","numeroDocumento":"98765432","telefono":"999888777","direccion":"Lima"}}
+        """;
+    mvc.perform(post("/api/v1/usuarios/register").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        .andExpect(status().isCreated()).andExpect(jsonPath("$.persona.nombres").value("Ana"));
+    mvc.perform(post("/api/v1/usuarios/register").contentType(MediaType.APPLICATION_JSON)
+        .content(cuerpo.replace("cliente-uno","cliente-dos").replace("uno@test","dos@test")))
+        .andExpect(status().isConflict());
+    Assertions.assertEquals(1, personas.count());
+    Assertions.assertFalse(usuarios.existsByEmail("dos@test.local"));
+  }
+
+  @Test
+  void desactivarConservaPersonaYDocumentoDeLaCuenta() throws Exception {
+    String cuerpo = """
+        {"nombreUsuario":"con-persona","email":"persona@test.local","password":"Password123!",
+         "persona":{"nombres":"Ana","apellidos":"Pérez","numeroDocumento":"99999999","telefono":"999888777","direccion":"Lima"}}
+        """;
+    mvc.perform(post("/api/v1/usuarios/register").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        .andExpect(status().isCreated());
+    long id=usuarios.findByEmail("persona@test.local").orElseThrow().getId();
+    long cantidad=personas.count();
+    mvc.perform(delete("/api/v1/usuarios/"+id).header("Authorization",token(admin))).andExpect(status().isNoContent());
+    Assertions.assertTrue(usuarios.existsById(id));
+    Assertions.assertEquals(cantidad,personas.count());
+    mvc.perform(get("/api/v1/usuarios/"+id).header("Authorization",token(admin)))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.activo").value(false))
+        .andExpect(jsonPath("$.persona.numeroDocumento").value("99999999"));
   }
 
   private String token(long id) throws Exception {
@@ -261,7 +314,7 @@ class PermisosUsuariosTest {
     var mac = javax.crypto.Mac.getInstance("HmacSHA256");
     mac.init(
         new javax.crypto.spec.SecretKeySpec(
-            "ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456"
+            "test-only-jwt-key-not-for-production-1234567890"
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8),
             "HmacSHA256"));
     return "Bearer "

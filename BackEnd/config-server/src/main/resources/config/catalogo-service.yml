@@ -8,8 +8,8 @@ spring:
       max-request-size: 3MB
   datasource:
     url: jdbc:mysql://localhost:3307/db_catalogo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:mysql123}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -27,4 +27,4 @@ eureka:
     instance-id: ${spring.application.name}:${server.port}
 servicios:
   interno:
-    token: ${INTERNAL_SERVICE_TOKEN:sol-de-shiran-local-internal-token-change-me}
+    token: ${INTERNAL_SERVICE_TOKEN}

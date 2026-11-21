@@ -8,7 +8,7 @@ describe('Integración del panel de reservas', () => {
   const metodosDialog = ['showModal', 'close'] as const;
   const originalesDialog = metodosDialog.map(metodo => Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, metodo));
 
-  // JSDOM no implementa los métodos del diálogo nativo del navegador.
+
   beforeAll(() => {
     metodosDialog.forEach(metodo => Object.defineProperty(HTMLDialogElement.prototype, metodo, {
       configurable: true,
@@ -26,7 +26,7 @@ describe('Integración del panel de reservas', () => {
   let http: HttpTestingController;
   const esperar = (ms = 0) => new Promise(resolve => setTimeout(resolve, ms));
   const reserva: ReservaPanelResponse = {
-    idReserva: 1, idUsuario: 5, nombreUsuario: 'Antonella', emailUsuario: 'antonella@example.com',
+    idReserva: 1, codigo: 'RSS00001', idUsuario: 5, nombreUsuario: 'Antonella', emailUsuario: 'antonella@example.com',
     idCabana: 2, nombreCabana: 'Familiar', fechaIngreso: '2026-12-01', fechaSalida: '2026-12-03',
     cantidadHuespedes: 2, montoTotal: 200, montoAdelanto: 100, saldoPendiente: 100,
     estadoReserva: 'CONFIRMADA'
@@ -65,7 +65,7 @@ describe('Integración del panel de reservas', () => {
     expect(request.request.params.get('size')).toBe('20');
     expect(request.request.params.has('buscar')).toBe(false);
     expect(request.request.params.has('idCabana')).toBe(false);
-    request.flush(pagina([reserva, { ...reserva, idReserva: 2 }]));
+    request.flush(pagina([reserva, { ...reserva, idReserva: 2, codigo: 'RSS00002' }]));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('2 reservas');
     expect(fixture.nativeElement.querySelectorAll('.reservation-list [data-status="CONFIRMADA"]').length).toBe(2);
@@ -73,10 +73,10 @@ describe('Integración del panel de reservas', () => {
   });
 
   it('seleccionar una reserva actualiza noches e importes sin otra petición', () => {
-    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, nombreCabana: 'Jardín',
+    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, codigo: 'RSS00002', nombreCabana: 'Jardín',
       fechaSalida: '2026-12-05', montoTotal: 900, saldoPendiente: 150 }]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva #2"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva RSS00002"]').click();
     fixture.detectChanges();
     const detalle = fixture.nativeElement.querySelector('.detail-card');
     expect(detalle.textContent).toContain('Jardín');
@@ -120,7 +120,7 @@ describe('Integración del panel de reservas', () => {
   it('consulta y muestra el detalle seleccionado al pulsar Administrar', () => {
     solicitud().flush(pagina([reserva]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00001"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     expect(fixture.nativeElement.querySelector('dialog').textContent).toContain('Cargando detalle');
@@ -140,31 +140,31 @@ describe('Integración del panel de reservas', () => {
   });
 
   it('cerrar durante la carga cancela la consulta y permite abrir otra reserva', () => {
-    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2 }]));
+    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, codigo: 'RSS00002' }]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00001"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     const pendiente = http.expectOne(req => req.url.endsWith('/reservas/panel/1'));
     fixture.nativeElement.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
     expect(pendiente.cancelled).toBe(true);
-    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva #2"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva RSS00002"]').click();
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #2"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00002"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/2/restante')).flush(null);
     http.expectOne(req => req.url.endsWith('/reservas/panel/2')).flush({
-      ...reserva, idReserva: 2, tarifaNocheAplicada: 100, expiraEn: '2026-11-05T12:15:00', fechaCreacion: null
+      ...reserva, idReserva: 2, codigo: 'RSS00002', tarifaNocheAplicada: 100, expiraEn: '2026-11-05T12:15:00', fechaCreacion: null
     });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('dialog').textContent).toContain('Reserva #2');
+    expect(fixture.nativeElement.querySelector('dialog').textContent).toContain('Reserva RSS00002');
   });
 
   it('muestra el 404 del detalle y puede reintentar sin afectar el listado', () => {
     solicitud().flush(pagina([reserva]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva #1"]').click();
+    fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00001"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/1/restante')).flush(null);
     http.expectOne(req => req.url.endsWith('/reservas/panel/1'))

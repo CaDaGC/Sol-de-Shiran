@@ -2,6 +2,9 @@ package pe.edu.upeu.soldeshiran.usuario_service.service;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.nio.file.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,9 +19,23 @@ import pe.edu.upeu.soldeshiran.usuario_service.security.Actor;
 @RequiredArgsConstructor
 public class FotoPerfilService {
   private final UsuarioRepository repository;
+  @Value("${usuarios.fotos.directorio:uploads/perfiles}")
+  private String directorio;
 
+  @Transactional
+  public Usuario guardar(Long id, MultipartFile archivo, Actor actor) {
+    if (!actor.es("ADMIN") && !actor.id().equals(id))
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo puedes actualizar tu foto.");
+    var usuario = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    return guardarArchivo(archivo, usuario);
+  }
+
+  @Transactional
   public Usuario guardar(MultipartFile archivo, Actor actor) {
-    var usuario = obtener(actor);
+    return guardar(actor.id(), archivo, actor);
+  }
+
+  private Usuario guardarArchivo(MultipartFile archivo, Usuario usuario) {
     if (archivo.isEmpty() || archivo.getSize() > 2 * 1024 * 1024)
       throw error("Selecciona una foto de hasta 2 MB.");
     try (var entrada = ImageIO.createImageInputStream(archivo.getInputStream())) {
@@ -36,9 +53,18 @@ public class FotoPerfilService {
         if (lector.read(0) == null) throw error("No se pudo leer la foto.");
       } finally { lector.dispose(); }
       var foto = usuario;
-      foto.setTipoFotoPerfil(formato.equals("png") ? "image/png" : "image/jpeg");
-      foto.setFotoPerfil(archivo.getBytes());
-      return repository.save(foto);
+      Path carpeta=Paths.get(directorio).toAbsolutePath().normalize();
+      Files.createDirectories(carpeta);
+      String nombre=UUID.randomUUID() + (formato.equals("png") ? ".png" : ".jpg");
+      Path destino=carpeta.resolve(nombre);
+      Files.write(destino, archivo.getBytes(), StandardOpenOption.CREATE_NEW);
+      foto.setFotoPerfil("/api/v1/usuarios/fotos/" + nombre);
+      try {
+        return repository.saveAndFlush(foto);
+      } catch (RuntimeException e) {
+        Files.deleteIfExists(destino);
+        throw e;
+      }
     } catch (IOException | IllegalArgumentException ex) {
       throw error("El archivo no contiene una foto válida.");
     }
@@ -52,7 +78,6 @@ public class FotoPerfilService {
   public void quitar(Actor actor) {
     var usuario = obtener(actor);
     usuario.setFotoPerfil(null);
-    usuario.setTipoFotoPerfil(null);
     repository.save(usuario);
   }
   private ResponseStatusException error(String mensaje) {
