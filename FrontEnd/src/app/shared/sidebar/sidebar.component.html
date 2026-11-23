@@ -1,91 +1,257 @@
-<aside class="sidebar" [class.is-collapsed]="contraido()">
-  <button type="button" class="sidebar-toggle" (click)="alternar.emit()"
-    [attr.aria-label]="contraido() ? 'Expandir menú' : 'Contraer menú'"
-    [attr.aria-expanded]="!contraido()" aria-controls="sidebar-navigation"
-    [attr.title]="contraido() ? 'Expandir menú' : 'Contraer menú'">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-      [class.point-right]="contraido()">
-      <path d="M14.5 7 9.5 12 14.5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<header class="mobile-header d-lg-none d-flex align-items-center justify-content-between gap-3">
+  <a [routerLink]="inicioPorRol(perfil()?.rol)" aria-label="Inicio de Sol de Shirán">
+    <img
+      src="/images/logo-sol-shiran.png"
+      alt="Complejo Turístico Sol de Shirán"
+      width="130"
+      height="71"
+    />
+  </a>
+  <button
+    type="button"
+    class="mobile-toggle d-flex align-items-center justify-content-center rounded-circle border"
+    aria-label="Abrir menú"
+    aria-controls="sidebar-panel"
+    [attr.aria-expanded]="menuMovilAbierto()"
+    (click)="menuMovilAbierto.set(true)"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 6h16M4 12h16M4 18h16"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
     </svg>
   </button>
-  <a
-    class="brand"
-    [routerLink]="inicioPorRol(perfil()?.rol)"
-    aria-label="Inicio de Sol de Shirán"
-  >
-    <img class="brand-logo" src="/images/logo-sol-shiran.png" alt="Complejo Turístico Sol de Shirán" width="1698" height="926">
-    <span class="brand-symbol" aria-hidden="true"><img src="/images/logo-sol-shiran.png" alt="" width="1698" height="926"></span>
-  </a>
-
-  <p class="nav-heading">NAVEGACIÓN</p>
-
-  <nav id="sidebar-navigation" class="side-nav" aria-label="Navegación principal">
-    @if (perfil()?.rol === 'CLIENTE') {
-      <a routerLink="/mis-reservas" routerLinkActive="active" aria-label="Mis reservas" [attr.title]="contraido() ? 'Mis reservas' : null">
-        <span class="nav-icon" aria-hidden="true">▤</span><span>Mis reservas</span>
-      </a>
-    }
-    @if (['ADMIN', 'TRABAJADOR'].includes(perfil()?.rol ?? '')) {
-      <a routerLink="/guardian/reservas" routerLinkActive="active" aria-label="Reservas" [attr.title]="contraido() ? 'Reservas' : null">
-        <span class="nav-icon" aria-hidden="true">▤</span>
-        <span>Reservas</span>
-      </a>
-    }
-    @if (perfil()?.rol === 'ADMIN') {
-      <a routerLink="/admin/metricas" routerLinkActive="active" aria-label="Métricas"
-        [attr.title]="contraido() ? 'Métricas' : null">
-        <span class="nav-icon" aria-hidden="true">▥</span><span>Métricas</span>
-      </a>
-    }
+</header>
+@if (menuMovilAbierto()) {
+  <button
+    type="button"
+    class="sidebar-backdrop d-lg-none border-0"
+    aria-label="Cerrar menú"
+    (click)="menuMovilAbierto.set(false)"
+  ></button>
+}
+<aside
+  id="sidebar-panel"
+  class="sidebar d-flex flex-column gap-3"
+  [class.is-collapsed]="contraido()"
+  [class.mobile-open]="menuMovilAbierto()"
+  (keydown.escape)="menuMovilAbierto.set(false)"
+>
+  <div class="sidebar-header d-flex align-items-center justify-content-between gap-2 flex-shrink-0">
     <a
-      *ngIf="!perfil() || ['ADMIN', 'CLIENTE'].includes(perfil()?.rol ?? '')"
-      routerLink="/catalogo"
-      routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      aria-label="Catálogo" [attr.title]="contraido() ? 'Catálogo' : null"
+      class="brand d-flex align-items-center justify-content-center text-decoration-none"
+      [routerLink]="inicioPorRol(perfil()?.rol)"
+      aria-label="Inicio de Sol de Shirán"
     >
-      <span class="nav-icon" aria-hidden="true">⌂</span>
-      <span>Catálogo</span>
+      <img
+        class="brand-logo"
+        src="/images/logo-sol-shiran.png"
+        alt="Complejo Turístico Sol de Shirán"
+        width="1698"
+        height="926"
+      />
+      <span class="brand-symbol" aria-hidden="true"
+        ><img src="/images/logo-sol-shiran.png" alt="" width="1698" height="926"
+      /></span>
     </a>
-
-    <a *ngIf="['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')" routerLink="/gestion" routerLinkActive="active" aria-label="Gestión y cuenta" [attr.title]="contraido() ? 'Gestión y cuenta' : null">
-      <span class="nav-icon" aria-hidden="true">⚙</span><span>Gestión y cuenta</span>
-    </a>
-
-    <a *ngIf="!perfil()" routerLink="/login" routerLinkActive="active" aria-label="Iniciar sesión" [attr.title]="contraido() ? 'Iniciar sesión' : null">
-      <span class="nav-icon" aria-hidden="true">↗</span>
-      <span>Iniciar sesión</span>
-    </a>
-  </nav>
-
-  <div class="sidebar-note">
-    <span class="note-dot" aria-hidden="true"></span>
-    <span>Descanso y naturaleza</span>
+    <button
+      type="button"
+      class="sidebar-toggle d-none d-lg-flex align-items-center justify-content-center flex-shrink-0 rounded-circle border"
+      (click)="alternar.emit()"
+      [attr.aria-label]="contraido() ? 'Expandir menú' : 'Contraer menú'"
+      [attr.aria-expanded]="!contraido()"
+      aria-controls="sidebar-menu"
+      [attr.title]="contraido() ? 'Expandir menú' : 'Contraer menú'"
+    >
+      <svg
+        class="d-none d-lg-block"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        [class.point-right]="contraido()"
+      >
+        <path
+          d="M14.5 7 9.5 12 14.5 17"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <svg
+        class="d-lg-none"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        @if (contraido()) {
+          <path
+            d="M4 6h16M4 12h16M4 18h16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        } @else {
+          <path
+            d="m6 6 12 12M18 6 6 18"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        }
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="mobile-toggle d-flex d-lg-none align-items-center justify-content-center rounded-circle border"
+      aria-label="Cerrar menú"
+      (click)="menuMovilAbierto.set(false)"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="m6 6 12 12M18 6 6 18"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
   </div>
 
-  <section class="account-panel" *ngIf="perfil() as usuario">
-    <div class="account-actions">
-      <span class="account-heading">Cuenta</span>
-      <button type="button" class="logout-button" (click)="cerrarSesion()" aria-label="Cerrar sesión" [attr.title]="contraido() ? 'Cerrar sesión' : null">
-        <span aria-hidden="true">↪</span>
-        <span class="logout-label">Cerrar sesión</span>
-      </button>
+  <div id="sidebar-menu" class="sidebar-menu d-flex flex-column flex-grow-1 overflow-y-auto">
+    <p class="nav-heading mb-2 px-3">NAVEGACIÓN</p>
+
+    <nav
+      id="sidebar-navigation"
+      (click)="menuMovilAbierto.set(false)"
+      class="side-nav d-flex flex-column gap-2"
+      aria-label="Navegación principal"
+    >
+      @if (perfil()?.rol === 'CLIENTE') {
+        <a
+          class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+          routerLink="/mis-reservas"
+          routerLinkActive="active"
+          aria-label="Mis reservas"
+          [attr.title]="contraido() ? 'Mis reservas' : null"
+        >
+          <span class="nav-icon" aria-hidden="true">▤</span><span>Mis reservas</span>
+        </a>
+      }
+      @if (['ADMIN', 'TRABAJADOR'].includes(perfil()?.rol ?? '')) {
+        <a
+          class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+          routerLink="/guardian/reservas"
+          routerLinkActive="active"
+          aria-label="Reservas"
+          [attr.title]="contraido() ? 'Reservas' : null"
+        >
+          <span class="nav-icon" aria-hidden="true">▤</span>
+          <span>Reservas</span>
+        </a>
+      }
+      @if (perfil()?.rol === 'ADMIN') {
+        <a
+          class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+          routerLink="/admin/metricas"
+          routerLinkActive="active"
+          aria-label="Métricas"
+          [attr.title]="contraido() ? 'Métricas' : null"
+        >
+          <span class="nav-icon" aria-hidden="true">▥</span><span>Métricas</span>
+        </a>
+      }
+      <a
+        class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+        *ngIf="!perfil() || ['ADMIN', 'CLIENTE'].includes(perfil()?.rol ?? '')"
+        routerLink="/catalogo"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        aria-label="Catálogo"
+        [attr.title]="contraido() ? 'Catálogo' : null"
+      >
+        <span class="nav-icon" aria-hidden="true">⌂</span>
+        <span>Catálogo</span>
+      </a>
+
+      <a
+        class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+        *ngIf="['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')"
+        routerLink="/gestion"
+        routerLinkActive="active"
+        aria-label="Gestión y cuenta"
+        [attr.title]="contraido() ? 'Gestión y cuenta' : null"
+      >
+        <span class="nav-icon" aria-hidden="true">⚙</span><span>Gestión y cuenta</span>
+      </a>
+
+      <a
+        class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
+        *ngIf="!perfil()"
+        routerLink="/login"
+        routerLinkActive="active"
+        aria-label="Iniciar sesión"
+        [attr.title]="contraido() ? 'Iniciar sesión' : null"
+      >
+        <span class="nav-icon" aria-hidden="true">↗</span>
+        <span>Iniciar sesión</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-note d-flex align-items-center gap-2 mt-auto pt-4 pb-3 px-2">
+      <span class="note-dot" aria-hidden="true"></span>
+      <span>Descanso y naturaleza</span>
     </div>
 
-    <div class="account-profile" [attr.title]="contraido() ? usuario.nombre + ' · ' + usuario.rol : null" [attr.aria-label]="usuario.nombre + ' · ' + usuario.rol">
-      <div class="avatar" aria-hidden="true">
-                @if (fotoPerfil()) {
-          <img [src]="fotoPerfil()" alt="" (error)="fotoPerfil.set(null)" />
-        } @else {
-          {{ usuario.nombre.charAt(0).toUpperCase() }}
-        }
+    <section class="account-panel border-top pt-3" *ngIf="perfil() as usuario">
+      <div class="account-actions d-flex align-items-center justify-content-between gap-2 mb-3">
+        <span class="account-heading">Cuenta</span>
+        <button
+          type="button"
+          class="logout-button d-flex align-items-center gap-1 border-0 rounded-3 p-2"
+          (click)="cerrarSesion()"
+          aria-label="Cerrar sesión"
+          [attr.title]="contraido() ? 'Cerrar sesión' : null"
+        >
+          <span aria-hidden="true">↪</span>
+          <span class="logout-label">Cerrar sesión</span>
+        </button>
       </div>
 
-      <div class="account-data">
-        <span class="account-role">{{ usuario.rol }}</span>
-        <strong class="account-name">{{ usuario.nombre }}</strong>
-        <span class="account-email">{{ usuario.email }}</span>
+      <div
+        class="account-profile d-flex align-items-center gap-2"
+        [attr.title]="contraido() ? usuario.nombre + ' · ' + usuario.rol : null"
+        [attr.aria-label]="usuario.nombre + ' · ' + usuario.rol"
+      >
+        <div
+          class="avatar d-flex align-items-center justify-content-center flex-shrink-0 rounded-circle overflow-hidden"
+          aria-hidden="true"
+        >
+          @if (fotoPerfil()) {
+            <img
+              class="w-100 h-100 object-fit-cover"
+              [src]="fotoPerfil()"
+              alt=""
+              (error)="fotoPerfil.set(null)"
+            />
+          } @else {
+            {{ usuario.nombre.charAt(0).toUpperCase() }}
+          }
+        </div>
+
+        <div class="account-data d-flex flex-column gap-1">
+          <span class="account-role">{{ usuario.rol }}</span>
+          <strong class="account-name text-truncate">{{ usuario.nombre }}</strong>
+          <span class="account-email text-truncate">{{ usuario.email }}</span>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </aside>

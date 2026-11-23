@@ -191,7 +191,7 @@
           </div>
           <div class="balance">
             <dt>Saldo</dt>
-            <dd>{{ reserva.saldoPendiente | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            <dd>{{ saldo(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
           </div>
         </dl>
         <div

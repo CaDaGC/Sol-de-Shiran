@@ -1,0 +1,13 @@
+erDiagram
+ reserva ||..o| pago_restante : "idReserva unica"
+ pago_restante {
+ long id PK
+ long idReserva UK
+ string claveIdempotencia UK
+ long idTrabajador
+ decimal monto
+ string metodoPago
+ string numeroOperacion
+ boolean completado
+ datetime fechaRegistro
+ }

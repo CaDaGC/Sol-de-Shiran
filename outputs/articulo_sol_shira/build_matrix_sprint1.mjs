@@ -1,0 +1,27 @@
+import fs from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {pathToFileURL,fileURLToPath} from 'node:url';
+const req=createRequire("C:/Program Files/WindowsApps/OpenAI.CodexPrimaryRuntime.v26-1112-737-0_26.1112.737.0_x64__3k8sg7r9htsxt/dependencies/node/resolver.cjs");
+const {Workbook,SpreadsheetFile}=await import(pathToFileURL(req.resolve('@oai/artifact-tool')).href);
+const data=JSON.parse(await fs.readFile(new URL('../articulo_sprint1/matriz_datos.json',import.meta.url),'utf8'));
+const wb=Workbook.create();const s=wb.worksheets.add('Sprint 1');
+const r=x=>s.getRange(x);
+r('A1:J1').merge();r('A1').values=[['Matriz de requisitos del Sprint 1 de Sol de Shirán']];
+r('A2:J2').merge();r('A2').values=[['10 RF y 4 RNF · Corte histórico 776a2ec, 05/11/2026 · Ejecución y aceptación por validar.']];
+r('A4:J4').values=[['ID','Dominio','Requisito','Actor','HU','Sprint','Evidencia histórica','Prueba asociada','Estado','Fuente']];
+r('A5:J18').values=data.map(x=>[...x,'Historias de usuario.xlsx y git show 776a2ec. Autenticación se concilia por nombre (HU21/HU22).']);
+r('A1:J18').format.font.name='Calibri';
+r('A1:J1').format.font={size:17,bold:true,color:'#FFFFFF'};r('A1:J1').format.fill='#244F45';r('A1:J1').format.rowHeight=34;
+r('A2:J2').format.fill='#E6F1EB';r('A2:J2').format.rowHeight=30;
+r('A4:J4').format.fill='#244F45';r('A4:J4').format.font={bold:true,color:'#FFFFFF'};
+r('A4:J18').format.wrapText=true;r('A4:J18').format.verticalAlignment='center';r('A5:J18').format.rowHeight=64;
+[75,125,365,145,140,75,310,260,260,240].forEach((w,i)=>r('ABCDEFGHIJ'[i]+'1:'+'ABCDEFGHIJ'[i]+'18').format.columnWidthPx=w);
+for(let i=5;i<=18;i++)if(i%2)r('A'+i+':J'+i).format.fill='#F0F5F2';
+s.freezePanes.freezeRows(4);
+r('A20:J20').merge();r('A20').values=[['Los RNF describen condiciones técnicas observadas o criterios por validar. La presencia de código no demuestra aceptación del usuario.']];
+r('A20:J20').format.rowHeight=30;
+const result=await SpreadsheetFile.exportXlsx(wb);
+await result.save(fileURLToPath(new URL('../articulo_sprint1/Matriz_Requisitos_Sprint_1.xlsx',import.meta.url)));
+const img=await wb.render({sheetName:'Sprint 1',range:'A4:J18',scale:1});
+await fs.writeFile(new URL('../articulo_sprint1/matriz_qa.png',import.meta.url),new Uint8Array(await img.arrayBuffer()));
+

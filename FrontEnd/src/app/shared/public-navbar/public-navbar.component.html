@@ -1,0 +1,68 @@
+<!-- Parte navbar -->
+<header class="public-header">
+  <div class="container d-flex align-items-center justify-content-between gap-3 py-3">
+    <a class="brand" routerLink="/catalogo" aria-label="Inicio de Sol de Shirán"
+      ><img
+        src="/images/logo-sol-shiran.png"
+        alt="Complejo Turístico Sol de Shirán"
+        width="1698"
+        height="926"
+    /></a>
+    <a
+      class="account-link d-lg-none d-flex align-items-center justify-content-center"
+      [routerLink]="
+        usuario() ? (usuario()?.rol === 'CLIENTE' ? '/mi-cuenta' : '/gestion') : '/login'
+      "
+      [attr.aria-label]="usuario() ? 'Mi cuenta' : 'Iniciar sesión'"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="7" r="4" />
+        <path d="M4 22v-2a8 8 0 0 1 16 0v2" />
+      </svg>
+    </a>
+    <nav
+      id="public-nav"
+      class="public-nav align-items-center gap-4"
+      aria-label="Navegación principal"
+    >
+      <a
+        routerLink="/catalogo"
+        fragment="cabanas"
+        (click)="irASeccion($event, 'cabanas')"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ><svg class="d-lg-none" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7" /></svg
+        >Cabañas</a
+      >
+      @if (usuario()?.rol === 'CLIENTE') {
+        <a routerLink="/mis-reservas" routerLinkActive="active">Mis reservas</a>
+      }
+      @if (usuario()?.rol === 'ADMIN') {
+        <a routerLink="/guardian/reservas">Reservas</a>
+        <a routerLink="/admin/metricas">Métricas</a>
+      } @else {
+        <a routerLink="/catalogo" fragment="naturaleza" (click)="irASeccion($event, 'naturaleza')"
+          ><svg class="d-lg-none" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m2 20 7-13 4 7 3-5 6 11H2ZM7 11l2 2 2-2" /></svg
+          >Naturaleza</a
+        >
+        <a routerLink="/catalogo" fragment="contacto" (click)="irASeccion($event, 'contacto')"
+          ><svg class="d-lg-none" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 6 9 7 9-7" /></svg
+          >Contacto</a
+        >
+      }
+      <a
+        class="button button-gold d-none d-lg-inline-flex"
+        [routerLink]="
+          usuario() ? (usuario()?.rol === 'CLIENTE' ? '/mi-cuenta' : '/gestion') : '/login'
+        "
+        >{{
+          usuario()?.rol === 'ADMIN' ? 'Administración' : usuario() ? 'Mi cuenta' : 'Iniciar sesión'
+        }}</a
+      >
+    </nav>
+  </div>
+</header>

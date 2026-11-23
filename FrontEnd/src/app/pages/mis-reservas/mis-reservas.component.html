@@ -1,90 +1,169 @@
-<section class="my-reservations" aria-labelledby="my-title">
+<app-public-navbar />
+<section class="my-reservations container" aria-labelledby="my-title">
   <header class="page-heading">
     <div>
       <p class="eyebrow">SOL DE SHIRÁN · TU CUENTA</p>
       <h1 id="my-title">Mis reservas</h1>
       <p class="subtitle">Tus próximas escapadas y los recuerdos de tus estancias.</p>
     </div>
-    <a class="explore-button" routerLink="/catalogo">⌂ <span>Explorar cabañas</span></a>
-  </header>
-  <section class="search-filters" aria-label="Buscar mis reservas">
-    <label>Código de reserva<input type="search" maxlength="32" placeholder="RSS00001" [ngModel]="codigo" (ngModelChange)="codigo = $event; actualizarFiltros(300)"></label>
-    <label>Cabaña<input type="search" maxlength="100" placeholder="Nombre de la cabaña" [ngModel]="cabana" (ngModelChange)="cabana = $event; actualizarFiltros(300)"></label>
-    <label>Estancias desde<input type="date" [ngModel]="desde" (ngModelChange)="desde = $event; actualizarFiltros()"></label>
-    <label>Hasta<input type="date" [min]="desde" [ngModel]="hasta" (ngModelChange)="hasta = $event; actualizarFiltros()"></label>
-    <button class="secondary-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
-    <small>Se muestran las estancias que coinciden con el intervalo de fechas.</small>
-  </section>
-  <nav class="filters" aria-label="Filtrar mis reservas">
-    @for (filtro of filtros; track filtro.valor) {
+    <nav class="period-tabs d-flex" aria-label="Periodo de las reservas">
       <button
         type="button"
-        [class.active]="grupo() === filtro.valor"
-        [attr.aria-pressed]="grupo() === filtro.valor"
-        (click)="filtrar(filtro.valor)"
+        [class.active]="periodo() === 'PROXIMAS'"
+        [attr.aria-pressed]="periodo() === 'PROXIMAS'"
+        (click)="cambiarPeriodo('PROXIMAS')"
       >
-        {{ filtro.etiqueta }}
+        Próximas
       </button>
-    }
-  </nav>
-  <div [attr.aria-busy]="cargando()">
-    @if (cargando()) {
-      <p class="message" role="status">Cargando tus reservas…</p>
-    } @else if (error()) {
-      <div class="message" role="alert">
-        <h2>No pudimos cargar tus reservas</h2>
-        <p>{{ error() }}</p>
-        <button type="button" class="primary-button" (click)="cargar()">Reintentar</button>
-      </div>
-    } @else if (datos()?.content?.length === 0) {
-      <div class="message">
-        <h2>
-          {{
-            grupo() === 'TODAS' && !codigo && !cabana && !desde && !hasta
-              ? 'Tu próxima escapada te espera'
-              : 'No se encontraron reservas'
-          }}
-        </h2>
-        <p>Explora nuestras cabañas y encuentra tu espacio para descansar.</p>
-        <a routerLink="/catalogo" class="explore-button">Ver cabañas</a>
-      </div>
-    } @else {
-      <h2 class="history-heading">{{ grupo() === 'TODAS' ? 'Historial de reservas' : 'Reservas' }}</h2>
-      <div class="reservation-cards">
-        @for (reserva of datos()?.content; track reserva.idReserva) {
-          <ng-container *ngTemplateOutlet="card; context: { $implicit: reserva }"></ng-container>
+      <button
+        type="button"
+        [class.active]="periodo() === 'PASADAS'"
+        [attr.aria-pressed]="periodo() === 'PASADAS'"
+        (click)="cambiarPeriodo('PASADAS')"
+      >
+        Pasadas
+      </button>
+    </nav>
+  </header>
+  <!-- Parte filtros -->
+  <details class="reservation-search mb-4">
+    <summary>Buscar por código, cabaña o fechas</summary>
+    <section class="search-filters" aria-label="Buscar mis reservas">
+      <label
+        >Código de reserva<input
+          type="search"
+          maxlength="32"
+          placeholder="RSS00001"
+          [ngModel]="codigo"
+          (ngModelChange)="codigo = $event; actualizarFiltros(300)"
+      /></label>
+      <label
+        >Cabaña<input
+          type="search"
+          maxlength="100"
+          placeholder="Nombre de la cabaña"
+          [ngModel]="cabana"
+          (ngModelChange)="cabana = $event; actualizarFiltros(300)"
+      /></label>
+      <label
+        >Estancias desde<input
+          type="date"
+          [ngModel]="desde"
+          (ngModelChange)="desde = $event; actualizarFiltros()"
+      /></label>
+      <label
+        >Hasta<input
+          type="date"
+          [min]="desde"
+          [ngModel]="hasta"
+          (ngModelChange)="hasta = $event; actualizarFiltros()"
+      /></label>
+      <button class="secondary-button" type="button" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+      <small>Se muestran las estancias que coinciden con el intervalo de fechas.</small>
+    </section>
+
+    <nav class="filters" aria-label="Filtrar mis reservas">
+      @for (filtro of filtros; track filtro.valor) {
+        <button
+          type="button"
+          [class.active]="grupo() === filtro.valor"
+          [attr.aria-pressed]="grupo() === filtro.valor"
+          (click)="filtrar(filtro.valor)"
+        >
+          {{ filtro.etiqueta }}
+        </button>
+      }
+    </nav>
+  </details>
+  <!-- Parte reservas -->
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-lg-8">
+      <div [attr.aria-busy]="cargando()">
+        @if (cargando()) {
+          <p class="message" role="status">Cargando tus reservas…</p>
+        } @else if (error()) {
+          <div class="message" role="alert">
+            <h2>No pudimos cargar tus reservas</h2>
+            <p>{{ error() }}</p>
+            <button type="button" class="primary-button" (click)="cargar()">Reintentar</button>
+          </div>
+        } @else if (datos()?.content?.length === 0) {
+          <div class="message">
+            <h2>
+              {{
+                grupo() === 'TODAS' && !codigo && !cabana && !desde && !hasta
+                  ? 'Tu próxima escapada te espera'
+                  : 'No se encontraron reservas'
+              }}
+            </h2>
+            <p>Explora nuestras cabañas y encuentra tu espacio para descansar.</p>
+            <a routerLink="/catalogo" class="explore-button">Ver cabañas</a>
+          </div>
+        } @else {
+          <h2 class="history-heading">
+            {{ grupo() === 'TODAS' ? 'Historial de reservas' : 'Reservas' }}
+          </h2>
+          <div class="reservation-cards">
+            @for (reserva of datos()?.content; track reserva.idReserva) {
+              <ng-container
+                *ngTemplateOutlet="card; context: { $implicit: reserva }"
+              ></ng-container>
+            }
+          </div>
         }
       </div>
-    }
+      @if (datos(); as pagina) {
+        @if (pagina.totalPages > 1) {
+          <nav class="pagination" aria-label="Páginas de mis reservas">
+            <button
+              type="button"
+              class="secondary-button"
+              [disabled]="pagina.page === 0"
+              (click)="cambiarPagina(pagina.page - 1)"
+            >
+              Anterior
+            </button>
+            <span>Página {{ pagina.page + 1 }} de {{ pagina.totalPages }}</span>
+            <button
+              type="button"
+              class="secondary-button"
+              [disabled]="pagina.page + 1 >= pagina.totalPages"
+              (click)="cambiarPagina(pagina.page + 1)"
+            >
+              Siguiente
+            </button>
+          </nav>
+        }
+      }
+    </div>
+    <!-- Parte ayuda -->
+    <aside class="col-12 col-lg-4">
+      <div class="help-panel p-4">
+        <h2>¿Necesitas ayuda?</h2>
+        <p>
+          Ten a mano tu código de reserva al comunicarte con el complejo. En el detalle puedes
+          revisar los horarios y los importes.
+        </p>
+        <a
+          class="help-whatsapp secondary-button w-100"
+          [href]="whatsappUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Escribir por WhatsApp</a
+        >
+      </div>
+      <a class="explore-button w-100 mt-3" routerLink="/catalogo">Reservar otra cabaña</a>
+    </aside>
   </div>
-  @if (datos(); as pagina) {
-    @if (pagina.totalPages > 1) {
-      <nav class="pagination" aria-label="Páginas de mis reservas">
-        <button
-          type="button"
-          class="secondary-button"
-          [disabled]="pagina.page === 0"
-          (click)="cambiarPagina(pagina.page - 1)"
-        >
-          Anterior
-        </button>
-        <span>Página {{ pagina.page + 1 }} de {{ pagina.totalPages }}</span>
-        <button
-          type="button"
-          class="secondary-button"
-          [disabled]="pagina.page + 1 >= pagina.totalPages"
-          (click)="cambiarPagina(pagina.page + 1)"
-        >
-          Siguiente
-        </button>
-      </nav>
-    }
-  }
 </section>
 <ng-template #card let-reserva>
   <article class="reservation-card" [attr.aria-label]="'Reserva ' + reserva.codigo">
     <div class="thumbnail">
-      <span aria-hidden="true">⌂</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7" />
+      </svg>
       @if (reserva.imagenPrincipal) {
         <img
           [src]="reserva.imagenPrincipal"
@@ -110,14 +189,22 @@
       <div class="card-information">
         <div class="stay-strip">
           <div>
-            <small>LLEGADA</small><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</strong>
+            <small>LLEGADA</small
+            ><strong
+              >{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}
+              {{ reserva.horaIngreso?.slice(0, 5) }}</strong
+            >
           </div>
           <div class="nights">
             <span aria-hidden="true">→</span
             ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
           </div>
           <div>
-            <small>SALIDA</small><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</strong>
+            <small>SALIDA</small
+            ><strong
+              >{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }}
+              {{ reserva.horaSalida?.slice(0, 5) }}</strong
+            >
           </div>
         </div>
         <dl class="amounts">
@@ -127,8 +214,12 @@
           </div>
           @if (reserva.estadoReserva === 'PENDIENTE_PAGO') {
             <div>
-              <dt>Adelanto</dt>
-              <dd>{{ reserva.montoAdelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+              <dt>Pagado</dt>
+              <dd>{{ 0 | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Saldo</dt>
+              <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
             </div>
           } @else if (
             reserva.estadoReserva === 'CONFIRMADA' ||
@@ -151,8 +242,8 @@
       <div class="card-footer">
         @if (reserva.pagoDisponible) {
           <p class="payment-hint">
-            Completa el adelanto antes de que venza tu reserva:
-            {{ reserva.expiraEn | date: 'dd/MM/yyyy, HH:mm' }}.
+            Adelanto requerido: {{ reserva.montoAdelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }}.
+            Completa el pago antes del {{ reserva.expiraEn | date: 'dd/MM/yyyy, HH:mm' }}.
           </p>
         }
         <div class="card-actions">
@@ -160,7 +251,7 @@
             <app-pago-modal
               [reserva]="reserva"
               [nombreCabana]="reserva.nombreCabana || 'Cabaña'"
-              textoBoton="Continuar pago"
+              textoBoton="Completar adelanto"
             ></app-pago-modal>
           }
           <button
@@ -203,11 +294,15 @@
       <dl class="detail-grid">
         <div>
           <dt>Llegada</dt>
-          <dd>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</dd>
+          <dd>
+            {{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0, 5) }}
+          </dd>
         </div>
         <div>
           <dt>Salida</dt>
-          <dd>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</dd>
+          <dd>
+            {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0, 5) }}
+          </dd>
         </div>
         <div>
           <dt>Noches</dt>
@@ -245,7 +340,11 @@
           </div>
         }
       </dl>
-      @if (reserva.estadoReserva === 'CONFIRMADA' || reserva.estadoReserva === 'OCUPADA' || reserva.estadoReserva === 'FINALIZADA') {
+      @if (
+        reserva.estadoReserva === 'CONFIRMADA' ||
+        reserva.estadoReserva === 'OCUPADA' ||
+        reserva.estadoReserva === 'FINALIZADA'
+      ) {
         <app-comprobante [idReserva]="reserva.idReserva"></app-comprobante>
       }
     </div>
@@ -254,3 +353,10 @@
     <button type="button" class="secondary-button" (click)="cerrarDetalle()">Cerrar</button>
   </footer>
 </dialog>
+
+<footer class="reservations-footer py-4">
+  <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <strong>Sol de Shirán</strong><span>Complejo turístico · Trujillo, Perú</span
+    ><a routerLink="/catalogo">Ver cabañas</a>
+  </div>
+</footer>

@@ -87,3 +87,7 @@ body app-root :is(.secondary-button, .reset-button, .back-button) {
   font-family: var(--font-body);
   font-weight: 600;
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}

@@ -37,7 +37,7 @@ export function inicioPorRol(rol?: string): string {
     case 'TRABAJADOR': return '/guardian/reservas';
     case 'CLIENTE': return '/mis-reservas';
     case 'DUENO': return '/inicio-dueno';
-    case 'ADMIN':
+    case 'ADMIN': return '/guardian/reservas';
     case '': return '/catalogo';
     default: return '/inicio-dueno';
   }

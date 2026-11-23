@@ -13,11 +13,31 @@ import { clienteGuard } from './guards/cliente.guard';
 class InicioDuenoComponent {}
 
 export const routes: Routes = [
-  { path: 'registro', loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },
+  {
+    path: 'mi-cuenta',
+    canActivate: [clienteGuard],
+    loadComponent: () =>
+      import('./pages/gestion/gestion.component').then((m) => m.GestionComponent),
+  },
+  {
+    path: 'mis-reservas',
+    canActivate: [clienteGuard],
+    loadComponent: () =>
+      import('./pages/mis-reservas/mis-reservas.component').then(
+        (module) => module.MisReservasComponent,
+      ),
+  },
+  { path: 'catalogo/:id', canActivate: [catalogoGuard], component: DetalleCabanaComponent },
+  { path: 'catalogo', canActivate: [catalogoGuard], component: CatalogoComponent },
+  {
+    path: 'registro',
+    loadComponent: () =>
+      import('./pages/registro/registro.component').then((m) => m.RegistroComponent),
+  },
   { path: 'pago/resultado', canActivate: [pagoGuard], component: PagoResultadoComponent },
   {
     path: 'login',
-    component: LoginComponent
+    component: LoginComponent,
   },
   {
     path: '',
@@ -26,45 +46,34 @@ export const routes: Routes = [
       {
         path: 'gestion',
         canActivate: [cuentaGuard],
-        loadComponent: () => import('./pages/gestion/gestion.component').then((m) => m.GestionComponent),
+        loadComponent: () =>
+          import('./pages/gestion/gestion.component').then((m) => m.GestionComponent),
       },
       {
         path: 'admin/metricas',
         canActivate: [adminGuard],
-        loadComponent: () => import('./pages/metricas/metricas.component').then(m => m.MetricasComponent)
+        loadComponent: () =>
+          import('./pages/metricas/metricas.component').then((m) => m.MetricasComponent),
       },
       { path: 'inicio-dueno', component: InicioDuenoComponent },
-      {
-        path: 'mis-reservas',
-        canActivate: [clienteGuard],
-        loadComponent: () => import('./pages/mis-reservas/mis-reservas.component')
-          .then(module => module.MisReservasComponent)
-      },
+
       {
         path: 'guardian/reservas',
         canActivate: [guardianGuard],
-        loadComponent: () => import('./pages/panel-reservas/panel-reservas.component')
-          .then(module => module.PanelReservasComponent)
+        loadComponent: () =>
+          import('./pages/panel-reservas/panel-reservas.component').then(
+            (module) => module.PanelReservasComponent,
+          ),
       },
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'catalogo'
+        redirectTo: 'catalogo',
       },
-      {
-        path: 'catalogo',
-        canActivate: [catalogoGuard],
-        component: CatalogoComponent
-      },
-      {
-        path: 'catalogo/:id',
-        canActivate: [catalogoGuard],
-        component: DetalleCabanaComponent
-      }
-    ]
+    ],
   },
   {
     path: '**',
-    redirectTo: ''
-  }
+    redirectTo: '',
+  },
 ];

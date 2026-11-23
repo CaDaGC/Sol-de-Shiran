@@ -1,0 +1,132 @@
+{
+  "info": {
+    "name": "HU22 Registro de clientes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway",
+      "value": "http://localhost:8061"
+    }
+  ],
+  "item": [
+    {
+      "name": "Registro público",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{gateway}}/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Cliente de prueba\",\n  \"email\": \"{{correoRegistro}}\",\n  \"password\": \"Registro2026!\",\n  \"rol\": \"ADMIN\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('correoRegistro', 'cliente.' + pm.variables.replaceIn('{{$guid}}') + '@example.com');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('Rol CLIENTE y respuesta sin contraseña', () => { const cuenta = pm.response.json(); pm.expect(cuenta.rol).to.eql('CLIENTE'); pm.expect(cuenta).not.to.have.property('password'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Correo duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{gateway}}/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Cliente de prueba\",\n  \"email\": \"{{correoRegistro}}\",\n  \"password\": \"Registro2026!\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Datos inválidos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{gateway}}/api/v1/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"\",\n  \"email\": \"incorrecto\",\n  \"password\": \"123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inicio de sesión del cliente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{gateway}}/api/v1/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{correoRegistro}}\",\n  \"password\": \"Registro2026!\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('Sesión de cliente', () => pm.expect(pm.response.json().rol).to.eql('CLIENTE'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

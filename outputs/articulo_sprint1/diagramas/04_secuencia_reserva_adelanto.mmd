@@ -1,0 +1,29 @@
+sequenceDiagram
+ actor C as Cliente
+ participant A as Angular
+ participant G as API Gateway
+ participant R as reservas-service
+ participant P as pagos-service
+ participant M as Mercado Pago
+ C->>A: Cabaña, fechas y huéspedes
+ A->>G: Consultar disponibilidad
+ G->>R: Validar rango y capacidad
+ R-->>A: Disponibilidad e importe
+ A->>G: Crear reserva
+ G->>R: Guardar solicitud pendiente
+ A->>G: Iniciar adelanto de reserva
+ G->>P: Crear checkout
+ P->>M: Crear orden
+ M-->>A: Enlace o interacción de pago
+ C->>M: Completar pago
+ M->>G: Webhook
+ G->>P: Procesar notificación
+ P->>P: Validar firma y consultar estado real
+ alt Pago aprobado
+ P->>R: Aplicar adelanto validado
+ else Pendiente o rechazado
+ P->>P: Conservar estado correspondiente
+ end
+ A->>G: Consultar reserva
+ G->>R: Obtener estado
+ R-->>A: Estado confirmado o pendiente

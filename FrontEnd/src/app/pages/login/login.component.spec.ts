@@ -8,7 +8,7 @@ describe('Destino después de iniciar sesión', () => {
   it.each([
     ['CLIENTE', '/mis-reservas'],
     ['GUARDIAN', '/guardian/reservas'],
-    ['ADMIN', '/catalogo']
+    ['ADMIN', '/guardian/reservas']
   ])('envía el rol %s a %s', (rol, destino) => {
     TestBed.configureTestingModule({
       imports: [LoginComponent], providers: [provideRouter([]), {

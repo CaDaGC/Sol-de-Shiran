@@ -23,6 +23,6 @@ describe('Acceso a Mis reservas', () => {
     expect(comprobar(true, 'TRABAJADOR')).toEqual(TestBed.inject(Router).createUrlTree(['/guardian/reservas']));
   });
   it('reserva el historial para clientes y devuelve al administrador al catálogo', () => {
-    expect(comprobar(true, 'ADMIN')).toEqual(TestBed.inject(Router).createUrlTree(['/catalogo']));
+    expect(comprobar(true, 'ADMIN')).toEqual(TestBed.inject(Router).createUrlTree(['/guardian/reservas']));
   });
 });

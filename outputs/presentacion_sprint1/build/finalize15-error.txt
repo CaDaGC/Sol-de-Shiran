@@ -1,0 +1,16 @@
+node:internal/fs/promises:1774
+  return await PromisePrototypeThen(
+         ^
+
+Error: EPERM: operation not permitted, link 'C:\Users\tania\Documents\Tareas de DAD\Sol-de-Shiran\outputs\presentacion_sprint1\final\.Presentacion_Sprint_1_15min_Con_Imagenes.pptx.22c0cada-c7fe-47f5-a11d-a564ff665058.validated' -> 'C:\Users\tania\Documents\Tareas de DAD\Sol-de-Shiran\outputs\presentacion_sprint1\final\Presentacion_Sprint_1_15min_Con_Imagenes.pptx'
+    at async Object.link (node:internal/fs/promises:1774:10)
+    at async finalizePresentation (file:///C:/Users/tania/.codex/plugins/cache/openai-primary-runtime/presentations/26.1116.12020/skills/presentations/container_tools/artifact_tool_utils.mjs:1018:5)
+    at async file:///C:/Users/tania/Documents/Tareas%20de%20DAD/Sol-de-Shiran/outputs/presentacion_sprint1/build/finalize15.mjs:4:13 {
+  errno: -4048,
+  code: 'EPERM',
+  syscall: 'link',
+  path: 'C:\\Users\\tania\\Documents\\Tareas de DAD\\Sol-de-Shiran\\outputs\\presentacion_sprint1\\final\\.Presentacion_Sprint_1_15min_Con_Imagenes.pptx.22c0cada-c7fe-47f5-a11d-a564ff665058.validated',
+  dest: 'C:\\Users\\tania\\Documents\\Tareas de DAD\\Sol-de-Shiran\\outputs\\presentacion_sprint1\\final\\Presentacion_Sprint_1_15min_Con_Imagenes.pptx'
+}
+
+Node.js v24.22.3

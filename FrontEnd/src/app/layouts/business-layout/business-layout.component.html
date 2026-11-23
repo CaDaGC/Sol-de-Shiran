@@ -1,7 +1,10 @@
-<div class="business-layout" [class.sidebar-collapsed]="contraido()">
+<div
+  class="business-layout d-flex flex-column flex-lg-row min-vh-100"
+  [class.sidebar-collapsed]="contraido()"
+>
   <app-sidebar [contraido]="contraido()" (alternar)="alternarSidebar()"></app-sidebar>
 
-  <main class="business-content">
+  <main class="business-content flex-grow-1">
     <router-outlet></router-outlet>
   </main>
 </div>

@@ -193,4 +193,16 @@ describe('Integración del panel de reservas', () => {
     expect(fixture.nativeElement.textContent).toContain('Confirmada');
     expect(fixture.componentInstance.error()).toBe('');
   });
+  it('no presenta adelantos pendientes ni vencidos como dinero pagado', () => {
+    solicitud().flush(pagina([reserva]));
+    const c = fixture.componentInstance;
+    for (const estadoReserva of ['PENDIENTE_PAGO', 'EXPIRADA']) {
+      const pendiente = { ...reserva, estadoReserva };
+      expect(c.pagado(pendiente)).toBe(0);
+      expect(c.saldo(pendiente)).toBe(200);
+    }
+    expect(c.pagado(reserva)).toBe(100);
+    expect(c.saldo(reserva)).toBe(100);
+  });
+
 });

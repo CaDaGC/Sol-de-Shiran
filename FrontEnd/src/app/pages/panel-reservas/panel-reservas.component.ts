@@ -40,7 +40,12 @@ export class PanelReservasComponent {
       - Date.parse(reserva.fechaIngreso + 'T00:00:00Z')) / 86400000);
   }
 
+  saldo(reserva: ReservaPanelResponse): number {
+    return ['PENDIENTE_PAGO', 'EXPIRADA'].includes(reserva.estadoReserva) ? reserva.montoTotal : reserva.saldoPendiente;
+  }
+
   pagado(reserva: ReservaPanelResponse): number {
+    if (['PENDIENTE_PAGO', 'EXPIRADA'].includes(reserva.estadoReserva)) return 0;
     return Math.round((reserva.montoTotal - reserva.saldoPendiente) * 100) / 100;
   }
 

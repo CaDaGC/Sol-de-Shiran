@@ -3,7 +3,8 @@ import { Component, computed, ElementRef, viewChild, ChangeDetectorRef, inject, 
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { Router } from '@angular/router';
+import { PublicNavbarComponent } from '../../shared/public-navbar/public-navbar.component';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { API_CONFIG } from '../../core/api.config';
 import { imagenUrl } from '../../core/imagen-url';
@@ -23,12 +24,23 @@ interface FormularioCuenta {
 @Component({
   selector: 'app-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink, PublicNavbarComponent],
   templateUrl: './gestion.component.html',
   styleUrl: './gestion.component.css',
 })
 export class GestionComponent implements OnInit {
   readonly auth = inject(AuthService);
+  readonly seccionCuenta = signal('datos-personales');
+  private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  irASeccion(seccion: 'datos-personales' | 'foto-perfil' | 'seguridad-cuenta', evento: Event): void {
+    evento.preventDefault();
+    const destino = this.elemento.nativeElement.querySelector<HTMLElement>('#' + seccion);
+    if (!destino) return;
+    this.seccionCuenta.set(seccion);
+    destino.scrollIntoView({ block: 'start' });
+  }
+
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   readonly url = API_CONFIG.baseUrl;

@@ -82,4 +82,21 @@ describe('Usuarios y perfil con datos civiles',()=>{
     http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([{...perfil,id:2,activo:false}]);
     expect(c.usuarios()[0].activo).toBe(false);expect(c.mensaje()).toBe('Cuenta desactivada.');confirmar.mockRestore();f.destroy();
   });
+  it('desplaza foto y seguridad dentro de la cuenta sin seguir el enlace al inicio', () => {
+    const f = crear();
+    f.componentInstance.tab = 'perfil';
+    f.detectChanges();
+    for (const id of ['foto-perfil', 'seguridad-cuenta']) {
+      const destino = f.nativeElement.querySelector('#' + id) as HTMLElement;
+      const desplazar = vi.fn();
+      destino.scrollIntoView = desplazar;
+      const evento = new MouseEvent('click', { cancelable: true });
+      f.componentInstance.irASeccion(id as 'foto-perfil' | 'seguridad-cuenta', evento);
+      expect(evento.defaultPrevented).toBe(true);
+      expect(desplazar).toHaveBeenCalledWith({ block: 'start' });
+      expect(f.componentInstance.seccionCuenta()).toBe(id);
+    }
+    f.destroy();
+  });
+
 });
