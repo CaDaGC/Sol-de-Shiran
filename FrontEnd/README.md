@@ -1,68 +1,70 @@
-# FrontEnd
+# Aplicación web de Sol de Shirán
 
-## Sol de Shirán: entorno local
+Interfaz Angular 22 para el catálogo de cabañas, reservas, pagos y administración del complejo turístico. Utiliza TypeScript, componentes standalone, formularios Angular, signals, RxJS y Bootstrap 5.3. Incluye configuración de renderizado de servidor.
 
-1. Inicia MySQL y los servicios service-registry, config-server, usuario-service, auth-service, catalogo-service, reservas-service, pagos-service y api-gateway.
-2. Desde `FrontEnd`, ejecuta `npm install` y `npm start`. Abre `http://localhost:4200`.
-3. Para HU19, inicia sesión con una cuenta ADMIN y abre **Métricas** en el menú o visita `http://localhost:4200/admin/metricas`.
-4. El dashboard consulta ingresos, frecuencia de reservas y nombres de cabañas mediante el gateway en `http://localhost:8061/api/v1`. Si una de las tres solicitudes falla, muestra un mensaje de error.
+## Estructura
 
-La [guía de HU19](../docs/HU19-metricas.md) explica los filtros y las pruebas. La [colección Postman](../docs/postman/HU19.postman_collection.json) permite verificar las API y los permisos sin cambiar datos.
+| Directorio | Contenido |
+| --- | --- |
+| src/app/pages | Catálogo, detalle, registro, login, gestión, reservas del cliente, panel del personal y métricas. |
+| src/app/shared | Componentes reutilizables, pagos, comprobantes, detalle de reserva, notificaciones y directivas de formularios. |
+| src/app/services | Acceso HTTP, autenticación y estado compartido. |
+| src/app/models | Contratos y modelos de la interfaz. |
+| src/app/guards | Restricciones de navegación por sesión y rol. |
+| src/app/layouts | Estructura de navegación y menú lateral. |
+| src/app/core | Configuración de API y utilidades comunes. |
+| public | Recursos estáticos. |
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.3.
+## Funcionalidades
 
-## Development server
+- Catálogo y detalle de cabañas con fotografías y consulta de disponibilidad.
+- Selección de ingreso, salida y huéspedes, con validación del intervalo reservado.
+- Registro público con datos personales y sugerencias de nombres disponibles.
+- Autenticación, perfil, fotografías y cambio de contraseña.
+- Reservas del cliente con búsqueda y filtros de estado, fechas y cabaña.
+- Panel tabular de reservas para ADMIN y TRABAJADOR, con administración mediante modal.
+- Registro presencial de pago restante y check-in; check-out con daños opcionales.
+- Adelantos mediante Mercado Pago y consulta del resultado al retornar.
+- Vista y descarga de comprobantes PDF del adelanto.
+- Reseñas con fotografía, nombre público, estrellas y comentario.
+- Gestión administrativa de cuentas, cabañas y fechas bloqueadas.
 
-To start a local development server, run:
+Las operaciones de escritura solicitan confirmación. Los campos obligatorios se indican con asterisco y muestran su validación al salir del campo o intentar guardar. Las notificaciones de gestión aparecen temporalmente en la esquina superior derecha.
 
-```bash
-ng serve
-```
+## Desarrollo local
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Utiliza Node.js 24, como la construcción Docker, y npm. Desde esta carpeta:
 
 ```bash
-ng build
+npm ci
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+La aplicación se abre en http://localhost:4200. El backend debe estar disponible. La dirección de las API se configura en `src/app/core/api.config.ts` y actualmente apunta a http://localhost:8061/api/v1.
 
-## Running unit tests
+El frontend no contiene secretos de Mercado Pago ni credenciales OAuth de Drive. Las imágenes y los documentos se consultan a través del backend. Para cambiar de almacenamiento no es necesario añadir tokens de Google al navegador.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Compilación y pruebas
 
 ```bash
-ng test
+npm run build
+npm test -- --watch=false
 ```
 
-## Running end-to-end tests
+La compilación genera la aplicación en `dist/FrontEnd`. Las pruebas utilizan Vitest y jsdom. La configuración incluye presupuestos de tamaño; revisa las advertencias de compilación al incorporar recursos o estilos.
 
-For end-to-end (e2e) testing, run:
+## Ejecución integrada
+
+Desde la raíz del repositorio:
 
 ```bash
-ng e2e
+docker compose up -d --build
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Compose construye el frontend y lo publica en el puerto 4200. No ejecutes npm start al mismo tiempo sobre ese puerto.
 
-## Additional Resources
+## Navegación y permisos
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+El menú se adapta al rol. CLIENTE dispone de sus reservas, catálogo y cuenta; TRABAJADOR administra estancias y su cuenta; ADMIN gestiona el sistema y las métricas administrativas. Las guardas del navegador complementan la autorización del backend, que determina el acceso real a cada operación.
+
+El rol DUENO existe en el dominio, pero su pantalla web de reportes por propiedad todavía no está completada. No debe confundirse la existencia del rol con una vista ya implementada.
