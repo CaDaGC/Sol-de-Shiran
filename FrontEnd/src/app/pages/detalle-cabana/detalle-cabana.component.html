@@ -419,7 +419,7 @@
           class="continue-button"
           type="button"
           [disabled]="!puedeCrearReserva()"
-          (click)="confirmarBloqueo()"
+          appConfirmar="¿Confirmas estas fechas y huéspedes para crear la reserva temporal? Tendrás 15 minutos para pagar el adelanto." (click)="confirmarBloqueo()"
         >
           {{ creandoReserva() ? 'Creando bloqueo temporal...' : 'Confirmar y bloquear fechas' }}
           <ng-container *ngIf="cotizacion()">

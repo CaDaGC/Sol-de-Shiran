@@ -44,7 +44,7 @@ public class GestionUsuarioService {
     }
     if (usuarios.existsByEmail(r.getEmail().trim().toLowerCase()))
       conflicto("El correo ya estÃ¡ registrado");
-    if (usuarios.findByNombre(r.getNombre().strip()).isPresent())
+    if (usuarios.findByNombreIgnoreCase(r.getNombre().strip()).isPresent())
       conflicto("El nombre de usuario ya existe");
     Usuario u = mapper.toEntity(r);
     u.setEmail(r.getEmail().trim().toLowerCase());
@@ -89,7 +89,7 @@ public class GestionUsuarioService {
     }
     if (r.getPersona() != null || (!nuevoRol.equals("ADMIN") && !rolActual.equals(nuevoRol)))
       u.setPersona(personas.preparar(u.getPersona(), r.getPersona()));
-    usuarios.findByNombre(r.getNombre().strip()).filter(otro -> !otro.getId().equals(id))
+    usuarios.findByNombreIgnoreCase(r.getNombre().strip()).filter(otro -> !otro.getId().equals(id))
         .ifPresent(otro -> conflicto("El nombre de usuario ya existe"));
     u.setNombre(r.getNombre().trim());
     u.setEmail(r.getEmail().trim().toLowerCase());

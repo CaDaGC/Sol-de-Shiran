@@ -173,7 +173,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .payment-help, small { color: #657268; font-size: .8rem; line-height: 1.6; }
 .primary-button { width: 100%; padding: 13px 16px; border: 0; border-radius: 7px; color: white; background: #315b3d; font-weight: 600; }
 .primary-button:hover { background: #24472e; }
-button:disabled { opacity: .55; cursor: wait; }
+button:disabled { opacity: .55; cursor: not-allowed; }
 .payment-error { color: #9d2e24; font-size: .85rem; line-height: 1.6; }
 .payment-success { padding: 16px; border-radius: 8px; color: #24472e; background: #edf3eb; line-height: 1.6; }
 

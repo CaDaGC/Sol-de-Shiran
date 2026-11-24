@@ -92,7 +92,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     || path.equals("/api/v1/usuarios/register")
                     || path.equals("/api/v1/pagos/webhook");
         }
-        return "GET".equals(method) && (path.matches("/api/v1/resenas/cabanas/[0-9]+")
+        return "GET".equals(method) && (path.equals("/api/v1/usuarios/nombre-disponible")
+                || path.matches("/api/v1/resenas/cabanas/[0-9]+")
                 || path.matches("/api/v1/cabanas/fotos/[a-f0-9-]{36}")
                 || path.matches("/api/v1/usuarios/fotos/(?:[a-f0-9-]{36}|migrada-[0-9]+)\\.(png|jpg)"));
     }

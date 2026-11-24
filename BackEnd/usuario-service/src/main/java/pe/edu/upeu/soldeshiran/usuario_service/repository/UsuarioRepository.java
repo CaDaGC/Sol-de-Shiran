@@ -17,6 +17,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findAllByRol(pe.edu.upeu.soldeshiran.usuario_service.model.Rol rol);
     boolean existsByEmail(String email);
     Optional<Usuario> findByNombre(String nombre);
+    Optional<Usuario> findByNombreIgnoreCase(String nombre);
+    boolean existsByNombreIgnoreCase(String nombre);
 
 
 

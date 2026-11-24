@@ -3,13 +3,13 @@
 
   @if (cliente()) {
     @if (estancia()) {
-      <form (ngSubmit)="enviar()" class="review-form">
+      <form appConfirmar="¿Estás seguro de publicar esta reseña? Solo puedes publicar una por estancia." (ngSubmit)="enviar()" class="review-form">
         <fieldset>
-          <legend>Tu calificación</legend>
+          <legend>Tu calificación <span class="campo-obligatorio">*</span></legend>
           <div class="stars">
             @for (estrella of estrellas; track estrella) {
               <label [class.filled]="estrella <= puntuacion">
-                <input type="radio" name="puntuacion" [value]="estrella" [(ngModel)]="puntuacion"
+                <input type="radio" name="puntuacion" [value]="estrella" [(ngModel)]="puntuacion" required
                   [attr.aria-label]="estrella + (estrella === 1 ? ' estrella' : ' estrellas')" />
                 <span aria-hidden="true">{{ estrella <= puntuacion ? '★' : '☆' }}</span>
               </label>
@@ -19,7 +19,7 @@
         <label for="review-comment">Cuéntanos cómo fue tu estancia</label>
         <textarea id="review-comment" name="comentario" [(ngModel)]="comentario"
           maxlength="2000" rows="4" required></textarea>
-        <button type="submit" [disabled]="enviando() || !puntuacion || !comentario.trim()">
+        <button type="submit" [disabled]="enviando()">
           {{ enviando() ? 'Enviando…' : 'Enviar reseña' }}
         </button>
       </form>

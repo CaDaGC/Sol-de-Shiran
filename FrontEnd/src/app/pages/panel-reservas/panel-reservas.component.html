@@ -1,7 +1,7 @@
 <section class="panel-page" aria-labelledby="panel-title">
   <header class="page-heading">
     <div>
-      <p class="eyebrow">SOL DE SHIRÁN · GUARDIÁN</p>
+      <p class="eyebrow">SOL DE SHIRÁN · GESTIÓN DE ESTANCIAS</p>
       <h1 id="panel-title">Panel de reservas</h1>
       <p class="description">Consulta las estancias y encuentra la reserva que necesitas.</p>
     </div>
@@ -69,58 +69,18 @@
           <button type="button" class="reset-button" (click)="cargar()">Reintentar</button>
         </div>
       } @else {
-        <ul class="reservation-list" aria-label="Reservas">
+        <div class="tabla-reservas"><table class="table align-middle reservation-list">
+          <thead><tr><th>Código</th><th>Usuario</th><th>Correo</th><th>Cabaña</th><th>Ingreso</th><th>Salida</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody>
           @for (reserva of reservas(); track reserva.idReserva) {
-            <li>
-              <button
-                type="button"
-                class="reservation-row"
-                [class.selected]="seleccionada()?.idReserva === reserva.idReserva"
-                [attr.aria-pressed]="seleccionada()?.idReserva === reserva.idReserva"
-                [attr.aria-label]="'Seleccionar reserva ' + reserva.codigo"
-                (click)="idSeleccionada.set(reserva.idReserva)"
-              >
-                <span class="reservation-id">{{ reserva.codigo }}</span>
-                <span class="row-guest"
-                  ><strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong>
-                  <span class="secondary">{{
-                    reserva.nombreCabana || 'Cabaña #' + reserva.idCabana
-                  }}</span>
-                  <span class="secondary"
-                    >{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }} –
-                    {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</span
-                  ></span
-                >
-                <span class="row-summary"
-                  ><strong>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</strong>
-                  <span class="status" [attr.data-status]="reserva.estadoReserva">{{
-                    estados[reserva.estadoReserva] || reserva.estadoReserva
-                  }}</span></span
-                >
-              </button>
-            </li>
-          } @empty {
-            <li class="empty-state">
-              <h3>
-                {{
-                  hayFiltros() ? 'No se encontraron coincidencias' : 'No hay reservas para mostrar'
-                }}
-              </h3>
-              <p>
-                {{
-                  hayFiltros()
-                    ? 'Prueba con otro código, nombre, correo o cabaña.'
-                    : 'Las reservas se mostrarán en este registro.'
-                }}
-              </p>
-              @if (hayFiltros()) {
-                <button type="button" class="reset-button" (click)="limpiarFiltros()">
-                  Ver todas las reservas
-                </button>
-              }
-            </li>
-          }
-        </ul>
+            <tr><td><strong>{{ reserva.codigo }}</strong></td><td>{{ reserva.nombreUsuario || 'Sin nombre disponible' }}</td><td>{{ reserva.emailUsuario || 'Sin correo disponible' }}</td><td>{{ reserva.nombreCabana || 'Cabaña no disponible' }}</td>
+              <td>{{ reserva.fechaIngreso | date:'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</td><td>{{ reserva.fechaSalida | date:'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</td>
+              <td>{{ reserva.montoTotal | currency:'PEN':'S/ ':'1.2-2' }}</td><td>{{ pagado(reserva) | currency:'PEN':'S/ ':'1.2-2' }}</td><td>{{ saldo(reserva) | currency:'PEN':'S/ ':'1.2-2' }}</td>
+              <td><span class="status" [attr.data-status]="reserva.estadoReserva">{{ estados[reserva.estadoReserva] || reserva.estadoReserva }}</span></td>
+              <td><button type="button" class="primary-button" [attr.aria-label]="'Administrar reserva ' + reserva.codigo" (click)="idDetalle.set(reserva.idReserva)">Administrar</button></td></tr>
+          } @empty { <tr><td colspan="11" class="empty-state">{{ hayFiltros() ? 'No se encontraron coincidencias.' : 'No hay reservas para mostrar.' }}</td></tr> }
+          </tbody>
+        </table></div>
       }
       @if (resultado(); as datos) {
         @if (datos.totalPages > 1) {
@@ -146,83 +106,7 @@
         }
       }
     </section>
-    @if (seleccionada(); as reserva) {
-      <aside class="detail-card" aria-labelledby="selected-title" aria-live="polite">
-        <div class="detail-top">
-          <p class="eyebrow">DETALLE DE LA RESERVA</p>
-          <span class="status" [attr.data-status]="reserva.estadoReserva">{{
-            estados[reserva.estadoReserva] || reserva.estadoReserva
-          }}</span>
-        </div>
-        <h2 id="selected-title">{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</h2>
-        <p class="detail-subtitle">
-          Reserva {{ reserva.codigo }} · {{ reserva.cantidadHuespedes }}
-          {{ reserva.cantidadHuespedes === 1 ? 'persona' : 'personas' }}
-        </p>
-        <div class="stay-strip">
-          <div>
-            <span>LLEGADA</span><strong>{{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }} {{ reserva.horaIngreso?.slice(0,5) }}</strong>
-          </div>
-          <div class="nights">
-            <span aria-hidden="true">→</span
-            ><small>{{ noches(reserva) }} {{ noches(reserva) === 1 ? 'noche' : 'noches' }}</small>
-          </div>
-          <div>
-            <span>SALIDA</span><strong>{{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0,5) }}</strong>
-          </div>
-        </div>
-        <div class="guest-profile">
-          <span class="guest-avatar" aria-hidden="true">{{
-            (reserva.nombreUsuario || 'U').charAt(0)
-          }}</span>
-          <div>
-            <strong>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</strong
-            ><span>{{ reserva.emailUsuario || 'Sin correo disponible' }}</span>
-          </div>
-        </div>
-        <dl class="amount-grid">
-          <div>
-            <dt>Total</dt>
-            <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
-          </div>
-          <div>
-            <dt>Pagado</dt>
-            <dd>{{ pagado(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
-          </div>
-          <div class="balance">
-            <dt>Saldo</dt>
-            <dd>{{ saldo(reserva) | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
-          </div>
-        </dl>
-        <div
-          class="payment-progress"
-          role="progressbar"
-          aria-label="Importe pagado"
-          aria-valuemin="0"
-          [attr.aria-valuemax]="reserva.montoTotal"
-          [attr.aria-valuenow]="pagado(reserva)"
-        >
-          <span
-            [style.width.%]="
-              reserva.montoTotal > 0 ? (pagado(reserva) / reserva.montoTotal) * 100 : 0
-            "
-          ></span>
-        </div>
-        <button
-          type="button"
-          class="primary-button manage-button"
-          [attr.aria-label]="'Administrar reserva ' + reserva.codigo"
-          (click)="idDetalle.set(reserva.idReserva)"
-        >
-          Administrar reserva <span aria-hidden="true">→</span>
-        </button>
-      </aside>
-    } @else {
-      <aside class="detail-card detail-placeholder">
-        <h2>Detalle de la reserva</h2>
-        <p>Selecciona una reserva para consultar su estancia e importes.</p>
-      </aside>
-    }
+
   </div>
 </section>
 @if (idDetalle(); as id) {

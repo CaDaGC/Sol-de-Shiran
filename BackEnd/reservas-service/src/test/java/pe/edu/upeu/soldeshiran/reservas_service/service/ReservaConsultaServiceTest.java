@@ -41,6 +41,8 @@ class ReservaConsultaServiceTest {
                 new UsuarioResumen(2L, "Carlos", "carlos@gmail.com")));
         when(client.consultarCabanas(eq("test-key"), anyList())).thenReturn(List.of(
                 new CabanaResumen(1L, "Familiar"), new CabanaResumen(2L, "Sol")));
+        when(client.listarCabanas("test-key")).thenReturn(List.of(
+                new CabanaResumen(1L, "Familiar"), new CabanaResumen(2L, "Sol"), new CabanaResumen(9L, "Sin reservas")));
         guardar(1L, 1L);
         guardar(1L, 2L);
         guardar(2L, 1L);
@@ -126,7 +128,7 @@ class ReservaConsultaServiceTest {
         var trabajador = new Actor(3L, "TRABAJADOR");
         var resultado = service.consultar(trabajador, null, null, 0, 20);
         assertThat(resultado.content()).extracting(r -> r.idCabana()).containsOnly(1L, 2L);
-        assertThat(service.consultarCabanas(trabajador)).hasSize(2);
+        assertThat(service.consultarCabanas(trabajador)).extracting(CabanaResumen::idCabana).containsExactly(1L, 2L, 9L);
         assertThatThrownBy(() -> service.consultar(new Actor(3L, "DUENO"), null, null, 0, 20))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));

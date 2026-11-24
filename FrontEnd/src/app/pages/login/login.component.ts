@@ -1,3 +1,5 @@
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
+import { MostrarContrasenaDirective } from '../../shared/mostrar-contrasena/mostrar-contrasena.directive';
 import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import {
@@ -16,7 +18,7 @@ import { AuthResponse, AuthService, inicioPorRol } from '../../services/auth';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [FormularioDirective, MostrarContrasenaDirective, CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })

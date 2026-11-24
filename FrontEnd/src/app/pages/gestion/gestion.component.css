@@ -38,7 +38,7 @@ button:hover {
 }
 button:disabled {
   opacity: 0.5;
-  cursor: wait;
+  cursor: not-allowed;
 }
 .primary {
   background: #245439;
@@ -532,3 +532,23 @@ nav button[aria-pressed='true'] {
 .usuario-dialog .btn-secondary { color: white; background: #5c636a; }
 .datos-cuenta dd { overflow-wrap: anywhere; }
 .management-toolbar .role-filter { min-width: 160px; }
+
+.campo-nombre { min-width: 0; }
+.campo-nombre > label { margin-bottom: 0; }
+.detalle-dialog { width: min(920px, calc(100vw - 32px)); }
+.detalle-contenido { background: #f6f8f5; }
+.detalle-presentacion { display: flex; align-items: center; gap: 16px; padding: 18px; margin-bottom: 20px; border: 1px solid #dce6dd; border-radius: 12px; background: #edf4ed; }
+.detalle-avatar { display: grid; place-items: center; flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; background: #d9b77a; color: #203d2e; font-size: 1.6rem; font-weight: 700; }
+.detalle-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.detalle-presentacion h3 { margin: 0 0 4px; font-size: 1.25rem; overflow-wrap: anywhere; }
+.detalle-presentacion p { margin: 0 0 8px; overflow-wrap: anywhere; }
+.detalle-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.detalle-grupo { min-width: 0; padding: 20px; border: 1px solid #dce5dc; border-radius: 12px; background: white; }
+.detalle-grupo h3 { margin: 0 0 5px; font-size: 1.2rem; }
+.detalle-descripcion { padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #e8ede6; color: #657268; font-size: .78rem; }
+.detalle-grupo dl { display: grid; gap: 13px; margin: 0; }
+.detalle-grupo dt { margin-bottom: 3px; color: #657268; font-size: .74rem; font-weight: 600; }
+.detalle-grupo dd { margin: 0; font-size: .88rem; overflow-wrap: anywhere; }
+.detalle-sin-persona { padding: 14px; border-radius: 8px; background: #f6f8f5; font-size: .85rem; color: #657268; }
+.cuenta .profile-fields > .campo-nombre { width: 50%; }
+@media (max-width: 767.98px) { .detalle-grupos { grid-template-columns: 1fr; } .cuenta .profile-fields > .campo-nombre { width: 100%; } }

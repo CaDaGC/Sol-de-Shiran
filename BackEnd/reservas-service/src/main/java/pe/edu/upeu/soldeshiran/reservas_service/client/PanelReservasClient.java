@@ -22,6 +22,12 @@ public class PanelReservasClient {
                 .body(new org.springframework.core.ParameterizedTypeReference<List<UsuarioResumen>>() {});
     }
 
+    public List<CabanaResumen> listarCabanas(String key) {
+        return InternalHttp.cliente(catalogoUrl).get().uri("/internal/cabanas/selector")
+                .header("X-Internal-Key", key).retrieve()
+                .body(new org.springframework.core.ParameterizedTypeReference<List<CabanaResumen>>() {});
+    }
+
     public List<CabanaResumen> consultarCabanas(String key, List<Long> ids) {
         var resultado = new java.util.ArrayList<CabanaResumen>();
         for (int inicio = 0; inicio < ids.size(); inicio += 100) {

@@ -91,3 +91,19 @@ body app-root :is(.secondary-button, .reset-button, .back-button) {
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
+
+body app-root .campo-contrasena { display: flex; position: relative; width: 100%; min-width: 0; }
+body app-root .campo-contrasena > input { width: 100%; padding-right: 48px; }
+body app-root .campo-contrasena > .boton-contrasena { position: absolute; inset: 0 0 0 auto; display: grid; place-items: center; width: 44px; min-height: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0 7px 7px 0; background: transparent; color: #315b3d; cursor: pointer; }
+body app-root .campo-contrasena > .boton-contrasena:hover { background: #315b3d0c; }
+body app-root .campo-contrasena > .boton-contrasena:focus-visible { outline: 2px solid #315b3d; outline-offset: -4px; }
+
+.campo-obligatorio { color: #b02a37; font-weight: 700; }
+app-root .campo-invalido { border: 1px solid #b02a37 !important; box-shadow: 0 0 0 2px #b02a3718; }
+.error-campo-obligatorio { display: block; color: #b02a37; font-size: .78rem; margin: 5px 0; }
+.error-campo-obligatorio[hidden], .campo-obligatorio[hidden] { display: none; }
+.confirmacion-escritura { border: 1px solid #d5dfd3; border-radius: 18px; padding: 26px; width: min(480px, calc(100vw - 32px)); color: #203e30; background: #fff; }
+.confirmacion-escritura::backdrop { background: #102c2066; }
+.confirmacion-escritura h2 { font-size: 1.5rem; margin-bottom: 16px; }
+.confirmacion-escritura p { line-height: 1.6; }
+.confirmacion-escritura-acciones { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }

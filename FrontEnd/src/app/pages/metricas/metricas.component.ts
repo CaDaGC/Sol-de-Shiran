@@ -1,3 +1,4 @@
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
@@ -24,7 +25,7 @@ export function rangoMetricasValido(desde: string, hasta: string): boolean {
 @Component({
   selector: 'app-metricas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormularioDirective, CommonModule, FormsModule],
   templateUrl: './metricas.component.html',
   styleUrl: './metricas.component.css'
 })

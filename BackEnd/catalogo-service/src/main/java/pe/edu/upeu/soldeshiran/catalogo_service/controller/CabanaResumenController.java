@@ -16,6 +16,13 @@ import java.util.List;
 public class CabanaResumenController {
     private final CabanaRepository cabanaRepository;
 
+    @GetMapping("/internal/cabanas/selector")
+    public List<CabanaResumenResponse> listarSelector() {
+        return cabanaRepository.findAll(org.springframework.data.domain.Sort.by("nombre")).stream()
+                .map(c -> new CabanaResumenResponse(c.getIdCabana(), c.getNombre(), c.getImagenPrincipal()))
+                .toList();
+    }
+
     @GetMapping("/internal/cabanas/resumen")
     public List<CabanaResumenResponse> consultar(@RequestParam List<Long> ids) {
         if (ids.isEmpty() || ids.size() > 100

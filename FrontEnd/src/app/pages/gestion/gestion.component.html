@@ -33,8 +33,6 @@
       <p *ngIf="perfil()">{{ perfil().nombreUsuario }} · {{ rol() }}</p>
     </header>
   }
-  <p class="success" role="status" *ngIf="mensaje()">{{ mensaje() }}</p>
-  <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
   <section *ngIf="tab === 'cabanas' && es('ADMIN')">
     <div class="management-toolbar">
       <h2>Cabañas</h2>
@@ -45,7 +43,7 @@
           [ngModel]="buscarCabana()"
           (ngModelChange)="buscarCabana.set($event)"
       /></label>
-      <button class="primary" type="button" (click)="crearCabana()">Crear cabaña</button>
+      <button class="primary" type="button" [disabled]="ocupado()" (click)="crearCabana()">Crear cabaña</button>
     </div>
 
     <div class="cards">
@@ -74,7 +72,7 @@
         </select>
       </label>
       <label>Buscar usuarios<input class="form-control" type="search" placeholder="Nombre de usuario o correo" [ngModel]="buscarUsuario()" (ngModelChange)="buscarUsuario.set($event)" /></label>
-      <button class="primary" type="button" (click)="crearUsuario()">Crear usuario</button>
+      <button class="primary" type="button" [disabled]="ocupado()" (click)="crearUsuario()">Crear usuario</button>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle usuarios-table">
@@ -121,11 +119,11 @@
           >Motivo<input name="bmotivo" [(ngModel)]="bloqueo.motivo" required maxlength="200"
         /></label>
       </div>
-      <button class="primary" [disabled]="bf.invalid || !bloqueo.idCabana">Bloquear fechas</button>
+      <button class="primary" [disabled]="ocupado()">Bloquear fechas</button>
     </form>
     <article *ngFor="let b of bloqueos()">
       {{ b.desde }} a {{ b.hasta }} · {{ b.motivo }}
-      <button (click)="desbloquear(b)">Retirar bloqueo</button>
+      <button type="button" [disabled]="ocupado()" (click)="desbloquear(b)">Retirar bloqueo</button>
     </article>
   </section>
   <section class="account-content" *ngIf="tab === 'perfil' && perfil()">
@@ -184,13 +182,16 @@
     <form id="datos-personales" #pf="ngForm" (ngSubmit)="pf.valid && guardarPerfil()">
       <h2 *ngIf="es('CLIENTE')">Datos personales</h2>
       <div class="profile-fields" [class.row]="es('CLIENTE')" [class.g-3]="es('CLIENTE')">
+        <div class="campo-nombre">
         <label
           >Nombre de usuario<input
             name="mnombre"
             [(ngModel)]="perfil().nombreUsuario"
             required
-            maxlength="80" /></label
-        ><label
+            maxlength="80" /></label>
+          <app-disponibilidad-nombre [nombre]="perfil().nombreUsuario" [nombreActual]="nombrePerfilOriginal()" [revision]="revisionNombrePerfil()" (seleccionar)="perfil().nombreUsuario = $event" (bloqueado)="nombrePerfilBloqueado.set($event)" />
+        </div>
+        <label
           >Correo<input
             name="memail"
             type="email"
@@ -230,7 +231,7 @@
         Los nombres y el documento de identidad se muestran como referencia y no se editan desde tu
         cuenta.
       </p>
-      <button class="primary" [disabled]="pf.invalid">Guardar perfil</button>
+      <button class="primary" [disabled]="nombrePerfilBloqueado() || ocupado()">Guardar perfil</button>
     </form>
     <!-- Parte seguridad -->
     <form id="seguridad-cuenta" (ngSubmit)="cambiarPassword()">
@@ -238,19 +239,19 @@
       <label
         >Contraseña actual<input
           name="actual"
-          type="password"
+          type="password" appMostrarContrasena="contraseña actual"
           [(ngModel)]="passwordActual"
           required
           autocomplete="current-password" /></label
       ><label
         >Nueva contraseña<input
           name="nueva"
-          type="password"
+          type="password" appMostrarContrasena="contraseña nueva"
           [(ngModel)]="passwordNueva"
           required
           minlength="8"
           autocomplete="new-password" /></label
-      ><button class="primary">Cambiar contraseña</button>
+      ><button class="primary" [disabled]="ocupado()">Cambiar contraseña</button>
     </form>
   </section>
 </main>
@@ -283,7 +284,6 @@
       ×
     </button>
   </header>
-  <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
   @if (editor() === 'cabana') {
     <form *ngIf="es('ADMIN')" (ngSubmit)="cf.valid && guardarCabana()" #cf="ngForm">
       <div class="grid">
@@ -355,7 +355,7 @@
             <button
               type="button"
               [disabled]="subiendoFotos() || ocupado()"
-              (click)="cabana.imagenPrincipal = '/images/cabana-placeholder.svg'"
+              (click)="quitarImagenPrincipal()"
             >
               Quitar imagen principal
             </button>
@@ -383,9 +383,9 @@
           Subiendo fotos… Espera antes de guardar la cabaña.
         </p>
       </div>
-      <button class="primary" [disabled]="cf.invalid || ocupado() || subiendoFotos()">
+      <button class="primary" [disabled]="ocupado() || subiendoFotos()">
         Guardar cabaña</button
-      ><button type="button" [disabled]="subiendoFotos() || ocupado()" (click)="nueva()">
+      ><button type="button" [disabled]="subiendoFotos() || ocupado()" (click)="limpiarFormularioCabana()">
         Limpiar formulario
       </button>
     </form>
@@ -393,6 +393,7 @@
   @if (editor() === 'usuario') {
     <form (ngSubmit)="uf.valid && guardarUsuario()" #uf="ngForm">
       <div class="grid">
+        <div class="campo-nombre">
         <label
           >Nombre de usuario<input
             name="unombre"
@@ -400,6 +401,8 @@
             required
             maxlength="80"
         /></label>
+          <app-disponibilidad-nombre [nombre]="usuario.nombreUsuario" [nombreActual]="nombreUsuarioOriginal()" [revision]="revisionNombreUsuario()" (seleccionar)="usuario.nombreUsuario = $event" (bloqueado)="nombreUsuarioBloqueado.set($event)" />
+        </div>
         <label
           >Correo<input
             name="uemail"
@@ -413,7 +416,7 @@
           Contraseña inicial
           <input
             name="upass"
-            type="password"
+            type="password" appMostrarContrasena="contraseña"
             [(ngModel)]="usuario.password"
             minlength="8"
             maxlength="72"
@@ -423,7 +426,7 @@
         </label>
         <label *ngIf="es('ADMIN') && usuario.id !== perfil()?.id">
           Rol
-          <select name="urol" [(ngModel)]="usuario.rol">
+          <select required name="urol" [(ngModel)]="usuario.rol">
             <option *ngFor="let seccion of seccionesCuentas" [ngValue]="seccion.rol">
               {{ seccion.titulo }}
             </option>
@@ -485,40 +488,50 @@
           /></label>
         </div>
       </fieldset>
-      <button class="primary" [disabled]="uf.invalid || ocupado()">Guardar usuario</button>
+      <button class="primary" [disabled]="ocupado() || nombreUsuarioBloqueado()">Guardar usuario</button>
       <button type="button" [disabled]="ocupado()" (click)="cerrarEditor()">Cancelar</button>
     </form>
   }
 </dialog>
 
-<dialog #detalleDialog class="usuario-dialog" aria-labelledby="detalle-usuario-title" (cancel)="$event.preventDefault(); cerrarDetalle()" (click)="$event.target === detalleDialog && cerrarDetalle()">
+<dialog #detalleDialog class="usuario-dialog detalle-dialog" aria-labelledby="detalle-usuario-title" (cancel)="$event.preventDefault(); cerrarDetalle()" (click)="$event.target === detalleDialog && cerrarDetalle()">
   <div class="modal-content" *ngIf="detalleUsuario() as cuenta">
     <div class="modal-header"><h2 class="modal-title fs-5" id="detalle-usuario-title">Información de la cuenta</h2><button type="button" class="btn-close" aria-label="Cerrar información" (click)="cerrarDetalle()"></button></div>
-    <div class="modal-body">
-      <img *ngIf="cuenta.fotoPerfil" [src]="imagenUrl(cuenta.fotoPerfil)" alt="Foto de perfil de la cuenta" class="rounded-circle mb-3" width="72" height="72" style="object-fit: cover" />
-      <h3 class="fs-6">Cuenta</h3>
-      <dl class="row g-2 datos-cuenta">
-        <dt class="col-sm-4">ID de usuario</dt><dd class="col-sm-8">{{ cuenta.id }}</dd>
-        <dt class="col-sm-4">Nombre de usuario</dt><dd class="col-sm-8">{{ cuenta.nombreUsuario || cuenta.nombre }}</dd>
-        <dt class="col-sm-4">Correo</dt><dd class="col-sm-8">{{ cuenta.email }}</dd>
-        <dt class="col-sm-4">Rol</dt><dd class="col-sm-8">{{ rolCuenta(cuenta) }}</dd>
-        <dt class="col-sm-4">Estado</dt><dd class="col-sm-8">{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</dd>
-        <dt class="col-sm-4">Fecha de creación</dt><dd class="col-sm-8">{{ cuenta.fechaCreacion ? (cuenta.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
-      </dl>
-      <h3 class="fs-6">Datos personales</h3>
-      @if (cuenta.persona; as persona) {
-        <dl class="row g-2 datos-cuenta">
-          <dt class="col-sm-4">ID de persona</dt><dd class="col-sm-8">{{ persona.id ?? 'No registrado' }}</dd>
-          <dt class="col-sm-4">Nombres</dt><dd class="col-sm-8">{{ persona.nombres }}</dd>
-          <dt class="col-sm-4">Apellidos</dt><dd class="col-sm-8">{{ persona.apellidos }}</dd>
-          <dt class="col-sm-4">Tipo de documento</dt><dd class="col-sm-8">{{ persona.tipoDocumento === 'CARNET_EXTRANJERIA' ? 'Carné de extranjería' : persona.tipoDocumento }}</dd>
-          <dt class="col-sm-4">Número de documento</dt><dd class="col-sm-8">{{ persona.numeroDocumento }}</dd>
-          <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">{{ persona.telefono }}</dd>
-          <dt class="col-sm-4">Dirección</dt><dd class="col-sm-8">{{ persona.direccion || 'No registrada' }}</dd>
-          <dt class="col-sm-4">Fecha de creación</dt><dd class="col-sm-8">{{ persona.fechaCreacion ? (persona.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
-          <dt class="col-sm-4">Última actualización</dt><dd class="col-sm-8">{{ persona.fechaActualizacion ? (persona.fechaActualizacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
-        </dl>
-      } @else { <p class="text-body-secondary">Esta cuenta no tiene una persona asociada.</p> }
+    <div class="modal-body detalle-contenido">
+      <div class="detalle-presentacion">
+        <div class="detalle-avatar">
+          @if (cuenta.fotoPerfil) { <img [src]="imagenUrl(cuenta.fotoPerfil)" alt="Foto de perfil de la cuenta" /> }
+          @else { <span aria-hidden="true">{{ (cuenta.nombreUsuario || cuenta.nombre || 'U').charAt(0).toUpperCase() }}</span> }
+        </div>
+        <div><h3>{{ cuenta.nombreUsuario || cuenta.nombre }}</h3><p>{{ cuenta.email }}</p><span class="badge" [class.text-bg-success]="cuenta.activo" [class.text-bg-secondary]="!cuenta.activo">{{ cuenta.activo ? 'Cuenta activa' : 'Cuenta inactiva' }}</span></div>
+      </div>
+      <div class="detalle-grupos">
+        <section class="detalle-grupo" aria-labelledby="datos-cuenta-title">
+          <h3 id="datos-cuenta-title">Cuenta</h3><p class="detalle-descripcion">Identidad pública y acceso al sistema</p>
+          <dl>
+            <div><dt>Nombre de usuario</dt><dd>{{ cuenta.nombreUsuario || cuenta.nombre }}</dd></div>
+            <div><dt>Correo electrónico</dt><dd>{{ cuenta.email }}</dd></div>
+            <div><dt>Rol</dt><dd>{{ rolCuenta(cuenta) }}</dd></div>
+            <div><dt>Estado</dt><dd>{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</dd></div>
+            <div><dt>Fecha de creación</dt><dd>{{ cuenta.fechaCreacion ? (cuenta.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd></div>
+          </dl>
+        </section>
+        <section class="detalle-grupo" aria-labelledby="datos-persona-title">
+          <h3 id="datos-persona-title">Datos personales</h3><p class="detalle-descripcion">Información de identidad y contacto</p>
+          @if (cuenta.persona; as persona) {
+            <dl>
+              <div><dt>Nombres</dt><dd>{{ persona.nombres }}</dd></div>
+              <div><dt>Apellidos</dt><dd>{{ persona.apellidos }}</dd></div>
+              <div><dt>Tipo de documento</dt><dd>{{ persona.tipoDocumento === 'CARNET_EXTRANJERIA' ? 'Carné de extranjería' : persona.tipoDocumento }}</dd></div>
+              <div><dt>Número de documento</dt><dd>{{ persona.numeroDocumento }}</dd></div>
+              <div><dt>Teléfono</dt><dd>{{ persona.telefono }}</dd></div>
+              <div><dt>Dirección</dt><dd>{{ persona.direccion || 'No registrada' }}</dd></div>
+              <div><dt>Fecha de creación</dt><dd>{{ persona.fechaCreacion ? (persona.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd></div>
+              <div><dt>Última actualización</dt><dd>{{ persona.fechaActualizacion ? (persona.fechaActualizacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd></div>
+            </dl>
+          } @else { <p class="detalle-sin-persona">Esta cuenta no tiene una persona asociada.</p> }
+        </section>
+      </div>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button></div>
   </div>
@@ -530,8 +543,27 @@
       <p>{{ cuenta.activo ? '¿Estás seguro de desactivar esta cuenta?' : '¿Estás seguro de reactivar a este usuario?' }}</p>
       <p><strong>{{ cuenta.nombreUsuario || cuenta.nombre }}</strong><br />{{ cuenta.email }}</p>
       <p class="small text-body-secondary">{{ cuenta.activo ? 'Se conservarán sus datos e historial. No podrá iniciar sesión mientras esté inactiva.' : 'El usuario podrá volver a iniciar sesión con sus credenciales.' }}</p>
-      <p class="alert alert-danger" role="alert" *ngIf="errorEstado()">{{ errorEstado() }}</p>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary" [disabled]="ocupado()" (click)="cerrarEstado()">Cancelar</button><button type="button" class="btn" [class.btn-danger]="cuenta.activo" [class.btn-success]="!cuenta.activo" [disabled]="ocupado()" (click)="confirmarEstado()">{{ ocupado() ? 'Guardando…' : 'Confirmar' }}</button></div>
+  </div>
+</dialog>
+
+<dialog #edicionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-edicion-title" (cancel)="$event.preventDefault(); cerrarConfirmacionEdicion()" (click)="$event.target === edicionDialog && cerrarConfirmacionEdicion()">
+  <div class="modal-content" *ngIf="edicionPendiente() as pendiente">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="confirmar-edicion-title">Confirmar cambios</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación de edición" [disabled]="ocupado()" (click)="cerrarConfirmacionEdicion()"></button></div>
+    <div class="modal-body">
+      <p>¿Estás seguro de guardar los cambios de esta cuenta?</p>
+      <p><strong>{{ pendiente.datos.nombreUsuario }}</strong><br />{{ pendiente.datos.email }}</p>
+      <p class="small text-body-secondary">Al confirmar se actualizarán los datos ingresados. Si cancelas, podrás seguir editando el formulario.</p>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" [disabled]="ocupado()" (click)="cerrarConfirmacionEdicion()">Cancelar</button><button type="button" class="btn primary" [disabled]="ocupado()" (click)="confirmarEdicion()">{{ ocupado() ? 'Guardando…' : 'Confirmar' }}</button></div>
+  </div>
+</dialog>
+
+<dialog #accionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-accion-title" (cancel)="$event.preventDefault(); cancelarAccion()" (click)="$event.target === accionDialog && cancelarAccion()">
+  <div class="modal-content" *ngIf="confirmacion() as accion">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="confirmar-accion-title">{{ accion.titulo }}</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación" (click)="cancelarAccion()"></button></div>
+    <div class="modal-body"><p>{{ accion.mensaje }}</p></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" (click)="cancelarAccion()">Cancelar</button><button type="button" class="btn primary" (click)="confirmarAccion()">Confirmar</button></div>
   </div>
 </dialog>

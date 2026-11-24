@@ -14,6 +14,15 @@ import pe.edu.upeu.soldeshiran.usuario_service.service.GestionUsuarioService;
 @RequiredArgsConstructor
 public class UsuarioController {
   private final GestionUsuarioService gestion;
+  private final pe.edu.upeu.soldeshiran.usuario_service.service.NombreUsuarioService nombres;
+
+  @GetMapping("/nombre-disponible")
+  public org.springframework.http.ResponseEntity<DisponibilidadNombreResponse> disponibilidadNombre(
+      @RequestParam String nombre) {
+    return org.springframework.http.ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .body(nombres.consultar(nombre));
+  }
 
   @PostMapping("/register")
   @ResponseStatus(HttpStatus.CREATED)

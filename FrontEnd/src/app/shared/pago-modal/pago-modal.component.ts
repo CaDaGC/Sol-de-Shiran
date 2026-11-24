@@ -1,3 +1,4 @@
+import { ConfirmarDirective } from '../../shared/confirmar/confirmar.directive';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, PLATFORM_ID, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -9,7 +10,7 @@ import { AuthService } from '../../services/auth';
 import { PagosService } from '../../services/pagos.service';
 
 @Component({
-  selector: 'app-pago-modal', standalone: true, imports: [CommonModule, PagoEstadoComponent],
+  selector: 'app-pago-modal', standalone: true, imports: [ConfirmarDirective, CommonModule, PagoEstadoComponent],
   templateUrl: './pago-modal.component.html', styleUrl: './pago-modal.component.css'
 })
 export class PagoModalComponent implements OnInit, OnDestroy {

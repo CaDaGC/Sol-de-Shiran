@@ -72,18 +72,24 @@ describe('Integración del panel de reservas', () => {
     expect(fixture.nativeElement.textContent).toContain('Familiar');
   });
 
-  it('seleccionar una reserva actualiza noches e importes sin otra petición', () => {
-    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, codigo: 'RSS00002', nombreCabana: 'Jardín',
-      fechaSalida: '2026-12-05', montoTotal: 900, saldoPendiente: 150 }]));
+  it('presenta una fila por reserva y una acción directa para administrar', () => {
+    solicitud().flush(pagina([reserva, { ...reserva, idReserva: 2, codigo: 'RSS00002' }]));
     fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva RSS00002"]').click();
-    fixture.detectChanges();
-    const detalle = fixture.nativeElement.querySelector('.detail-card');
-    expect(detalle.textContent).toContain('Jardín');
-    expect(detalle.textContent).toContain('4 noches');
-    expect(detalle.querySelector('.amount-grid > div:nth-child(2)').textContent).toContain('750.00');
-    expect(detalle.querySelector('.balance').textContent).toContain('150.00');
-    http.expectNone(req => req.url.includes('/reservas/panel'));
+    expect(fixture.nativeElement.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('tbody button')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.detail-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('thead').textContent).toContain('Correo');
+  });
+
+  it('actualiza las cabañas al recuperar el foco sin perder el filtro', () => {
+    solicitud().flush(pagina([reserva]));
+    fixture.componentInstance.idCabana.set(2);
+    window.dispatchEvent(new Event('focus'));
+    http.expectOne(req => req.url.endsWith('/reservas/panel/cabanas')).flush([
+      { idCabana: 2, nombre: 'Familiar' }, { idCabana: 9, nombre: 'Sin reservas' }
+    ]);
+    expect(fixture.componentInstance.cabanas()).toHaveLength(2);
+    expect(fixture.componentInstance.idCabana()).toBe(2);
   });
 
   it('cancela respuestas anteriores y combina búsqueda y cabaña en el servidor', async () => {
@@ -149,8 +155,7 @@ describe('Integración del panel de reservas', () => {
     fixture.nativeElement.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
     expect(pendiente.cancelled).toBe(true);
-    fixture.nativeElement.querySelector('button[aria-label="Seleccionar reserva RSS00002"]').click();
-    fixture.detectChanges();
+
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00002"]').click();
     fixture.detectChanges();
     http.expectOne(req => req.url.endsWith('/reservas/2/restante')).flush(null);

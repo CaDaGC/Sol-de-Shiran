@@ -1,3 +1,5 @@
+import { ConfirmarDirective } from '../../shared/confirmar/confirmar.directive';
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,7 +25,7 @@ interface Pagina {
 
 @Component({
   selector: 'app-resenas-cabana',
-  imports: [FormsModule],
+  imports: [ConfirmarDirective, FormularioDirective, FormsModule],
   templateUrl: './resenas-cabana.component.html',
   styleUrl: './resenas-cabana.component.css',
 })

@@ -1,3 +1,4 @@
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
 import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import {
   Component,
@@ -21,7 +22,7 @@ import { CabanaService } from '../../services/cabana.service';
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, PublicNavbarComponent],
+  imports: [FormularioDirective, CommonModule, RouterLink, FormsModule, PublicNavbarComponent],
   templateUrl: './catalogo.component.html',
   styleUrl: './catalogo.component.css',
 })

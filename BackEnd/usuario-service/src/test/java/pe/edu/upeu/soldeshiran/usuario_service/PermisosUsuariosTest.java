@@ -134,6 +134,52 @@ class PermisosUsuariosTest {
   }
 
   @Test
+  void consultaPublicaSugiereSoloNombresDisponiblesSinDatosDeCuenta() throws Exception {
+    crear("CLIENTE", "admin_1@test.local");
+    var respuesta = mvc.perform(get("/api/v1/usuarios/nombre-disponible").param("nombre", " ADMIN "))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.disponible").value(false))
+        .andExpect(jsonPath("$.id").doesNotExist()).andExpect(jsonPath("$.email").doesNotExist())
+        .andReturn().getResponse().getContentAsString();
+    var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(respuesta);
+    Assertions.assertEquals(2, json.get("sugerencias").size());
+    for (var sugerencia : json.get("sugerencias")) {
+      Assertions.assertFalse(usuarios.existsByNombreIgnoreCase(sugerencia.asText()));
+      Assertions.assertTrue(sugerencia.asText().startsWith("admin_"));
+      Assertions.assertTrue(sugerencia.asText().length() <= 80);
+    }
+    mvc.perform(get("/api/v1/usuarios/nombre-disponible").param("nombre", "nombrelibre"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.disponible").value(true))
+        .andExpect(jsonPath("$.sugerencias.length()").value(0));
+  }
+
+  @Test
+  void nombreDeCuentaInactivaSigueReservadoYSeValidanLimites() throws Exception {
+    var cuenta = usuarios.findById(cliente).orElseThrow();
+    cuenta.setActivo(false); usuarios.save(cuenta);
+    mvc.perform(get("/api/v1/usuarios/nombre-disponible").param("nombre", cuenta.getNombre()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.disponible").value(false));
+    for (String invalido : new String[] {"   ", "a".repeat(81)})
+      mvc.perform(get("/api/v1/usuarios/nombre-disponible").param("nombre", invalido))
+          .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void noDuplicaNombreAlCrearOEditarYPermiteConservarElPropio() throws Exception {
+    mvc.perform(post("/api/v1/usuarios").header("Authorization", token(admin))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"nombreUsuario\":\"ADMIN\",\"email\":\"otro@test.local\",\"password\":\"Password123!\",\"rol\":\"ADMIN\"}"))
+        .andExpect(status().isConflict());
+    mvc.perform(put("/api/v1/usuarios/" + cliente).header("Authorization", token(admin))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"nombreUsuario\":\"ADMIN\",\"email\":\"cliente@test.local\"}"))
+        .andExpect(status().isConflict());
+    mvc.perform(put("/api/v1/usuarios/" + admin).header("Authorization", token(admin))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"nombreUsuario\":\"ADMIN\",\"email\":\"admin@test.local\"}"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.nombreUsuario").value("ADMIN"));
+  }
+
+  @Test
   void puertoDirectoNoPermiteCrearAdminAnonimo() throws Exception {
     mvc.perform(
             post("/api/v1/usuarios/admin").contentType(MediaType.APPLICATION_JSON).content("{}"))

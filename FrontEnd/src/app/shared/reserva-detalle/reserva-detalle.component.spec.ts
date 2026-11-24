@@ -11,7 +11,8 @@ describe('HU7 pago restante y check-in', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-05T15:00:00Z'));
-    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() {} });
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value(this: HTMLDialogElement) { this.open = true; } });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value(this: HTMLDialogElement) { this.open = false; } });
     TestBed.configureTestingModule({ imports: [ReservaDetalleComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
     fixture = TestBed.createComponent(ReservaDetalleComponent);
     fixture.componentRef.setInput('idReserva', 3);
@@ -46,6 +47,22 @@ describe('HU7 pago restante y check-in', () => {
       http.expectNone(r => r.method === 'POST');
     }
   });
+  it('solicita confirmación antes del pago y no envía al cancelar', async () => {
+    http.expectOne(r => r.url.endsWith('/restante')).flush(null);
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+    boton.click();
+    http.expectNone(r => r.method === 'POST');
+    expect(document.querySelector('.confirmacion-escritura')?.textContent).toContain('pago restante');
+    document.querySelector<HTMLButtonElement>('.confirmacion-escritura button')!.click();
+    http.expectNone(r => r.method === 'POST');
+    expect(fixture.componentInstance.guardando()).toBe(false);
+    boton.click();
+    document.querySelector<HTMLButtonElement>('.confirmacion-escritura .btn-success')!.click();
+    http.expectOne(r => r.method === 'POST').flush({ completado: true });
+    http.expectOne(r => r.url.endsWith('/reservas/panel/3')).flush({ ...reserva, estadoReserva: 'OCUPADA' });
+  });
+
   it('efectivo envía saldo calculado en servidor y bloquea doble envío; éxito refresca el detalle', () => {
     http.expectOne(r => r.url.endsWith('/restante')).flush(null);
     const actualizado = vi.fn(); fixture.componentInstance.actualizado.subscribe(actualizado);
@@ -106,7 +123,8 @@ describe('HU9 registro de check-out', () => {
   };
 
   beforeEach(async () => {
-    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() {} });
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value(this: HTMLDialogElement) { this.open = true; } });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value(this: HTMLDialogElement) { this.open = false; } });
     TestBed.configureTestingModule({
       imports: [ReservaDetalleComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
@@ -131,7 +149,11 @@ describe('HU9 registro de check-out', () => {
 
     const form = root.querySelector('form')!;
     form.dispatchEvent(new Event('submit', { cancelable: true }));
+    http.expectNone(r => r.method === 'POST');
+    document.querySelector<HTMLButtonElement>('.confirmacion-escritura button')!.click();
+    http.expectNone(r => r.method === 'POST');
     form.dispatchEvent(new Event('submit', { cancelable: true }));
+    document.querySelector<HTMLButtonElement>('.confirmacion-escritura .btn-success')!.click();
     const post = http.expectOne(r => r.method === 'POST' && r.url.endsWith('/9/check-out'));
     expect(post.request.body).toEqual({});
     post.flush({

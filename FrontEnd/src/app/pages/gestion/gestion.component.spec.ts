@@ -39,7 +39,7 @@ describe('Usuarios y perfil con datos civiles',()=>{
   it('oculta persona para ADMIN y no envía dueño ni asignaciones',async()=>{
     const f=crear();const c=f.componentInstance;c.abrirCuentas(); c.crearUsuario(); c.usuario.rol = 'ADMIN';f.detectChanges();await f.whenStable();
     expect(f.nativeElement.querySelector('[name="unumeroDocumento"]')).toBeNull();
-    c.usuario.nombreUsuario='nuevoAdmin';c.usuario.email='nuevo@example.com';c.usuario.password='Clave1234';c.guardarUsuario();
+    c.usuario.nombreUsuario='nuevoAdmin';c.usuario.email='nuevo@example.com';c.usuario.password='Clave1234';c.guardarUsuario();http.expectNone(r=>r.method==='POST');c.confirmarAccion();
     const req=http.expectOne(r=>r.method==='POST');expect(req.request.body).toEqual({nombreUsuario:'nuevoAdmin',email:'nuevo@example.com',rol:'ADMIN',password:'Clave1234'});
     req.flush({detail:'Prueba'},{status:409,statusText:'Conflict'});f.destroy();
   });
@@ -49,16 +49,16 @@ describe('Usuarios y perfil con datos civiles',()=>{
       c.abrirCuentas(); c.crearUsuario(); c.usuario.rol = seccion.rol;f.detectChanges();await f.whenStable();
       expect(f.nativeElement.querySelector('[name="unumeroDocumento"]').required).toBe(true);
       c.usuario.nombreUsuario='cliente';c.usuario.email='c@example.com';c.usuario.password='Clave1234';c.guardarUsuario();http.expectNone(r=>r.method==='POST');
-      c.usuario.persona={...persona};c.guardarUsuario();const req=http.expectOne(r=>r.method==='POST');expect(req.request.body.persona).toEqual(persona);expect(req.request.body.rol).toBe(seccion.rol);
+      c.usuario.persona={...persona};c.guardarUsuario();c.confirmarAccion();const req=http.expectOne(r=>r.method==='POST');expect(req.request.body.persona).toEqual(persona);expect(req.request.body.rol).toBe(seccion.rol);
       req.flush({detail:'Prueba'},{status:409,statusText:'Conflict'});
     }f.destroy();
   });
   it('edita alias y contacto conservando documento y datos civiles',()=>{
-    const f=crear();const c=f.componentInstance;c.perfil.set({...perfil,persona:{...persona,telefono:'912345678',direccion:'Nueva dirección'},nombreUsuario:'alias'});c.guardarPerfil();
+    const f=crear();const c=f.componentInstance;c.perfil.set({...perfil,persona:{...persona,telefono:'912345678',direccion:'Nueva dirección'},nombreUsuario:'alias'});c.guardarPerfil();c.confirmarAccion();
     const req=http.expectOne(r=>r.method==='PUT');expect(req.request.body.nombreUsuario).toBe('alias');expect(req.request.body.persona.numeroDocumento).toBe('12345678');expect(req.request.body.persona.telefono).toBe('912345678');expect(req.request.body.rol).toBeUndefined();req.flush({...perfil,nombreUsuario:'alias',persona});expect(auth.actualizarPerfil).toHaveBeenCalled();f.destroy();
   });
   it('sube la imagen mediante MultipartFile con el campo file',()=>{
-    const f=crear();const c=f.componentInstance;const foto=new File(['foto'],'foto.png',{type:'image/png'});c.archivoFotoPerfil=foto;c.guardarFotoPerfil();
+    const f=crear();const c=f.componentInstance;const foto=new File(['foto'],'foto.png',{type:'image/png'});c.archivoFotoPerfil=foto;c.guardarFotoPerfil();http.expectNone(r=>r.method==='POST');c.confirmarAccion();
     const req=http.expectOne(r=>r.method==='POST' && r.url.endsWith('/usuarios/1/foto'));
     expect(req.request.body instanceof FormData).toBe(true);expect(req.request.body.get('file')).toBe(foto);expect(req.request.body.has('archivo')).toBe(false);
     req.flush({...perfil,fotoPerfil:'/api/v1/usuarios/fotos/foto.png'});expect(auth.actualizarPerfil).toHaveBeenLastCalledWith(expect.objectContaining({fotoPerfil:'/api/v1/usuarios/fotos/foto.png'}));f.destroy();
@@ -82,7 +82,7 @@ describe('Usuarios y perfil con datos civiles',()=>{
     const f=crear();const c=f.componentInstance;c.crearCabana();expect(c.editor()).toBe('cabana');expect(c.cabana.idCabana).toBeNull();
     c.cerrarEditor();c.editarCabana({...c.nuevaCabana(),idCabana:7,nombre:'Luna',imagenesSecundarias:['/luna.jpg']});
     expect(c.cabana.nombre).toBe('Luna');expect(c.imagenes).toBe('/luna.jpg');
-    c.guardarCabana();http.expectOne(r=>r.method==='PUT' && r.url.endsWith('/cabanas/7')).flush({detail:'No disponible'},{status:503,statusText:'Unavailable'});
+    c.guardarCabana();c.confirmarAccion();http.expectOne(r=>r.method==='PUT' && r.url.endsWith('/cabanas/7')).flush({detail:'No disponible'},{status:503,statusText:'Unavailable'});
     expect(c.editor()).toBe('cabana');expect(c.cabana.nombre).toBe('Luna');expect(c.error()).toBe('No disponible');f.destroy();
   });
   it('confirma desactivación en un modal y cambia el icono al reactivar',()=>{
@@ -103,9 +103,46 @@ describe('Usuarios y perfil con datos civiles',()=>{
   });
   it('muestra datos civiles solo en lectura y admite cuentas sin persona',()=>{
     const f=crear();const c=f.componentInstance;c.verUsuario({...perfil,id:2,persona});f.detectChanges();
-    const modal=f.nativeElement.querySelector('dialog[aria-labelledby="detalle-usuario-title"]');expect(modal.open).toBe(true);expect(modal.textContent).toContain('12345678');expect(modal.querySelector('input,select,textarea,form')).toBeNull();
+    const modal=f.nativeElement.querySelector('dialog[aria-labelledby="detalle-usuario-title"]');expect(modal.open).toBe(true);expect(modal.textContent).toContain('12345678');expect(modal.querySelector('input,select,textarea,form')).toBeNull();expect(modal.textContent).not.toContain('ID de usuario');expect(modal.textContent).not.toContain('ID de persona');expect(modal.querySelectorAll('.detalle-grupo')).toHaveLength(2);
     c.cerrarDetalle();c.verUsuario(perfil);f.detectChanges();expect(modal.textContent).toContain('no tiene una persona asociada');c.cerrarDetalle();
     c.solicitarEstado(perfil);expect(c.cuentaEstado()).toBeNull();f.destroy();
+  });
+  it('solicita confirmación antes de editar y cancelar conserva el formulario',async()=>{
+    const f=crear();const c=f.componentInstance;c.editarUsuario({...perfil,id:2,nombreUsuario:'anterior'});
+    c.usuario.nombreUsuario='actualizado';c.guardarUsuario();f.detectChanges();
+    expect(f.nativeElement.querySelector('dialog[aria-labelledby="confirmar-edicion-title"]').open).toBe(true);
+    http.expectNone(r=>r.method==='PUT');c.cerrarConfirmacionEdicion();expect(c.usuario.nombreUsuario).toBe('actualizado');expect(c.editor()).toBe('usuario');
+    await new Promise(resolve=>setTimeout(resolve,400));http.expectOne(r=>r.url.endsWith('/usuarios/nombre-disponible')).flush({nombre:'actualizado',disponible:true,sugerencias:[]});
+    c.guardarUsuario();c.confirmarEdicion();const req=http.expectOne(r=>r.method==='PUT');expect(req.request.body.nombreUsuario).toBe('actualizado');req.flush({...perfil,id:2,nombreUsuario:'actualizado'});
+    http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([]);
+    expect(c.edicionPendiente()).toBeNull();expect(c.editor()).toBeNull();f.destroy();
+  });
+  it('conserva la edición y permite cancelar si el servidor rechaza el guardado',()=>{
+    const f=crear();const c=f.componentInstance;c.editarUsuario({...perfil,id:2});c.guardarUsuario();c.confirmarEdicion();
+    http.expectOne(r=>r.method==='PUT').flush({detail:'El nombre de usuario ya existe'},{status:409,statusText:'Conflict'});
+    expect(c.errorEdicion()).toContain('nombre de usuario');expect(c.editor()).toBe('usuario');expect(c.ocupado()).toBe(false);c.cerrarConfirmacionEdicion();f.destroy();
+  });
+  it('cancelar guardados y cambios de estado de cabaña no envía peticiones',()=>{
+    const f=crear();const c=f.componentInstance;const cabana={...c.nuevaCabana(),idCabana:5,nombre:'Luna'};
+    c.desactivarCabana(cabana);http.expectNone(r=>r.method==='DELETE');c.cancelarAccion();
+    c.activar(cabana);http.expectNone(r=>r.method==='PUT');c.confirmarAccion();
+    http.expectOne(r=>r.method==='PUT'&&r.url.endsWith('/cabanas/5/activar')).flush({});
+    http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([]);
+    c.desactivarCabana(cabana);c.confirmarAccion();http.expectOne(r=>r.method==='DELETE').flush({});
+    http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([]);f.destroy();
+  });
+  it('explica rangos inválidos y confirma bloquear y retirar fechas',()=>{
+    const f=crear();const c=f.componentInstance;c.bloqueo={idCabana:5,desde:'2099-12-10',hasta:'2099-12-09',motivo:'Mantenimiento'};
+    c.bloquear();expect(c.confirmacion()).toBeNull();expect(c.notificaciones.aviso()?.mensaje).toContain('fecha final');http.expectNone(r=>r.method==='POST');
+    c.bloqueo.hasta='2099-12-12';c.bloquear();c.cancelarAccion();http.expectNone(r=>r.method==='POST');
+    c.bloquear();c.confirmarAccion();http.expectOne(r=>r.method==='POST').flush({});http.expectOne(r=>r.url.endsWith('/reservas/bloqueos')).flush([]);
+    c.desbloquear({id:7,desde:'2099-12-10',hasta:'2099-12-12'});c.confirmarAccion();http.expectOne(r=>r.method==='DELETE'&&r.url.endsWith('/reservas/bloqueos/7')).flush(null);http.expectOne(r=>r.url.endsWith('/reservas/bloqueos')).flush([]);f.destroy();
+  });
+  it('confirma cambios de contraseña y muestra el motivo real del servidor',()=>{
+    const f=crear();const c=f.componentInstance;c.passwordActual='anterior';c.passwordNueva='NuevaClave123';c.cambiarPassword();
+    http.expectNone(r=>r.method==='PUT');c.confirmarAccion();
+    http.expectOne(r=>r.url.endsWith('/password')).flush({detail:'La contraseña actual no es correcta.'},{status:400,statusText:'Bad Request'});
+    expect(c.notificaciones.aviso()?.tipo).toBe('error');expect(c.notificaciones.aviso()?.mensaje).toContain('contraseña actual');f.destroy();
   });
   it('desplaza foto y seguridad dentro de la cuenta sin seguir el enlace al inicio', () => {
     const f = crear();

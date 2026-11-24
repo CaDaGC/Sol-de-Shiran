@@ -1,9 +1,9 @@
-import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject, catchError, finalize, of, switchMap, timer } from 'rxjs';
+import { BehaviorSubject, fromEvent, merge, catchError, finalize, of, switchMap, timer } from 'rxjs';
 import { ESTADOS_RESERVA, ReservaPanelResponse, ReservasPaginaResponse } from '../../models/reserva.model';
 import { ReservaDetalleComponent } from '../../shared/reserva-detalle/reserva-detalle.component';
 import { ReservasService } from '../../services/reservas.service';
@@ -29,17 +29,8 @@ export class PanelReservasComponent {
   readonly idCabana = signal<number | null>(null);
   readonly pagina = signal(0);
   readonly idDetalle = signal<number | null>(null);
-  readonly idSeleccionada = signal<number | null>(null);
   readonly tamanoPagina = 20;
   readonly reservas = computed(() => this.resultado()?.content ?? []);
-  readonly seleccionada = computed(() => this.reservas().find(r => r.idReserva === this.idSeleccionada())
-    ?? this.reservas()[0] ?? null);
-
-  noches(reserva: ReservaPanelResponse): number {
-    return Math.round((Date.parse(reserva.fechaSalida + 'T00:00:00Z')
-      - Date.parse(reserva.fechaIngreso + 'T00:00:00Z')) / 86400000);
-  }
-
   saldo(reserva: ReservaPanelResponse): number {
     return ['PENDIENTE_PAGO', 'EXPIRADA'].includes(reserva.estadoReserva) ? reserva.montoTotal : reserva.saldoPendiente;
   }
@@ -52,8 +43,15 @@ export class PanelReservasComponent {
   readonly hayFiltros = computed(() => !!this.buscar().trim() || this.idCabana() !== null);
 
   constructor() {
-    this.reservasService.listarCabanasDelPanel().pipe(takeUntilDestroyed()).subscribe({
+    merge(of(null), timer(30000, 30000), isPlatformBrowser(inject(PLATFORM_ID)) ? fromEvent(window, 'focus') : of(null)).pipe(
+      switchMap(() => this.reservasService.listarCabanasDelPanel().pipe(catchError(() => {
+        this.errorCabanas.set('No se pudieron actualizar las cabañas. Se volverá a intentar automáticamente.');
+        this.cargandoCabanas.set(false);
+        return of(null);
+      }))), takeUntilDestroyed()).subscribe({
       next: cabanas => {
+        if (!cabanas) return;
+        this.errorCabanas.set('');
         this.cabanas.set(cabanas);
         this.cargandoCabanas.set(false);
       },

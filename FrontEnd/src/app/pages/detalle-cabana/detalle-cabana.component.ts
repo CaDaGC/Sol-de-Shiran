@@ -1,3 +1,4 @@
+import { ConfirmarDirective } from '../../shared/confirmar/confirmar.directive';
 import {cruzaHorario, cruzaRango} from '../../models/reserva-tiempo';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
@@ -39,7 +40,7 @@ interface DiaCalendario {
 @Component({
   selector: 'app-detalle-cabana',
   standalone: true,
-  imports: [CommonModule, RouterLink, PagoModalComponent, ResenasCabanaComponent, PublicNavbarComponent],
+  imports: [ConfirmarDirective, CommonModule, RouterLink, PagoModalComponent, ResenasCabanaComponent, PublicNavbarComponent],
   templateUrl: './detalle-cabana.component.html',
   styleUrl: './detalle-cabana.component.css'
 })

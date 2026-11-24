@@ -71,12 +71,12 @@ public class ReservaConsultaService {
 
     public List<CabanaResumen> consultarCabanas(Actor actor) {
         actor.exigir("ADMIN", "TRABAJADOR");
-        var ids = reservaRepository.listarCabanasConReservas();
-        var nombres = resumenCabanas(ids).stream()
-                .collect(Collectors.toMap(CabanaResumen::idCabana, CabanaResumen::nombre));
-        return ids.stream().sorted()
-                .map(id -> new CabanaResumen(id, nombres.getOrDefault(id, "Cabaña #" + id)))
-                .toList();
+        try {
+            return panelClient.listarCabanas(internalKey);
+        } catch (org.springframework.web.client.RestClientException exception) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudieron consultar las cabañas. Intenta nuevamente.", exception);
+        }
     }
 
     public ReservasPaginaResponse consultar(Actor actor, String buscar, Long idCabana,

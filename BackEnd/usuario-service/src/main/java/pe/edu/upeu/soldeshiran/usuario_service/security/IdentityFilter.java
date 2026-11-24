@@ -59,6 +59,7 @@ public class IdentityFilter extends OncePerRequestFilter {
   private boolean publica(HttpServletRequest r) {
     String p = r.getRequestURI();
     return ("GET".equals(r.getMethod()) && p.matches("/api/v1/usuarios/fotos/(?:[a-f0-9-]{36}|migrada-[0-9]+)\\.(png|jpg)"))
+        || ("GET".equals(r.getMethod()) && p.equals("/api/v1/usuarios/nombre-disponible"))
         || "OPTIONS".equals(r.getMethod())
         || ("POST".equals(r.getMethod()) && p.equals("/api/v1/usuarios/register"))
         || ("GET".equals(r.getMethod())

@@ -163,7 +163,7 @@
             <p class="payment-help">
               Confirma la salida para finalizar la reserva y liberar la cabaña.
             </p>
-            <form #checkoutForm="ngForm" (ngSubmit)="registrarCheckout()">
+            <form appConfirmar="¿Estás seguro de registrar el check-out? Si indicaste daños, también se registrará el pago presencial correspondiente." #checkoutForm="ngForm" (ngSubmit)="registrarCheckout()">
               <fieldset [disabled]="guardando()">
                 <label class="checkout-checkbox">
                   <input type="checkbox" name="huboDanos" [(ngModel)]="huboDanos" />
@@ -200,7 +200,7 @@
               <button
                 class="primary-button"
                 type="submit"
-                [disabled]="guardando() || checkoutForm.invalid"
+                [disabled]="guardando()"
               >
                 {{ guardando() ? 'Registrando salida…' : 'Confirmar check-out' }}
               </button>
@@ -233,7 +233,7 @@
                 Reintentar consulta de pago
               </button>
             } @else {
-              <form #pagoForm="ngForm" (ngSubmit)="registrarPago()">
+              <form [appConfirmar]="registroExistente() ? '¿Estás seguro de reintentar el check-in? El pago existente se conservará sin volver a cobrar.' : '¿Confirmas que recibiste el pago restante y deseas registrar el check-in?'" #pagoForm="ngForm" (ngSubmit)="registrarPago()">
                 <fieldset [disabled]="guardando() || registroExistente()">
                   <label for="metodo-restante">Método de pago</label>
                   <select id="metodo-restante" name="metodoPago" [(ngModel)]="metodoPago" required>
@@ -268,7 +268,7 @@
                 <button
                   class="primary-button"
                   type="submit"
-                  [disabled]="guardando() || pagoForm.invalid"
+                  [disabled]="guardando()"
                 >
                   {{
                     guardando()

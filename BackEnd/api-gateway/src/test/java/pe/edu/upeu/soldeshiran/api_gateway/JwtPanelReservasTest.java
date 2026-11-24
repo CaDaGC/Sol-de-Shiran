@@ -17,6 +17,20 @@ import static org.mockito.Mockito.*;
 
 class JwtPanelReservasTest {
     @Test
+    void disponibilidadDeNombreEsPublicaPeroNoAbreOtrasConsultasDeUsuarios() {
+        JwtUtil jwt = mock(JwtUtil.class);
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        var filtro = new JwtAuthenticationFilter(jwt);
+        filtro.filter(MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/usuarios/nombre-disponible?nombre=ana")), chain).block();
+        verify(chain).filter(any()); verifyNoInteractions(jwt);
+        var privado = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/usuarios"));
+        filtro.filter(privado, chain).block();
+        assertThat(privado.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verifyNoMoreInteractions(chain);
+    }
+
+    @Test
     void clienteConsultaSusReservasSinSuplantarElIdDelToken() {
         JwtUtil jwt = mock(JwtUtil.class);
         when(jwt.isValid("token")).thenReturn(true);

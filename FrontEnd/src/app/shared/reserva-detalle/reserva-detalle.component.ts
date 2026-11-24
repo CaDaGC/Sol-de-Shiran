@@ -1,3 +1,5 @@
+import { ConfirmarDirective } from '../../shared/confirmar/confirmar.directive';
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
 import { ComprobanteComponent } from '../comprobante/comprobante.component';
 import { FormsModule } from '@angular/forms';
 import { PagosService, PagoRestanteRequest } from '../../services/pagos.service';
@@ -13,7 +15,7 @@ import { ReservasService } from '../../services/reservas.service';
 @Component({
   selector: 'app-reserva-detalle',
   standalone: true,
-  imports: [CommonModule, FormsModule, ComprobanteComponent],
+  imports: [ConfirmarDirective, FormularioDirective, CommonModule, FormsModule, ComprobanteComponent],
   templateUrl: './reserva-detalle.component.html',
   styleUrl: './reserva-detalle.component.css'
 })

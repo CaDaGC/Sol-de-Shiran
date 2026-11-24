@@ -474,3 +474,11 @@ dd {
     display: flex;
   }
 }
+
+.reservation-workspace { display: block; }
+.tabla-reservas { width: 100%; overflow-x: auto; border: 1px solid #dce4d8; border-radius: 14px; background: white; }
+table.reservation-list { display: table; width: 100%; margin: 0; font-size: .8rem; }
+.tabla-reservas th { background: #e6eddf; padding: 16px 12px; white-space: nowrap; }
+.tabla-reservas td { padding: 16px 12px; min-width: 105px; }
+.tabla-reservas td:nth-child(3) { overflow-wrap: anywhere; }
+.tabla-reservas .primary-button { padding: 10px 14px; white-space: nowrap; }

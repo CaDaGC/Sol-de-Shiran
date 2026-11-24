@@ -20,7 +20,7 @@
       <small>La reserva temporal vence: {{ reserva.expiraEn | date:'short' }}</small>
     </div>
     <p>Continúa a Mercado Pago para completar el pago de forma segura.</p>
-    <button class="pay-button" type="button" [disabled]="enviandoPago()" (click)="pagar()">
+    <button class="pay-button" type="button" [disabled]="enviandoPago()" appConfirmar="¿Deseas continuar a Mercado Pago para pagar el adelanto de esta reserva?" (click)="pagar()">
       {{ enviandoPago() ? 'Abriendo Mercado Pago…' : 'Continuar a Mercado Pago' }}
     </button>
     <p class="payment-message" *ngIf="mensaje()" role="alert">{{ mensaje() }}</p>
