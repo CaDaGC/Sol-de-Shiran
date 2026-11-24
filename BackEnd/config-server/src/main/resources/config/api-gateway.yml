@@ -16,6 +16,7 @@ spring:
             allowedOrigins:
               - "http://localhost"
               - "http://localhost:4200"
+              - "http://127.0.0.1:4200"
               - "http://127.0.0.1"
             allowedMethods:
               - GET
@@ -31,12 +32,17 @@ spring:
         - id: usuario-service
           uri: lb://USUARIO-SERVICE
           predicates:
-            - Path=/api/v1/usuarios,/api/v1/usuarios/**
+            - Path=/api/v1/usuarios,/api/v1/usuarios/**,/api/usuarios/**
 
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/api/v1/auth,/api/v1/auth/**
+
+        - id: resenas-service
+          uri: lb://RESENAS-SERVICE
+          predicates:
+            - Path=/api/v1/resenas,/api/v1/resenas/**
 
         - id: catalogo-service
           uri: lb://CATALOGO-SERVICE
@@ -47,6 +53,11 @@ spring:
           uri: lb://MS-RESERVAS
           predicates:
             - Path=/api/v1/reservas,/api/v1/reservas/**
+
+        - id: ms-pagos
+          uri: lb://MS-PAGOS
+          predicates:
+            - Path=/api/v1/pagos,/api/v1/pagos/**
 
 management:
   tracing:

@@ -2,17 +2,20 @@ server:
   port: 8087
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
   application:
     name: usuario-service
 
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8089/}"
 
   datasource:
       url: jdbc:mysql://localhost:3307/usuario_db
-      username: root
-      password: mysql123
-
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -25,3 +28,7 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
+
+usuarios:
+  fotos:
+    directorio: ${USUARIOS_FOTOS_DIRECTORIO:uploads/perfiles}

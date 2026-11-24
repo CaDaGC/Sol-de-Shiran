@@ -1,98 +1,247 @@
-<main class="catalog-page">
-  <section class="hero">
-    <div class="hero-content">
+<app-public-navbar />
+<main>
+  <!-- Parte presentación -->
+  <section class="hero text-center d-flex align-items-center">
+    <div class="container">
       <p class="eyebrow">DESCANSO · NATURALEZA · BIENESTAR</p>
-      <h1>Encuentra tu espacio para descansar</h1>
-      <p class="hero-description">
+      <h1 class="mx-auto">Encuentra tu espacio para descansar</h1>
+      <p class="hero-description mx-auto">
         Conoce nuestras cabañas, sus características y tarifas por noche.
       </p>
     </div>
   </section>
-
-  <section class="catalog-section" aria-labelledby="catalog-title">
-    <div class="section-heading">
+  <!-- Parte buscador -->
+  <div class="container search-container">
+    <form class="search-box" (ngSubmit)="buscarDisponibilidad()" aria-label="Buscar disponibilidad">
+      <div class="row g-2 align-items-stretch">
+        <div class="col-12 col-lg-6">
+          <div class="search-field d-flex align-items-center gap-3 h-100">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M7 3v4M17 3v4M3 11h18" />
+            </svg>
+            <div class="row g-2 flex-grow-1">
+              <label class="col-6"
+                >Llegada<input
+                  type="date"
+                  name="llegada"
+                  [(ngModel)]="fechaIngreso"
+                  [min]="fechaMinima"
+                  required
+                  [disabled]="buscando()"
+              /></label>
+              <label class="col-6"
+                >Salida<input
+                  type="date"
+                  name="salida"
+                  [(ngModel)]="fechaSalida"
+                  [min]="fechaIngreso || fechaMinima"
+                  required
+                  [disabled]="buscando()"
+              /></label>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="search-field d-flex align-items-center gap-3 h-100">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="7" r="4" />
+              <path d="M4 22v-2a8 8 0 0 1 16 0v2" />
+            </svg>
+            <span class="flex-grow-1"
+              >Huéspedes<input
+                type="number"
+                name="huespedes"
+                [(ngModel)]="huespedes"
+                min="1"
+                step="1"
+                required
+                [disabled]="buscando()"
+            /></span>
+          </label>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <button
+            class="button button-green w-100 h-100"
+            type="submit"
+            [disabled]="cargando() || !!mensajeError() || buscando()"
+          >
+            {{ buscando() ? 'Buscando…' : 'Buscar disponibilidad' }}
+          </button>
+        </div>
+      </div>
+    </form>
+    @if (errorBusqueda) {
+      <p class="search-error mt-3" role="alert">{{ errorBusqueda }}</p>
+    }
+  </div>
+  <!-- Parte cabañas -->
+  <section
+    class="container catalog-section py-5"
+    id="cabanas"
+    aria-labelledby="catalog-title"
+    [attr.aria-busy]="cargando() || buscando()"
+  >
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
       <div>
         <p class="section-kicker">ALOJAMIENTO</p>
-        <h2 id="catalog-title">Nuestras cabañas</h2>
+        <h2 id="catalog-title">{{ filtrado() ? 'Cabañas disponibles' : 'Nuestras cabañas' }}</h2>
       </div>
-
-      <p class="cabin-count" *ngIf="!cargando() && !mensajeError()">
-        {{ cabanas().length }}
-        {{ cabanas().length === 1 ? 'cabaña disponible' : 'cabañas disponibles' }}
-      </p>
+      @if (filtrado()) {
+        <button class="text-button" type="button" (click)="limpiarBusqueda()">
+          Ver todas las cabañas
+        </button>
+      }
     </div>
-
-    <div class="status-message" *ngIf="cargando()" role="status">
-      <span class="loader" aria-hidden="true"></span>
-      <p>Cargando cabañas...</p>
-    </div>
-
-    <div class="error-message" *ngIf="!cargando() && mensajeError()" role="alert">
-      <p>{{ mensajeError() }}</p>
-      <button type="button" class="retry-button" (click)="cargarCabanas()">
-        Volver a intentar
-      </button>
-    </div>
-
-    <div
-      class="empty-message"
-      *ngIf="!cargando() && !mensajeError() && cabanas().length === 0"
-      role="status"
-    >
-      <div class="empty-icon" aria-hidden="true">⌂</div>
-      <h3>Pronto tendremos cabañas para ti</h3>
-      <p>En este momento no hay cabañas activas en el catálogo.</p>
-    </div>
-
-    <div class="cabin-grid" *ngIf="!cargando() && !mensajeError() && cabanas().length > 0">
-      <a
-        class="cabin-card-link"
-        *ngFor="let cabana of cabanas()"
-        [routerLink]="['/catalogo', cabana.idCabana]"
-        [attr.aria-label]="'Ver detalle de ' + cabana.nombre"
-      >
-        <article class="cabin-card">
-          <div class="cabin-image-wrapper">
+    @if (cargando() || buscando()) {
+      <div class="status-message" role="status">
+        <span class="loader" aria-hidden="true"></span>
+        <p>{{ buscando() ? 'Consultando disponibilidad…' : 'Cargando cabañas…' }}</p>
+      </div>
+    } @else if (mensajeError()) {
+      <div class="status-message" role="alert">
+        <h3>No pudimos cargar las cabañas</h3>
+        <p>{{ mensajeError() }}</p>
+        <button class="button button-green" (click)="cargarCabanas()">Reintentar</button>
+      </div>
+    } @else if (!visibles().length) {
+      <div class="status-message" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7" />
+        </svg>
+        <h3>
+          {{
+            filtrado()
+              ? 'No encontramos cabañas para tu búsqueda'
+              : 'Pronto tendremos cabañas para ti'
+          }}
+        </h3>
+        <p>
+          {{
+            filtrado()
+              ? 'Prueba otras fechas o una cantidad diferente de huéspedes.'
+              : 'En este momento no hay cabañas en el catálogo.'
+          }}
+        </p>
+      </div>
+    } @else {
+      <div class="row g-4 cabin-list">
+        @for (cabana of visibles(); track cabana.idCabana) {
+          <div class="col-12 col-md-6 col-xl-4">
+            <article class="cabin-card h-100 d-flex flex-column">
+              <img
+                class="cabin-image"
+                [src]="cabana.imagenPrincipal"
+                [alt]="cabana.nombre"
+                loading="lazy"
+                (error)="mostrarImagenAlternativa($event)"
+              />
+              <div class="p-4 d-flex flex-column flex-grow-1">
+                <h3>{{ cabana.nombre }}</h3>
+                <p class="cabin-details">
+                  {{ cabana.aforoMaximo }} personas · {{ cabana.numHabitaciones }}
+                  {{ cabana.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
+                </p>
+                <p class="cabin-description">{{ cabana.descripcion }}</p>
+                <div
+                  class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-auto pt-3"
+                >
+                  <div class="price">
+                    <span>Desde </span><strong>{{ formatearTarifa(cabana.tarifaNoche) }}</strong
+                    ><span> / noche</span>
+                  </div>
+                  <a
+                    class="button button-green"
+                    [routerLink]="['/catalogo', cabana.idCabana]"
+                    [queryParams]="parametros"
+                    [attr.aria-label]="'Ver detalle de ' + cabana.nombre"
+                    >Ver detalle</a
+                  >
+                </div>
+              </div>
+            </article>
+          </div>
+        }
+      </div>
+    }
+  </section>
+  <!-- Parte naturaleza -->
+  <section class="container nature-section pb-5" id="naturaleza" aria-labelledby="nature-title">
+    <header class="text-center mb-4">
+      <p class="section-kicker">ENTORNO CAMPESTRE</p>
+      <h2 id="nature-title">Un respiro en Sol de Shirán</h2>
+      <p class="nature-description mt-3">Un espacio para descansar y compartir en Trujillo.</p>
+    </header>
+    <div class="nature-gallery mb-4" [class.single-photo]="cabanas().length < 2">
+      @if (cabanas().length) {
+        @for (cabana of cabanas().slice(0, 3); track cabana.idCabana) {
+          <figure class="m-0">
             <img
-              class="cabin-image"
               [src]="cabana.imagenPrincipal"
-              [alt]="'Imagen de ' + cabana.nombre"
+              [alt]="cabana.nombre + ' en Sol de Shirán'"
               loading="lazy"
+              width="900"
+              height="600"
               (error)="mostrarImagenAlternativa($event)"
             />
-            <span class="image-label">Sol de Shirán</span>
-          </div>
-
-          <div class="cabin-content">
-            <div class="cabin-title-row">
-              <h3>{{ cabana.nombre }}</h3>
-              <span class="capacity">Hasta {{ cabana.aforoMaximo }} huéspedes</span>
-            </div>
-
-            <p class="cabin-description">{{ cabana.descripcion }}</p>
-
-            <div class="cabin-details">
-              <span>
-                {{ cabana.numHabitaciones }}
-                {{ cabana.numHabitaciones === 1 ? 'habitación' : 'habitaciones' }}
-              </span>
-              <span class="detail-separator" aria-hidden="true">•</span>
-              <span>
-                {{ cabana.numBanos }}
-                {{ cabana.numBanos === 1 ? 'baño' : 'baños' }}
-              </span>
-            </div>
-
-            <div class="cabin-footer">
-              <div class="price">
-                <strong>{{ formatearTarifa(cabana.tarifaNoche) }}</strong>
-                <span>por noche</span>
-              </div>
-              <span class="view-detail">Ver detalle →</span>
-            </div>
-          </div>
+          </figure>
+        }
+      } @else {
+        <figure class="m-0">
+          <img
+            src="/images/cabana-placeholder.svg"
+            alt="Ilustración de cabaña; próximamente agregaremos fotos del entorno"
+            width="900"
+            height="600"
+          />
+        </figure>
+      }
+    </div>
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <article class="feature p-4 h-100">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 21V7l9-4 9 4v14M7 21v-8h10v8M9 8h6" />
+          </svg>
+          <h3>Descanso</h3>
+          <p>Encuentra una cabaña para compartir y descansar.</p>
         </article>
-      </a>
+      </div>
+      <div class="col-12 col-md-4">
+        <article class="feature p-4 h-100">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m2 20 7-13 4 7 3-5 6 11H2ZM7 11l2 2 2-2" />
+          </svg>
+          <h3>Naturaleza</h3>
+          <p>Disfruta de un ambiente campestre en Trujillo.</p>
+        </article>
+      </div>
+      <div class="col-12 col-md-4">
+        <article class="feature p-4 h-100">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 4C8 2 2 8 5 15s15 4 15-11ZM5 20 16 9" />
+          </svg>
+          <h3>Bienestar</h3>
+          <p>Dedica un momento al descanso junto a quienes más quieres.</p>
+        </article>
+      </div>
+    </div>
+    <div
+      class="nature-cta d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 mt-4 p-4"
+    >
+      <h3 class="mb-0">Tu próxima escapada empieza aquí</h3>
+      <a
+        class="button nature-button"
+        href="#cabanas"
+        (click)="$event.preventDefault(); volverACabanas()"
+        >Ver cabañas <span aria-hidden="true">→</span></a
+      >
     </div>
   </section>
 </main>
+<footer class="public-footer py-4" id="contacto">
+  <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <strong>Sol de Shirán</strong><span>Complejo turístico · Trujillo, Perú</span
+    ><a routerLink="/catalogo" fragment="cabanas">Explorar cabañas</a>
+  </div>
+</footer>

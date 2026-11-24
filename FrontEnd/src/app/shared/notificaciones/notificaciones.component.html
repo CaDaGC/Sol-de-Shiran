@@ -1,0 +1,9 @@
+<div #panel popover="manual" class="notificaciones">
+  @if (notificaciones.aviso(); as aviso) {
+    <div class="aviso toast show" [class.aviso-error]="aviso.tipo === 'error'" [attr.role]="aviso.tipo === 'error' ? 'alert' : 'status'" [attr.aria-live]="aviso.tipo === 'error' ? 'assertive' : 'polite'" aria-atomic="true">
+      <div class="aviso-icono" aria-hidden="true">{{ aviso.tipo === 'error' ? '!' : '✓' }}</div>
+      <div class="aviso-texto"><strong>{{ aviso.tipo === 'error' ? 'No se pudo completar la acción' : 'Acción completada' }}</strong><p>{{ aviso.mensaje }}</p></div>
+      <button type="button" (click)="notificaciones.cerrar()" aria-label="Cerrar notificación">×</button>
+    </div>
+  }
+</div>

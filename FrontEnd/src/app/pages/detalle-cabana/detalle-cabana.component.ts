@@ -1,3 +1,5 @@
+import { ConfirmarDirective } from '../../shared/confirmar/confirmar.directive';
+import {cruzaHorario, cruzaRango} from '../../models/reserva-tiempo';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
   Component,
@@ -22,6 +24,11 @@ import {
 import { AuthService } from '../../services/auth';
 import { CabanaService } from '../../services/cabana.service';
 import { ReservasService } from '../../services/reservas.service';
+import { CheckoutRetornoService } from '../../services/checkout-retorno.service';
+import { PagoModalComponent } from '../../shared/pago-modal/pago-modal.component';
+
+import { PublicNavbarComponent } from '../../shared/public-navbar/public-navbar.component';
+import { ResenasCabanaComponent } from './resenas-cabana.component';
 
 interface DiaCalendario {
   fecha: string;
@@ -33,7 +40,7 @@ interface DiaCalendario {
 @Component({
   selector: 'app-detalle-cabana',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [ConfirmarDirective, CommonModule, RouterLink, PagoModalComponent, ResenasCabanaComponent, PublicNavbarComponent],
   templateUrl: './detalle-cabana.component.html',
   styleUrl: './detalle-cabana.component.css'
 })
@@ -56,6 +63,10 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   readonly cargandoFechasOcupadas = signal(false);
   readonly mensajeFechasOcupadas = signal('');
 
+  readonly intervalos = signal<{inicio:string;fin:string}[]>([]);
+  readonly horaIngreso = () => '11:00';
+  readonly horaSalida = () => '13:00';
+  readonly mensajeRango = signal('');
   readonly fechaIngreso = signal('');
   readonly fechaSalida = signal('');
   readonly adultos = signal(1);
@@ -97,6 +108,12 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     () => this.imagenes()[this.indiceImagen()] ?? ''
   );
 
+  readonly nochesSeleccionadas = computed(() => {
+    const entrada = this.fechaIngreso(), salida = this.fechaSalida();
+    if (!entrada || !salida || salida <= entrada) return 0;
+    return Math.round((Date.parse(salida + 'T00:00:00Z') - Date.parse(entrada + 'T00:00:00Z')) / 86400000);
+  });
+
   readonly puedeCotizar = computed(() => {
     const detalle = this.cabana();
 
@@ -104,14 +121,19 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       detalle &&
       this.fechaIngreso() >= this.fechaMinima &&
       this.fechaSalida() > this.fechaIngreso() &&
+      !cruzaRango(this.fechaIngreso(), this.fechaSalida(), this.intervalos()) &&
+      /^\d{2}:\d{2}$/.test(this.horaIngreso()) &&
       this.totalHuespedes() >= 1 &&
       this.totalHuespedes() <= detalle.aforoMaximo
     );
   });
 
   readonly mensajeSeleccionFechas = computed(() => {
+    if (this.mensajeRango()) return this.mensajeRango();
     if (this.reservaCreada()) {
-      return 'Hay un bloqueo temporal activo para estas fechas.';
+      return this.reservaCreada()?.estadoReserva === 'CONFIRMADA'
+        ? 'Tu reserva está confirmada para estas fechas.'
+        : 'Hay un bloqueo temporal activo para estas fechas.';
     }
 
     if (!this.fechaIngreso()) {
@@ -119,7 +141,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
     }
 
     if (!this.fechaSalida()) {
-      return 'Ahora selecciona la fecha de salida posterior a la entrada.';
+      return 'Selecciona una fecha de salida posterior al ingreso.';
     }
 
     if (this.fechaSalida() <= this.fechaIngreso()) {
@@ -136,17 +158,28 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   readonly puedeCrearReserva = computed(() =>
     Boolean(
       this.cotizacion()?.disponible &&
+      this.cotizacion()?.fechaIngreso === this.fechaIngreso() &&
+      this.cotizacion()?.fechaSalida === this.fechaSalida() &&
+      this.cotizacion()?.horaIngreso?.slice(0,5) === this.horaIngreso() &&
+      this.cotizacion()?.cantidadHuespedes === this.totalHuespedes() &&
       !this.cargandoCotizacion() &&
       !this.creandoReserva() &&
       !this.reservaCreada()
     )
   );
 
+  readonly transaccionRetorno = signal(0);
+  private readonly retornoCheckout = inject(CheckoutRetornoService);
+  pagoConfirmado(): void {
+    if (this.temporizadorReserva) clearTimeout(this.temporizadorReserva);
+    this.reservaCreada.update(r => r ? { ...r, estadoReserva: 'CONFIRMADA' } : r);
+  }
   private readonly platformId = inject(PLATFORM_ID);
   private cotizacionSubscription?: Subscription;
   private fechasOcupadasSubscription?: Subscription;
   private temporizadorReserva?: ReturnType<typeof setTimeout>;
   private idCabana = 0;
+  private refresco?: ReturnType<typeof setInterval>;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -157,6 +190,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) this.refresco = setInterval(() => { if(this.modalReservaAbierto() && !this.creandoReserva()) this.consultarFechasOcupadas(); },15000);
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.idCabana = Number(this.route.snapshot.paramMap.get('id'));
@@ -178,6 +212,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         ? fechaSalidaParametro
         : ''
     );
+
     this.adultos.set(Math.max(1, Number(params.get('adultos') ?? 1)));
     this.ninos.set(Math.max(0, Number(params.get('ninos') ?? 0)));
 
@@ -188,11 +223,21 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.modalReservaAbierto.set(abrirReserva);
+    const idTransaccion = Number(params.get('transaccion'));
+    const contexto = this.retornoCheckout.obtener(idTransaccion);
+    if (contexto && contexto.reserva.idCabana === this.idCabana) {
+      this.reservaCreada.set(contexto.reserva);
+      this.cotizacion.set(contexto.cotizacion ?? null);
+      this.fechaIngreso.set(contexto.reserva.fechaIngreso); this.fechaSalida.set(contexto.reserva.fechaSalida);
+      this.adultos.set(contexto.adultos); this.ninos.set(contexto.ninos); this.indiceImagen.set(contexto.imagen);
+      this.transaccionRetorno.set(idTransaccion); this.modalReservaAbierto.set(true);
+      window.scrollTo(0, contexto.scroll);
+    } else this.modalReservaAbierto.set(abrirReserva);
     this.cargarDetalle();
   }
 
   ngOnDestroy(): void {
+    if(this.refresco) clearInterval(this.refresco);
     this.cotizacionSubscription?.unsubscribe();
     this.fechasOcupadasSubscription?.unsubscribe();
 
@@ -236,7 +281,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         if (this.modalReservaAbierto()) {
           this.consultarFechasOcupadas();
 
-          if (this.puedeCotizar()) {
+          if (this.puedeCotizar() && !this.reservaCreada()) {
             this.consultarDisponibilidad();
           }
         }
@@ -272,11 +317,15 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   }
 
   cerrarConfirmacionReserva(): void {
-    // Cierra solo la confirmación. El calendario queda detrás, abierto.
+
     this.confirmacionReservaAbierta.set(false);
   }
 
   seleccionarDia(dia: DiaCalendario): void {
+    if (this.cargandoFechasOcupadas() || this.mensajeFechasOcupadas()) return;
+
+    this.cotizacionSubscription?.unsubscribe();
+    this.cargandoCotizacion.set(false);
     if (
       dia.pasado ||
       dia.fecha < this.fechaMinima ||
@@ -286,30 +335,18 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const entradaActual = this.fechaIngreso();
-    const salidaActual = this.fechaSalida();
-    const vaAIniciarRango =
-      !entradaActual || Boolean(salidaActual) || dia.fecha <= entradaActual;
-
-    // Una noche ocupada no puede ser entrada. Sí se permite probarla como salida,
-    // pues ese día puede ser el check-out de otra reserva.
-    if (vaAIniciarRango && this.fechaOcupada(dia.fecha)) {
-      this.mensajeReserva.set(
-        'Esa fecha tiene una noche ocupada. Selecciona otra fecha de entrada.'
-      );
+    if (this.fechaOcupada(dia.fecha)) {
+      this.mensajeRango.set('El intervalo incluye fechas ocupadas. Elige una salida anterior o cambia la fecha de ingreso.');
       return;
     }
-
-    this.mensajeReserva.set('');
+    this.mensajeRango.set('');
     this.cotizacion.set(null);
     this.mensajeCotizacion.set('');
-
-    if (vaAIniciarRango) {
+    if (!this.fechaIngreso() || this.fechaSalida() || dia.fecha <= this.fechaIngreso()) {
       this.fechaIngreso.set(dia.fecha);
       this.fechaSalida.set('');
       return;
     }
-
     this.fechaSalida.set(dia.fecha);
     this.consultarDisponibilidad();
   }
@@ -361,7 +398,10 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   }
 
   fechaOcupada(fecha: string): boolean {
-    return this.fechasOcupadas().has(fecha);
+    if (this.fechaIngreso() && !this.fechaSalida() && fecha > this.fechaIngreso()) {
+      return cruzaRango(this.fechaIngreso(), fecha, this.intervalos());
+    }
+    return cruzaHorario(fecha,this.horaIngreso(),this.intervalos(),this.horaSalida());
   }
 
   estaEnEstadia(fecha: string): boolean {
@@ -390,9 +430,10 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
 
     const mes = this.mesMostrado();
     const desde = new Date(mes.getFullYear(), mes.getMonth(), 1);
-    const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
+    const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 1);
 
-    const desdeTexto = this.fechaLocal(desde);
+    const inicioMes = this.fechaLocal(desde);
+    const desdeTexto = this.fechaIngreso() && this.fechaIngreso() < inicioMes ? this.fechaIngreso() : inicioMes;
     const hastaTexto = this.fechaLocal(ultimoDia);
 
     this.fechasOcupadasSubscription?.unsubscribe();
@@ -407,6 +448,13 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: respuesta => {
+          if (!respuesta.intervalos) {
+            this.mensajeFechasOcupadas.set('Actualiza reservas-service para consultar los horarios.');
+            this.cargandoFechasOcupadas.set(false);
+            return;
+          }
+          if(JSON.stringify(this.intervalos()) !== JSON.stringify(respuesta.intervalos)) this.cotizacion.set(null);
+          this.intervalos.set(respuesta.intervalos);
           this.fechasOcupadas.set(
             new Set(respuesta.fechasOcupadas ?? [])
           );
@@ -439,10 +487,18 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         this.idCabana,
         this.fechaIngreso(),
         this.fechaSalida(),
-        this.totalHuespedes()
+        this.totalHuespedes(), this.horaIngreso(), this.horaSalida()
       )
       .subscribe({
         next: resultado => {
+          if (resultado.fechaIngreso !== this.fechaIngreso()
+            || resultado.fechaSalida !== this.fechaSalida()
+            || resultado.horaIngreso?.slice(0,5) !== this.horaIngreso()
+            || resultado.cantidadHuespedes !== this.totalHuespedes()) {
+            this.cotizacion.set(null);
+            this.cargandoCotizacion.set(false);
+            return;
+          }
           this.cotizacion.set(resultado);
           this.mensajeCotizacion.set(resultado.mensaje);
           this.cargandoCotizacion.set(false);
@@ -476,6 +532,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
         idCabana: this.idCabana,
         fechaIngreso: this.fechaIngreso(),
         fechaSalida: this.fechaSalida(),
+        horaIngreso: this.horaIngreso(), horaSalida: this.horaSalida(),
         cantidadHuespedes: this.totalHuespedes()
       })
       .subscribe({
@@ -484,7 +541,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
           this.creandoReserva.set(false);
           this.confirmacionReservaAbierta.set(true);
 
-          // Actualiza el calendario para marcar el nuevo bloqueo.
+
           this.consultarFechasOcupadas();
           this.programarExpiracionReserva(reserva);
         },
@@ -527,7 +584,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
   formatearFechaHora(fechaHora: string): string {
     if (!fechaHora) return '—';
 
-    // LocalDateTime del backend no lleva zona; se interpreta como hora local.
+
     return new Intl.DateTimeFormat('es-PE', {
       day: '2-digit',
       month: '2-digit',
@@ -539,6 +596,8 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
 
   etiquetaDia(dia: DiaCalendario): string {
     const fecha = this.formatearFecha(dia.fecha);
+    if (this.cargandoFechasOcupadas() || this.mensajeFechasOcupadas())
+      return `${fecha}, disponibilidad sin confirmar`;
 
     if (dia.pasado) return `${fecha}, fecha pasada no disponible`;
     if (!dia.mesActual) return `${fecha}, fuera del mes mostrado`;
@@ -546,7 +605,7 @@ export class DetalleCabanaComponent implements OnInit, OnDestroy {
       return `${fecha}, rango seleccionado no disponible`;
     }
     if (this.fechaOcupada(dia.fecha)) {
-      return `${fecha}, noche ocupada`;
+      return `${fecha}, fecha no disponible`;
     }
     if (this.esDiaLimite(dia.fecha)) return `${fecha}, seleccionada`;
     if (this.estaEnEstadia(dia.fecha)) return `${fecha}, dentro de tu estadía`;

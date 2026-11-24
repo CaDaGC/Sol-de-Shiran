@@ -1,3 +1,5 @@
+import { FormularioDirective } from '../../shared/formulario/formulario.directive';
+import { MostrarContrasenaDirective } from '../../shared/mostrar-contrasena/mostrar-contrasena.directive';
 import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import {
@@ -11,12 +13,12 @@ import {
   Router,
   RouterLink
 } from '@angular/router';
-import { AuthResponse, AuthService } from '../../services/auth';
+import { AuthResponse, AuthService, inicioPorRol } from '../../services/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [FormularioDirective, MostrarContrasenaDirective, CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
@@ -32,6 +34,10 @@ export class LoginComponent {
     private readonly router: Router,
     private readonly route: ActivatedRoute
   ) {
+    if (this.route.snapshot.queryParamMap.get('sesion') === 'expirada'
+        || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('sesionExpirada') === 'true')) {
+      this.errorMessage.set('Tu sesión expiró. Inicia sesión nuevamente.');
+    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
@@ -60,7 +66,7 @@ export class LoginComponent {
           returnUrl.startsWith('/') &&
           !returnUrl.startsWith('//')
             ? returnUrl
-            : '/catalogo';
+            : inicioPorRol(response.rol);
 
         void this.router.navigateByUrl(destino);
       },

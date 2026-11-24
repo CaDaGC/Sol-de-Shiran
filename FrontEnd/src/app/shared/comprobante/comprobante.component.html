@@ -1,0 +1,8 @@
+<button class="receipt-button" type="button" (click)="abrir()">Ver comprobante de pago</button>
+<dialog #visor aria-labelledby="receipt-title" (cancel)="$event.preventDefault(); cerrar()" (click)="cerrarFondo($event)">
+  <header><h2 id="receipt-title">Comprobante de pago del adelanto</h2><button type="button" aria-label="Cerrar comprobante" [disabled]="descargando()" (click)="cerrar()">×</button></header>
+  @if(cargando()){<p role="status">Preparando comprobante…</p>}
+  @if(error()){<p class="error" role="alert">{{ error() }}</p><button type="button" (click)="abrir()" [disabled]="cargando()">Reintentar</button>}
+  @if(vista(); as pdf){<iframe [src]="pdf" title="Vista previa del comprobante de pago"></iframe>}
+  <footer><button class="primary" type="button" (click)="descargar()" [disabled]="!vista() || descargando()">{{ descargando() ? 'Guardando…' : 'Descargar comprobante de pago' }}</button><button type="button" [disabled]="descargando()" (click)="cerrar()">Cerrar</button></footer>
+</dialog>

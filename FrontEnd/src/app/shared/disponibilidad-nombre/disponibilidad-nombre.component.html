@@ -1,0 +1,19 @@
+<div class="disponibilidad-nombre" aria-live="polite" aria-atomic="true">
+  @switch (estado()) {
+    @case ('consultando') { <p class="nombre-ayuda">Comprobando disponibilidad…</p> }
+    @case ('disponible') { <p class="nombre-disponible">{{ resultado() ? 'Nombre de usuario disponible.' : 'Este es tu nombre de usuario actual.' }}</p> }
+    @case ('ocupado') {
+      <p class="nombre-ocupado">Este nombre de usuario ya está ocupado.</p>
+      @if (resultado()?.sugerencias?.length) {
+        <p class="nombre-ayuda">Puedes elegir uno de estos nombres disponibles:</p>
+        <div class="sugerencias" role="group" aria-label="Nombres de usuario disponibles">
+          @for (sugerencia of resultado()!.sugerencias.slice(0, 2); track sugerencia) {
+            <button type="button" (click)="seleccionar.emit(sugerencia)">{{ sugerencia }}</button>
+          }
+        </div>
+      } @else { <p class="nombre-ayuda">Prueba agregando otra palabra o algunos números.</p> }
+    }
+    @case ('error') { <p class="nombre-ayuda">No pudimos comprobar el nombre. Se validará nuevamente al guardar.</p> }
+    @default { <p class="nombre-ayuda">Este nombre será público en tus reseñas y debe ser único.</p> }
+  }
+</div>

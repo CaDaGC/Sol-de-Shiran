@@ -1,0 +1,86 @@
+package pe.edu.upeu.soldeshiran.reservas_service.service;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import java.util.*;
+import java.time.*;
+import java.math.BigDecimal;
+import pe.edu.upeu.soldeshiran.reservas_service.repository.ReservaRepository;
+import pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient;
+import pe.edu.upeu.soldeshiran.reservas_service.model.*;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.CheckInRequest;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
+class CheckInTest {
+ ReservaRepository repo; CatalogoClient catalogo; ReservaPagoInternoService service; Reserva r;
+ @BeforeEach void setup() {
+  repo=mock(ReservaRepository.class);catalogo=mock(CatalogoClient.class);service=new ReservaPagoInternoService(repo,catalogo);
+  ReflectionTestUtils.setField(service,"token","internal");
+  r=new Reserva();r.setIdReserva(3L);r.setIdCabana(4L);r.setEstadoReserva(EstadoReserva.CONFIRMADA);
+  r.setSaldoPendiente(new BigDecimal("125.00"));r.setMontoTotal(new BigDecimal("250.00"));
+  var hoy=LocalDate.now(ZoneId.of("America/Lima"));r.setFechaIngreso(hoy);r.setFechaSalida(hoy.plusDays(1));
+  when(repo.bloquearPorId(3L)).thenReturn(Optional.of(r));
+ }
+ @Test void poneSaldoCeroYEstadia() {
+  service.checkIn(3L,new CheckInRequest("RESTANTE-7",new BigDecimal("125.00")));
+  assertEquals(EstadoReserva.OCUPADA,r.getEstadoReserva());assertEquals(0,r.getSaldoPendiente().signum());
+  verify(catalogo).ocupar(4L,3L,"internal");
+ }
+ @Test void reintentoMismaReferenciaNoRepiteOcupacion() {
+  var request=new CheckInRequest("RESTANTE-7",new BigDecimal("125.00"));service.checkIn(3L,request);service.checkIn(3L,request);
+  verify(catalogo,times(1)).ocupar(any(),any(),any());
+ }
+ @Test void conflictoDeOcupacionConservaElSaldoYPermiteReintentarTrasCheckout() {
+  var request = new CheckInRequest("RESTANTE-7", new BigDecimal("125.00"));
+  String detalle = "La cabaña sigue ocupada por la reserva #29.";
+  var httpRequest = feign.Request.create(feign.Request.HttpMethod.POST, "http://catalogo",
+          Map.of(), null, java.nio.charset.StandardCharsets.UTF_8, null);
+  var conflicto = feign.FeignException.errorStatus("ocupar", feign.Response.builder()
+          .request(httpRequest).status(409)
+          .body("{\"detail\":\"" + detalle + "\"}", java.nio.charset.StandardCharsets.UTF_8).build());
+  doThrow(conflicto).doNothing().when(catalogo).ocupar(4L, 3L, "internal");
+
+  var error = assertThrows(ResponseStatusException.class, () -> service.checkIn(3L, request));
+  assertEquals(409, error.getStatusCode().value());
+  assertEquals(detalle, error.getReason());
+  assertEquals(EstadoReserva.CONFIRMADA, r.getEstadoReserva());
+  assertEquals(new BigDecimal("125.00"), r.getSaldoPendiente());
+
+  service.checkIn(3L, request);
+  assertEquals(EstadoReserva.OCUPADA, r.getEstadoReserva());
+  assertEquals("RESTANTE-7", r.getReferenciaPagoRestante());
+ }
+ @Test void rechazaMontoAlterado() {
+  assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",BigDecimal.ONE)));
+  verifyNoInteractions(catalogo);
+ }
+ @Test void consultaDeSaldoNoPermitePrepararUnCobroFuturo() {
+  r.setFechaIngreso(LocalDate.now(ZoneId.of("America/Lima")).plusDays(1));
+  when(repo.findById(3L)).thenReturn(Optional.of(r));
+  var error=assertThrows(ResponseStatusException.class,()->service.saldoCheckIn(3L));
+  assertEquals(409,error.getStatusCode().value());
+  verify(repo,never()).saveAndFlush(any());
+  verifyNoInteractions(catalogo);
+ }
+ @Test void bloqueaIngresoDesdeElDiaDeSalida() {
+  r.setFechaIngreso(LocalDate.now(ZoneId.of("America/Lima")).minusDays(1));
+  r.setFechaSalida(LocalDate.now(ZoneId.of("America/Lima")));
+  assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));
+  verifyNoInteractions(catalogo);
+ }
+ @Test void rechazaIngresoFuturoYReservaCancelada() {
+  r.setFechaIngreso(r.getFechaIngreso().plusDays(1));
+  assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));
+  r.setEstadoReserva(EstadoReserva.CANCELADA);
+  assertThrows(ResponseStatusException.class,()->service.checkIn(3L,new CheckInRequest("x",new BigDecimal("125.00"))));verifyNoInteractions(catalogo);
+ }
+
+ @Test void bloqueaSaldoSiFaltaUnaHoraAunqueSeaElMismoDia() {
+  var futuro=LocalDateTime.now(ZoneId.of("America/Lima")).plusHours(1);
+  r.setFechaIngreso(futuro.toLocalDate());r.setHoraIngreso(futuro.toLocalTime());
+  r.setFechaSalida(futuro.plusHours(24).toLocalDate());r.setHoraSalida(futuro.toLocalTime());
+  when(repo.findById(3L)).thenReturn(Optional.of(r));
+  assertEquals(409,assertThrows(ResponseStatusException.class,()->service.saldoCheckIn(3L)).getStatusCode().value());
+  verifyNoInteractions(catalogo);
+ }
+}

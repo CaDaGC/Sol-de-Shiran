@@ -1,0 +1,7 @@
+Diagramas del Sprint 1 de Sol de Shirá
+Corte histórico 776a2ec del 05/11/2026.
+PNG: imágenes de alta resolución. MMD: fuente editable Mermaid para importar o modificar.
+El modelo de datos reproduce la imagen recibida. Las REF entre dominios son lógicas y la vinculación de webhook es propuesta en la captura.
+La extensión pago_restante se verifica en el código histórico. El código configura MySQL; los tipos NUMBER y VARCHAR2 de la captura requieren conciliación con el DDL.
+Las secuencias describen el flujo principal. La validación integral del corte queda pendiente.
+El burndown conserva la serie fuente, incluido el saldo planificado de -1.

@@ -1,8 +1,11 @@
+import { Persona } from './usuario.model';
 export interface CotizacionReservaResponse {
   idCabana: number;
   nombreCabana: string;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
   noches: number;
   tarifaNoche: number;
@@ -18,21 +21,27 @@ export interface FechasOcupadasResponse {
   desde: string;
   hasta: string;
   fechasOcupadas: string[];
+  intervalos?: { inicio: string; fin: string }[];
 }
 
 export interface CrearReservaRequest {
   idCabana: number;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
 }
 
 export interface ReservaResponse {
   idReserva: number;
+  codigo?: string;
   idCabana: number;
   idUsuario: number;
   fechaIngreso: string;
   fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
   cantidadHuespedes: number;
   tarifaNocheAplicada: number;
   montoTotal: number;
@@ -41,3 +50,88 @@ export interface ReservaResponse {
   estadoReserva: string;
   expiraEn: string;
 }
+
+export type GrupoReservasCliente = 'TODAS' | 'PENDIENTES' | 'CONFIRMADAS' | 'EN_ESTANCIA' | 'FINALIZADAS';
+
+export interface MiReservaResponse extends ReservaResponse {
+  nombreCabana: string | null;
+  imagenPrincipal: string | null;
+  grupo: GrupoReservasCliente;
+  pagoDisponible: boolean;
+}
+
+export interface MisReservasPaginaResponse {
+  content: MiReservaResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ReservaPanelResponse {
+  idReserva: number;
+  codigo?: string;
+  idUsuario: number;
+  nombreUsuario: string | null;
+  emailUsuario: string | null;
+  idCabana: number;
+  nombreCabana: string | null;
+  fechaIngreso: string;
+  fechaSalida: string;
+  horaIngreso?: string;
+  horaSalida?: string;
+  cantidadHuespedes: number;
+  montoTotal: number;
+  montoAdelanto: number;
+  saldoPendiente: number;
+  estadoReserva: string;
+}
+
+export interface ReservasPaginaResponse {
+  content: ReservaPanelResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export const MEDIOS_PAGO_DANOS = {
+  EFECTIVO: 'Efectivo',
+  TARJETA: 'Tarjeta',
+  YAPE: 'Yape',
+  PLIN: 'Plin'
+} as const;
+
+export type MedioPagoDanos = keyof typeof MEDIOS_PAGO_DANOS;
+
+export interface CheckoutRequest {
+  danos?: { descripcion: string; monto: number; medioPago: MedioPagoDanos };
+}
+
+export interface CheckoutResponse {
+  estadoReserva: string;
+  checkout: {
+    fecha: string;
+    descripcionDanos: string | null;
+    montoDanos: number | null;
+    medioPago: MedioPagoDanos | null;
+  };
+}
+
+export interface ReservaDetalleResponse extends ReservaPanelResponse {
+  persona?: Persona | null;
+  fotoPerfilUsuario?: string | null;
+  checkout?: CheckoutResponse['checkout'] | null;
+  tarifaNocheAplicada: number;
+  expiraEn: string;
+  fechaCreacion: string | null;
+}
+
+export const ESTADOS_RESERVA: Record<string, string> = {
+  PENDIENTE_PAGO: 'Pendiente de pago',
+  CONFIRMADA: 'Confirmada',
+  OCUPADA: 'En estadía',
+  FINALIZADA: 'Finalizada',
+  CANCELADA: 'Cancelada',
+  EXPIRADA: 'Expirada'
+};

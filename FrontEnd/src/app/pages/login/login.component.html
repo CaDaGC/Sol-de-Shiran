@@ -1,47 +1,85 @@
-<div class="login-container">
-  <div class="login-card">
-    <div class="login-header">
-      <a class="back-to-catalog" routerLink="/catalogo">← Volver al catálogo</a>
-
-      <div class="logo-badge">SOL DE SHIRÁN</div>
-      <h2>Iniciar sesión</h2>
-      <p>Complejo Turístico</p>
-    </div>
-
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="email">Correo electrónico</label>
-        <input
-          type="email"
-          id="email"
-          formControlName="email"
-          placeholder="admin@soldeshiran.com"
-          autocomplete="username"
+<main class="login-page container-fluid px-0">
+  <div class="row g-0 min-vh-100">
+    <!-- Parte presentación -->
+    <section
+      class="login-brand col-12 col-lg-6 d-flex flex-column justify-content-between"
+      aria-label="Sol de Shirán"
+    >
+      <a routerLink="/catalogo" aria-label="Volver al catálogo de Sol de Shirán">
+        <img
+          class="login-logo"
+          src="/images/logo-sol-shiran.png"
+          alt="Complejo Turístico Sol de Shirán"
+          width="1698"
+          height="926"
         />
+      </a>
+      <div class="brand-message d-none d-lg-block">
+        <p>DESCANSO · NATURALEZA · BIENESTAR</p>
+        <h2>Encuentra tu espacio<br />para descansar</h2>
       </div>
-
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          placeholder="••••••••"
-          autocomplete="current-password"
-        />
+    </section>
+    <!-- Parte formulario -->
+    <section
+      class="login-content col-12 col-lg-6 d-flex align-items-center justify-content-center"
+      aria-labelledby="login-title"
+    >
+      <div class="login-form w-100">
+        <a class="back-to-catalog" routerLink="/catalogo">← Volver al catálogo</a>
+        <header class="mb-4 mb-md-5">
+          <h1 id="login-title">Iniciar sesión</h1>
+          <p>Entra para ver y gestionar tus reservas.</p>
+        </header>
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" [attr.aria-busy]="enviando()">
+          <div class="form-group mb-4">
+            <label for="email">Correo electrónico</label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email" required
+              placeholder="tucorreo@ejemplo.com"
+              autocomplete="username"
+              [attr.aria-invalid]="
+                loginForm.get('email')?.touched && loginForm.get('email')?.invalid
+              "
+              aria-describedby="email-error"
+            />
+            @if (loginForm.get('email')?.touched && loginForm.get('email')?.invalid) {
+              <small id="email-error" class="field-error"
+                >Ingresa un correo electrónico válido.</small
+              >
+            }
+          </div>
+          <div class="form-group mb-4">
+            <label for="password">Contraseña</label>
+            <input
+              type="password" appMostrarContrasena="contraseña"
+              id="password"
+              formControlName="password" required
+              placeholder="Tu contraseña"
+              autocomplete="current-password"
+              [attr.aria-invalid]="
+                loginForm.get('password')?.touched && loginForm.get('password')?.invalid
+              "
+              aria-describedby="password-error"
+            />
+            @if (loginForm.get('password')?.touched && loginForm.get('password')?.invalid) {
+              <small id="password-error" class="field-error">Ingresa tu contraseña.</small>
+            }
+          </div>
+          <div *ngIf="errorMessage()" class="error-msg mb-4" role="alert">{{ errorMessage() }}</div>
+          <button
+            type="submit"
+            [disabled]="enviando()"
+            class="btn-submit w-100 mt-2"
+          >
+            {{ enviando() ? 'Ingresando...' : 'Iniciar sesión' }}
+          </button>
+        </form>
+        <p class="registration-link text-center mt-4 mb-0">
+          ¿Aún no tienes cuenta? <a routerLink="/registro">Crear cuenta</a>
+        </p>
       </div>
-
-      <div *ngIf="errorMessage()" class="error-msg" role="alert">
-        {{ errorMessage() }}
-      </div>
-
-      <button
-        type="submit"
-        [disabled]="loginForm.invalid || enviando()"
-        class="btn-submit"
-      >
-        {{ enviando() ? 'Ingresando...' : 'Ingresar' }}
-      </button>
-    </form>
+    </section>
   </div>
-</div>
+</main>

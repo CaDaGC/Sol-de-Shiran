@@ -1,0 +1,5 @@
+flowchart LR
+ Cliente["Cliente [Persona]"] -->|"Consulta, reserva y adelanto"| Sistema["Sol de Shirá [Sistema]"]
+ Trabajador["Trabajador [Persona]"] -->|"Panel, detalle, saldo y check-in"| Sistema
+ Sistema -->|"Crear checkout"| MP["Mercado Pago [Sistema externo]"]
+ MP -->|"Notificación verificada"| Sistema

@@ -6,13 +6,12 @@ spring:
     name: ms-reservas
 
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8089/}"
 
   datasource:
     url: jdbc:mysql://localhost:3307/db_reservas?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima
-    username: root
-    password: mysql123
-
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update

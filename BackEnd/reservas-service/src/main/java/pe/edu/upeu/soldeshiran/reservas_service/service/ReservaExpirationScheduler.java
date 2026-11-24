@@ -17,8 +17,8 @@ public class ReservaExpirationScheduler {
 
     @Scheduled(fixedDelayString = "${reservas.limpieza-cada-ms:60000}")
     @Transactional
-    public void expirarReservasVencidas() {
-        reservaRepository.expirarPendientesVencidas(
+    public void eliminarReservasVencidas() {
+        reservaRepository.eliminarReservasVencidas(
                 EstadoReserva.PENDIENTE_PAGO,
                 EstadoReserva.EXPIRADA,
                 LocalDateTime.now()

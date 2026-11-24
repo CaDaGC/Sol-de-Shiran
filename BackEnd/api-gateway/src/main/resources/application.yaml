@@ -5,7 +5,7 @@ spring:
   application:
     name: api-gateway
   config:
-    import: "optional:configserver:http://localhost:8089/"
+    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8089/}"
   cloud:
     config:
       override-none: false
@@ -23,4 +23,4 @@ eureka:
     instance-id: ${spring.application.name}:${server.port}
 
 jwt:
-  secret: ESTA_ES_UNA_CLAVE_SECRETA_MUY_LARGA_PARA_FIRMAR_TOKENS_123456
+  secret: ${JWT_SECRET}

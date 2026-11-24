@@ -1,0 +1,120 @@
+package pe.edu.upeu.soldeshiran.reservas_service;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.math.BigDecimal;
+import java.time.*;
+import java.util.*;
+import org.junit.jupiter.api.*;
+import org.springframework.web.server.ResponseStatusException;
+import pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient;
+import pe.edu.upeu.soldeshiran.reservas_service.dto.CheckoutRequest;
+import pe.edu.upeu.soldeshiran.reservas_service.model.*;
+import pe.edu.upeu.soldeshiran.reservas_service.repository.*;
+import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
+import pe.edu.upeu.soldeshiran.reservas_service.service.GestionReservaService;
+
+class GestionReservaTest {
+  ReservaRepository repo;
+  GestionReservaService service;
+  CatalogoClient catalogo;
+  Reserva r;
+  Actor admin = new Actor(1L, "ADMIN");
+
+  @BeforeEach
+  void setup() {
+    repo = mock(ReservaRepository.class);
+    catalogo = mock(CatalogoClient.class);
+    service = new GestionReservaService(repo, mock(BloqueoFechaRepository.class), catalogo);
+    r = new Reserva();
+    r.setIdReserva(1L);
+    r.setIdCabana(1L);
+    r.setIdUsuario(5L);
+    r.setMontoTotal(new BigDecimal("200"));
+    r.setMontoAdelanto(new BigDecimal("100"));
+    r.setSaldoPendiente(new BigDecimal("100"));
+    r.setExpiraEn(LocalDateTime.now().plusMinutes(15));
+    r.setFechaIngreso(LocalDate.now());
+    r.setFechaSalida(LocalDate.now().plusDays(2));
+    when(repo.bloquearPorId(1L)).thenReturn(Optional.of(r));
+    when(repo.findById(1L)).thenReturn(Optional.of(r));
+  }
+
+  @Test
+  void checkinRequiereSaldoCero() {
+    r.setEstadoReserva(EstadoReserva.CONFIRMADA);
+    assertThrows(ResponseStatusException.class, () -> service.checkin(1L, admin));
+  }
+
+  @Test
+  void checkinCorrecto() {
+    r.setEstadoReserva(EstadoReserva.CONFIRMADA);
+    r.setSaldoPendiente(BigDecimal.ZERO);
+    service.checkin(1L, admin);
+    assertEquals(EstadoReserva.OCUPADA, r.getEstadoReserva());
+  }
+
+  @Test
+  void checkoutRequiereOcupada() {
+    assertEquals(409, assertThrows(ResponseStatusException.class,
+        () -> service.checkout(1L, null, admin)).getStatusCode().value());
+    verifyNoInteractions(catalogo);
+  }
+
+  @Test
+  void checkoutSinDanosFinalizaYLiberarEsSeguroEnReintentos() {
+    r.setEstadoReserva(EstadoReserva.OCUPADA);
+
+    service.checkout(1L, null, admin);
+    service.checkout(1L, new CheckoutRequest(null), admin);
+
+    assertEquals(EstadoReserva.FINALIZADA, r.getEstadoReserva());
+    assertNotNull(r.getCheckout().fecha());
+    assertEquals(admin.id(), r.getCheckout().registradoPor());
+    assertNull(r.getCheckout().montoDanos());
+    verify(repo).saveAndFlush(r);
+    verify(catalogo).liberar(eq(1L), eq(1L), nullable(String.class));
+  }
+
+  @Test
+  void checkoutConDanosConservaElCobroYRechazaCambiosEnReintentos() {
+    r.setEstadoReserva(EstadoReserva.OCUPADA);
+    r.setSaldoPendiente(BigDecimal.ZERO);
+    var request = new CheckoutRequest(
+        new CheckoutRequest.Danos("  Toalla dañada  ", new BigDecimal("25.5"), "YAPE"));
+
+    service.checkout(1L, request, admin);
+    service.checkout(1L, request, admin);
+
+    assertEquals("Toalla dañada", r.getCheckout().descripcionDanos());
+    assertEquals(new BigDecimal("25.50"), r.getCheckout().montoDanos());
+    assertEquals("YAPE", r.getCheckout().medioPago());
+    assertEquals(BigDecimal.ZERO, r.getSaldoPendiente());
+    assertEquals(409, assertThrows(ResponseStatusException.class,
+        () -> service.checkout(1L, null, admin)).getStatusCode().value());
+    verify(repo).saveAndFlush(r);
+    verify(catalogo).liberar(eq(1L), eq(1L), nullable(String.class));
+  }
+
+  @Test
+  void clienteNoPuedeRegistrarCheckout() {
+    r.setEstadoReserva(EstadoReserva.OCUPADA);
+    assertEquals(403, assertThrows(ResponseStatusException.class,
+        () -> service.checkout(1L, null, new Actor(5L, "USUARIO"))).getStatusCode().value());
+    verify(repo, never()).saveAndFlush(any());
+    verifyNoInteractions(catalogo);
+  }
+
+  @Test
+  void clienteNoConsultaReservaAjena() {
+    assertThrows(
+        ResponseStatusException.class, () -> service.obtener(1L, new Actor(99L, "USUARIO")));
+  }
+
+  @Test
+  void trabajadorNoCancela() {
+    assertThrows(
+        ResponseStatusException.class, () -> service.cancelar(1L, new Actor(5L, "TRABAJADOR")));
+  }
+}

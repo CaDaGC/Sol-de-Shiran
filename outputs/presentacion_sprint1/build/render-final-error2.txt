@@ -1,0 +1,24 @@
+[MONO] * Assertion at /__w/1/s/src/mono/mono/mini/exceptions-wasm.c:66, condition `<disabled>' not met
+
+Error
+    at Fc (file:///C:/Program%20Files/WindowsApps/OpenAI.CodexPrimaryRuntime.v26-1116-1220-0_26.1116.1220.0_x64__3k8sg7r9htsxt/dependencies/node/node_modules/@oai/artifact-tool/node_modules/@oai/walnut/wasm/dotnet.runtime.33y5wagaqd.js:3:168833)
+    at wasm://wasm/0871f52a:wasm-function[101866]:0x1b15e35
+    at wasm://wasm/0871f52a:wasm-function[98782]:0x1a39b77
+    at wasm://wasm/0871f52a:wasm-function[98705]:0x1a37abf
+    at wasm://wasm/0871f52a:wasm-function[98709]:0x1a37bef
+    at wasm://wasm/0871f52a:wasm-function[98711]:0x1a37c36
+    at wasm://wasm/0871f52a:wasm-function[98710]:0x1a37c07
+    at wasm://wasm/0871f52a:wasm-function[101007]:0x1add2d1
+    at wasm://wasm/0871f52a:wasm-function[100996]:0x1adbba4
+    at wasm://wasm/0871f52a:wasm-function[100994]:0x1adac49
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+ExitStatus {
+  name: 'ExitStatus',
+  message: 'Program terminated with exit(1)',
+  status: 1
+}
+
+Node.js v24.22.3

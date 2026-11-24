@@ -1,7 +1,10 @@
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, Injector, PLATFORM_ID, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { Cuenta } from '../models/usuario.model';
+import { imagenUrl } from '../core/imagen-url';
 import { API_CONFIG } from '../core/api.config';
 
 export interface UsuarioAutenticado {
@@ -18,13 +21,39 @@ export interface AuthResponse {
   rol: string;
 }
 
+export function normalizarRol(rol: string): string {
+  switch (rol.trim().toUpperCase()) {
+    case 'USUARIO': return 'CLIENTE';
+    case 'GUARDIAN':
+    case 'EMPLEADO': return 'TRABAJADOR';
+    case 'DUEÑO':
+    case 'PROPIETARIO': return 'DUENO';
+    default: return rol.trim().toUpperCase();
+  }
+}
+
+export function inicioPorRol(rol?: string): string {
+  switch (normalizarRol(rol ?? '')) {
+    case 'TRABAJADOR': return '/guardian/reservas';
+    case 'CLIENTE': return '/mis-reservas';
+    case 'DUENO': return '/inicio-dueno';
+    case 'ADMIN': return '/guardian/reservas';
+    case '': return '/catalogo';
+    default: return '/inicio-dueno';
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private readonly url = `${API_CONFIG.baseUrl}/auth/login`;
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly injector = inject(Injector);
   private temporizadorExpiracion?: ReturnType<typeof setTimeout>;
+
+  readonly fotoPerfil = signal<string | null>(null);
+  private solicitudFoto = 0;
 
   readonly usuarioActual = signal<UsuarioAutenticado | null>(null);
 
@@ -49,13 +78,15 @@ export class AuthService {
     const usuario: UsuarioAutenticado = {
       nombre: response.nombre?.trim() || 'Usuario',
       email: response.email?.trim() || '',
-      rol: response.rol?.trim() || 'Usuario'
+      rol: normalizarRol(response.rol ?? '')
     };
 
+    sessionStorage.removeItem('sesionExpirada');
     localStorage.setItem('token', response.token);
     localStorage.setItem('usuario', JSON.stringify(usuario));
     this.usuarioActual.set(usuario);
     this.programarExpiracion(response.token);
+    this.cargarFotoPerfil();
   }
 
   estaAutenticado(): boolean {
@@ -64,7 +95,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
 
     if (!token || !this.tokenVigente(token)) {
-      this.cerrarSesion();
+      if (token) this.expirarSesion(); else this.cerrarSesion();
       return false;
     }
 
@@ -77,22 +108,60 @@ export class AuthService {
 
   cerrarSesion(): void {
     this.cancelarTemporizador();
+    this.solicitudFoto++;
+    this.establecerFoto(null);
 
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
+      sessionStorage.removeItem('sesionExpirada');
     }
 
     this.usuarioActual.set(null);
   }
 
+  expirarSesion(): void {
+    this.cerrarSesion();
+    if (!isPlatformBrowser(this.platformId)) return;
+    sessionStorage.setItem('sesionExpirada', 'true');
+
+    queueMicrotask(() => {
+      if (!this.usuarioActual()) void this.injector.get(Router).navigate(['/login'], {
+        queryParams: { sesion: 'expirada' }, replaceUrl: true
+      });
+    });
+  }
+
+  cargarFotoPerfil(): void {
+    if (!this.estaAutenticado()) return;
+    const solicitud = ++this.solicitudFoto;
+    this.http.get<Cuenta>(`${API_CONFIG.baseUrl}/usuarios/me`).subscribe({
+      next: (perfil) => {
+        if (solicitud === this.solicitudFoto) this.actualizarPerfil(perfil);
+      },
+      error: () => {
+        if (solicitud === this.solicitudFoto) this.establecerFoto(null);
+      },
+    });
+  }
+
+  actualizarPerfil(perfil: Cuenta): void {
+    this.solicitudFoto++;
+    const usuario = { nombre: perfil.nombreUsuario || perfil.nombre, email: perfil.email,
+      rol: normalizarRol(perfil.rol) };
+    this.usuarioActual.set(usuario);
+    this.establecerFoto(perfil.fotoPerfil ? imagenUrl(perfil.fotoPerfil) : null);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem('usuario', JSON.stringify(usuario));
+  }
+
+  private establecerFoto(url: string | null): void { this.fotoPerfil.set(url); }
   private restaurarSesion(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
     const token = localStorage.getItem('token');
 
     if (!token || !this.tokenVigente(token)) {
-      this.cerrarSesion();
+      if (token) this.expirarSesion(); else this.cerrarSesion();
       return;
     }
 
@@ -115,7 +184,7 @@ export class AuthService {
           return;
         }
       } catch {
-        // Si el valor local no es JSON válido, recupera lo disponible del JWT.
+
       }
     }
 
@@ -126,23 +195,24 @@ export class AuthService {
     }
   }
 
-  private tokenVigente(token: string): boolean {
+  private expiracionToken(token: string): number {
     const claims = this.leerClaims(token);
-    const expiracion = claims?.['exp'];
+    const exp = claims?.['exp'], iat = claims?.['iat'];
+    if (typeof exp !== 'number') return 0;
 
-    // El backend emite tokens JWT con el claim exp.
-    if (typeof expiracion !== 'number') return false;
+    return typeof iat === 'number' ? Math.min(exp, iat + 3600) : exp;
+  }
 
-    return expiracion * 1000 > Date.now();
+  private tokenVigente(token: string): boolean {
+    return this.expiracionToken(token) * 1000 > Date.now();
   }
 
   private programarExpiracion(token: string): void {
     this.cancelarTemporizador();
 
-    const claims = this.leerClaims(token);
-    const expiracion = claims?.['exp'];
+    const expiracion = this.expiracionToken(token);
 
-    if (typeof expiracion !== 'number') {
+    if (!expiracion) {
       this.cerrarSesion();
       return;
     }
@@ -150,16 +220,16 @@ export class AuthService {
     const milisegundosRestantes = expiracion * 1000 - Date.now();
 
     if (milisegundosRestantes <= 0) {
-      this.cerrarSesion();
+      this.expirarSesion();
       return;
     }
 
-    // El límite permite volver a comprobar tokens con duraciones largas.
+
     const maximoTemporizador = 2_000_000_000;
 
     this.temporizadorExpiracion = setTimeout(() => {
       if (!this.tokenVigente(token)) {
-        this.cerrarSesion();
+        this.expirarSesion();
         return;
       }
 
@@ -219,7 +289,7 @@ export class AuthService {
       this.aTexto(anidado['role']) ||
       'Usuario';
 
-    return { nombre, email, rol };
+    return { nombre, email, rol: normalizarRol(rol) };
   }
 
   private aTexto(valor: unknown): string {

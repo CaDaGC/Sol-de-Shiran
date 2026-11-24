@@ -1,0 +1,294 @@
+<dialog
+  #dialog
+  aria-labelledby="detalle-title"
+  (cancel)="$event.preventDefault(); cerrarModal()"
+  (click)="cerrarDesdeFondo($event)"
+>
+  <div class="detail-modal">
+    <header>
+      <div>
+        <p class="eyebrow">ADMINISTRAR RESERVA</p>
+        <h2 id="detalle-title">Reserva {{ detalle()?.codigo }}</h2>
+      </div>
+      <button
+        type="button"
+        class="close-button"
+        aria-label="Cerrar detalle de reserva"
+        autofocus
+        (click)="cerrarModal()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="detail-body" [attr.aria-busy]="cargando()">
+      @if (cargando()) {
+        <p class="message" role="status">Cargando detalle de la reserva…</p>
+      } @else if (error()) {
+        <div class="message" role="alert">
+          <p>{{ error() }}</p>
+          <button type="button" class="secondary-button" (click)="cargarDetalle()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (detalle(); as reserva) {
+        <section aria-labelledby="estancia-title">
+          <div class="section-heading">
+            <h3 id="estancia-title">Información de la estancia</h3>
+            <span class="status">{{
+              estados[reserva.estadoReserva] || reserva.estadoReserva
+            }}</span>
+          </div>
+          <dl>
+            <div class="wide">
+              <dt>Cabaña</dt>
+              <dd>{{ reserva.nombreCabana || 'Cabaña #' + reserva.idCabana }}</dd>
+            </div>
+            <div>
+              <dt>Ingreso</dt>
+              <dd>
+                {{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}
+                {{ reserva.horaIngreso?.slice(0, 5) }}
+              </dd>
+            </div>
+            <div>
+              <dt>Salida</dt>
+              <dd>
+                {{ reserva.fechaSalida | date: 'dd/MM/yyyy' }} {{ reserva.horaSalida?.slice(0, 5) }}
+              </dd>
+            </div>
+            <div>
+              <dt>Huéspedes</dt>
+              <dd>{{ reserva.cantidadHuespedes }}</dd>
+            </div>
+            <div>
+              <dt>Tarifa por noche</dt>
+              <dd>{{ reserva.tarifaNocheAplicada | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+          </dl>
+        </section>
+        <section aria-labelledby="contacto-title">
+          <h3 id="contacto-title">Datos de contacto</h3>
+          <dl>
+            <div>
+              <dt>Nombre</dt>
+              <dd>{{ reserva.nombreUsuario || 'Usuario #' + reserva.idUsuario }}</dd>
+            </div>
+            @if (reserva.persona; as persona) {
+              <div>
+                <dt>Nombres y apellidos</dt>
+                <dd>{{ persona.nombres }} {{ persona.apellidos }}</dd>
+              </div>
+              <div>
+                <dt>Documento</dt>
+                <dd>{{ persona.tipoDocumento }} {{ persona.numeroDocumento }}</dd>
+              </div>
+              <div>
+                <dt>Teléfono</dt>
+                <dd>{{ persona.telefono }}</dd>
+              </div>
+              <div>
+                <dt>Dirección</dt>
+                <dd>{{ persona.direccion }}</dd>
+              </div>
+            }
+            <div>
+              <dt>Correo electrónico</dt>
+              <dd>{{ reserva.emailUsuario || 'Sin correo disponible' }}</dd>
+            </div>
+          </dl>
+        </section>
+        <section class="payment-summary" aria-labelledby="montos-title">
+          <h3 id="montos-title">Resumen de importes</h3>
+          <dl>
+            <div>
+              <dt>Monto total</dt>
+              <dd>{{ reserva.montoTotal | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Adelanto de la reserva</dt>
+              <dd>{{ reserva.montoAdelanto | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+            </div>
+            <div class="wide balance">
+              <dt>Saldo pendiente</dt>
+              <dd>
+                {{
+                  (['PENDIENTE_PAGO', 'EXPIRADA'].includes(reserva.estadoReserva)
+                    ? reserva.montoTotal
+                    : reserva.saldoPendiente
+                  ) | currency: 'PEN' : 'S/ ' : '1.2-2'
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+        @if (reserva.estadoReserva === 'OCUPADA' || reserva.estadoReserva === 'FINALIZADA') {
+          <app-comprobante [idReserva]="reserva.idReserva"></app-comprobante>
+        }
+        @if (exitoCheckout()) {
+          <p class="payment-success" role="status">{{ exitoCheckout() }}</p>
+        }
+        @if (reserva.checkout; as checkout) {
+          <section aria-labelledby="salida-title">
+            <h3 id="salida-title">Salida registrada</h3>
+            <dl>
+              <div>
+                <dt>Fecha y hora</dt>
+                <dd>{{ checkout.fecha | date: 'dd/MM/yyyy HH:mm' }}</dd>
+              </div>
+              @if (checkout.medioPago; as medioPago) {
+                <div>
+                  <dt>Cobro por daños</dt>
+                  <dd>{{ checkout.montoDanos | currency: 'PEN' : 'S/ ' : '1.2-2' }}</dd>
+                </div>
+                <div class="wide">
+                  <dt>Descripción de los daños</dt>
+                  <dd>{{ checkout.descripcionDanos }}</dd>
+                </div>
+                <div>
+                  <dt>Medio de pago</dt>
+                  <dd>{{ mediosPagoDanos[medioPago] }}</dd>
+                </div>
+              } @else {
+                <div>
+                  <dt>Cobro por daños</dt>
+                  <dd>Sin cobro</dd>
+                </div>
+              }
+            </dl>
+          </section>
+        }
+        @if (reserva.estadoReserva === 'OCUPADA') {
+          <section aria-labelledby="checkout-title">
+            <h3 id="checkout-title">Registrar check-out</h3>
+            <p class="payment-help">
+              Confirma la salida para finalizar la reserva y liberar la cabaña.
+            </p>
+            <form appConfirmar="¿Estás seguro de registrar el check-out? Si indicaste daños, también se registrará el pago presencial correspondiente." #checkoutForm="ngForm" (ngSubmit)="registrarCheckout()">
+              <fieldset [disabled]="guardando()">
+                <label class="checkout-checkbox">
+                  <input type="checkbox" name="huboDanos" [(ngModel)]="huboDanos" />
+                  Registrar cobro por daños
+                </label>
+                @if (huboDanos) {
+                  <p class="payment-help">Ingresa los datos del pago recibido presencialmente.</p>
+                  <label for="descripcion-danos">Descripción de los daños</label>
+                  <textarea
+                    id="descripcion-danos"
+                    name="descripcionDanos"
+                    [(ngModel)]="descripcionDanos"
+                    rows="3"
+                    required
+                    maxlength="500"
+                  ></textarea>
+                  <label for="monto-danos">Importe (S/)</label>
+                  <input
+                    id="monto-danos"
+                    name="montoDanos"
+                    [(ngModel)]="montoDanos"
+                    required
+                    inputmode="decimal"
+                    [pattern]="formatoMontoDanos"
+                  />
+                  <label for="medio-pago-danos">Medio de pago</label>
+                  <select id="medio-pago-danos" name="medioPagoDanos" [(ngModel)]="medioPagoDanos">
+                    @for (medio of mediosPagoDanos | keyvalue; track medio.key) {
+                      <option [value]="medio.key">{{ medio.value }}</option>
+                    }
+                  </select>
+                }
+              </fieldset>
+              <button
+                class="primary-button"
+                type="submit"
+                [disabled]="guardando()"
+              >
+                {{ guardando() ? 'Registrando salida…' : 'Confirmar check-out' }}
+              </button>
+            </form>
+            @if (errorCheckout()) {
+              <p class="payment-error" role="alert">{{ errorCheckout() }}</p>
+            }
+          </section>
+        }
+        @if (exitoPago() && reserva.estadoReserva === 'OCUPADA') {
+          <p class="payment-success" role="status">{{ exitoPago() }}</p>
+        }
+        @if (reserva.estadoReserva === 'CONFIRMADA' && !exitoPago()) {
+          <section aria-labelledby="check-in-title">
+            <h3 id="check-in-title">Pago restante y check-in</h3>
+            <p class="payment-help">
+              Registra el pago recibido para iniciar la estancia. El importe corresponde al saldo
+              pendiente. El ingreso debe estar dentro de las fechas de la reserva.
+            </p>
+            @if (!puedeCobrarHoy()) {
+              <p class="payment-help" role="status">
+                El saldo y el check-in solo se habilitan desde el
+                {{ reserva.fechaIngreso | date: 'dd/MM/yyyy' }}
+                {{ reserva.horaIngreso?.slice(0, 5) }} y antes de la fecha de salida.
+              </p>
+            } @else if (consultandoPago()) {
+              <p role="status">Consultando registro de pago…</p>
+            } @else if (errorConsultaPago()) {
+              <button type="button" class="secondary-button" (click)="consultarPago()">
+                Reintentar consulta de pago
+              </button>
+            } @else {
+              <form [appConfirmar]="registroExistente() ? '¿Estás seguro de reintentar el check-in? El pago existente se conservará sin volver a cobrar.' : '¿Confirmas que recibiste el pago restante y deseas registrar el check-in?'" #pagoForm="ngForm" (ngSubmit)="registrarPago()">
+                <fieldset [disabled]="guardando() || registroExistente()">
+                  <label for="metodo-restante">Método de pago</label>
+                  <select id="metodo-restante" name="metodoPago" [(ngModel)]="metodoPago" required>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="YAPE_BILLETERA">Yape / Billetera</option>
+                  </select>
+                  @if (metodoPago !== 'EFECTIVO') {
+                    <label for="operacion-restante">Número de operación</label>
+                    <input
+                      id="operacion-restante"
+                      name="numeroOperacion"
+                      [(ngModel)]="numeroOperacion"
+                      required
+                      pattern=".*\S.*"
+                      maxlength="100"
+                      autocomplete="off"
+                      aria-describedby="operacion-ayuda"
+                    />
+                    <small id="operacion-ayuda"
+                      >Ingresa la referencia del comprobante de pago recibido.</small
+                    >
+                  }
+                </fieldset>
+                @if (registroExistente()) {
+                  <p class="payment-help">
+                    El pago ya está registrado con este método. Falta completar el check-in.
+                    Reintenta sin volver a cobrar; el método se conserva para evitar modificar o
+                    duplicar el pago.
+                  </p>
+                }
+                <button
+                  class="primary-button"
+                  type="submit"
+                  [disabled]="guardando()"
+                >
+                  {{
+                    guardando()
+                      ? 'Completando check-in…'
+                      : registroExistente()
+                        ? 'Reintentar check-in'
+                        : 'Registrar pago y realizar check-in'
+                  }}
+                </button>
+              </form>
+            }
+            @if (errorPago()) {
+              <p class="payment-error" role="alert">{{ errorPago() }}</p>
+            }
+          </section>
+        }
+      }
+    </div>
+    <footer>
+      <button type="button" class="secondary-button" (click)="cerrarModal()">Cerrar</button>
+    </footer>
+  </div>
+</dialog>

@@ -1,0 +1,25 @@
+flowchart TB
+ Persona["Cliente / trabajador"] --> WEB
+ subgraph SISTEMA["Sol de Shirá · Sprint 1"]
+ WEB["Aplicación web Angular [TypeScript]"] -->|"HTTPS/REST"| GW["API Gateway [Spring Cloud]"]
+ GW --> AUTH["auth-service [Spring Boot]"]
+ GW --> USR["usuario-service [Spring Boot]"]
+ GW --> CAT["catalogo-service [Spring Boot]"]
+ GW --> RES["reservas-service [Spring Boot]"]
+ GW --> PAG["pagos-service [Spring Boot]"]
+ AUTH -->|"HTTP"| USR
+ RES -->|"HTTP"| CAT
+ PAG -->|"HTTP"| RES
+ USR --> DBU[("MySQL usuario_db")]
+ CAT --> DBC[("MySQL db_catalogo")]
+ RES --> DBR[("MySQL db_reservas")]
+ PAG --> DBP[("MySQL db_pagos")]
+ EU["Eureka [descubrimiento]"] -.-> AUTH
+ EU -.-> USR
+ EU -.-> CAT
+ EU -.-> RES
+ EU -.-> PAG
+ CF["Config Server [configuración]"] -.-> GW
+ end
+ PAG -->|"Checkout"| MP["Mercado Pago [externo]"]
+ MP -->|"Webhook"| GW

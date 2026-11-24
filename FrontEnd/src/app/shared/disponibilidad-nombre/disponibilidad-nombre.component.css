@@ -1,0 +1,10 @@
+:host { display: block; margin-top: 7px; }
+.disponibilidad-nombre { font-size: .78rem; line-height: 1.5; }
+p { margin: 0 0 5px; }
+.nombre-ayuda { color: #657268; }
+.nombre-disponible { color: #146c43; }
+.nombre-ocupado { color: #b02a37; }
+.sugerencias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sugerencias button { padding: 5px 10px; border: 1px solid #b9cfbf; border-radius: 20px; background: #edf5ee; color: #245439; font: inherit; cursor: pointer; }
+.sugerencias button:hover { background: #dcebdd; }
+.sugerencias button:focus-visible { outline: 2px solid #245439; outline-offset: 2px; }

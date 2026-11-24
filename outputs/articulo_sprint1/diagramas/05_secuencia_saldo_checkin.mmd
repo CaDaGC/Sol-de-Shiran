@@ -1,0 +1,28 @@
+sequenceDiagram
+ actor T as Trabajador
+ participant A as Angular
+ participant G as API Gateway
+ participant P as pagos-service
+ participant R as reservas-service
+ participant K as catalogo-service
+ T->>A: Abrir detalle de reserva
+ A->>G: Consultar detalle
+ G->>R: Obtener datos y saldo
+ R-->>A: Reserva autorizada
+ T->>A: Medio de pago y operación
+ A->>G: POST pago restante
+ G->>G: Validar token y rol
+ G->>P: Registrar saldo con clave de idempotencia
+ P->>R: Consultar reserva y saldo
+ R-->>P: Estado e importe
+ alt Solicitud nueva y válida
+ P->>P: Registrar operación recuperable
+ P->>R: Aplicar check-in
+ R->>K: Registrar ocupación de cabaña
+ K-->>R: Ocupación aplicada
+ R-->>P: Check-in aplicado
+ P->>P: Completar pago restante
+ P-->>A: Resultado
+ else Reintento
+ P-->>A: Resultado existente o continuación
+ end
