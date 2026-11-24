@@ -9,4 +9,6 @@ public class PersonaResponse {
   private String numeroDocumento;
   private String telefono;
   private String direccion;
+  private java.time.LocalDateTime fechaCreacion;
+  private java.time.LocalDateTime fechaActualizacion;
 }

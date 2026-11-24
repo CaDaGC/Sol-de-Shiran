@@ -96,6 +96,14 @@ public class GestionUsuarioService {
     return mapper.toResponse(u);
   }
 
+  public UsuarioResponse cambiarEstado(Long id, boolean activo, Actor a) {
+    a.exigir("ADMIN");
+    Usuario u = find(id);
+    if (id.equals(a.id()) && !activo) malo("No puedes desactivar tu propia cuenta");
+    u.setActivo(activo);
+    return mapper.toResponse(u);
+  }
+
   public void eliminar(Long id, Actor a) {
     a.exigir("ADMIN");
     Usuario u = find(id);

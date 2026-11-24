@@ -240,3 +240,13 @@
 .account-role {
   font-size: 0.7rem;
 }
+
+.gestion-toggle { width: 100%; min-height: 46px; color: #e4e9e2; background: transparent; font-size: .82rem; }
+.gestion-toggle:hover, .gestion-toggle.active { color: white; background: var(--color-green); }
+.gestion-submenu { margin-left: 26px; padding-left: 10px; border-left: 1px solid #ffffff40; }
+.gestion-submenu[hidden] { display: none !important; }
+.gestion-submenu a { min-height: 40px; font-size: .78rem; }
+@media (min-width: 992px) {
+  .is-collapsed .gestion-label, .is-collapsed .gestion-chevron, .is-collapsed .gestion-submenu { display: none !important; }
+  .is-collapsed .gestion-toggle { justify-content: center; }
+}

@@ -181,16 +181,20 @@
         <span>Catálogo</span>
       </a>
 
-      <a
-        class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
-        *ngIf="['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')"
-        routerLink="/gestion"
-        routerLinkActive="active"
-        aria-label="Gestión y cuenta"
-        [attr.title]="contraido() ? 'Gestión y cuenta' : null"
-      >
-        <span class="nav-icon" aria-hidden="true">⚙</span><span>Gestión y cuenta</span>
-      </a>
+      @if (['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')) {
+        <button type="button" class="gestion-toggle d-flex align-items-center gap-3 rounded-3 px-3 py-2 border-0 text-start" [class.active]="!!seccionGestion()" [attr.aria-expanded]="gestionAbierta()" aria-controls="gestion-submenu" aria-label="Gestión" [attr.title]="contraido() ? 'Gestión' : null" (click)="alternarGestion($event)">
+          <span class="nav-icon" aria-hidden="true">⚙</span><span class="gestion-label">Gestión</span><span class="gestion-chevron ms-auto" aria-hidden="true">{{ gestionAbierta() ? '▴' : '▾' }}</span>
+        </button>
+        <div id="gestion-submenu" class="gestion-submenu d-flex flex-column gap-1" [hidden]="!gestionAbierta()">
+          @if (perfil()?.rol === 'ADMIN') {
+            <a routerLink="/gestion" [queryParams]="{ seccion: 'cabanas' }" [class.active]="seccionGestion() === 'cabanas'" [attr.aria-current]="seccionGestion() === 'cabanas' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Cabañas</a>
+            <a routerLink="/gestion" [queryParams]="{ seccion: 'cuentas' }" [class.active]="seccionGestion() === 'cuentas'" [attr.aria-current]="seccionGestion() === 'cuentas' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Usuarios</a>
+            <a routerLink="/gestion" [queryParams]="{ seccion: 'bloqueos' }" [class.active]="seccionGestion() === 'bloqueos'" [attr.aria-current]="seccionGestion() === 'bloqueos' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Bloquear fechas</a>
+          }
+          <a routerLink="/gestion" [queryParams]="{ seccion: 'perfil' }" [class.active]="seccionGestion() === 'perfil'" [attr.aria-current]="seccionGestion() === 'perfil' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Mi perfil</a>
+        </div>
+      }
+
 
       <a
         class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"

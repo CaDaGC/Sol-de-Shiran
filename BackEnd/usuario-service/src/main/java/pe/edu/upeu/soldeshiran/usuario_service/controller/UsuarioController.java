@@ -58,6 +58,13 @@ public class UsuarioController {
     return gestion.editar(id, r, Actor.desde(q));
   }
 
+  @PutMapping("/{id}/estado")
+  public UsuarioResponse cambiarEstado(
+      @PathVariable Long id, @jakarta.validation.Valid @RequestBody EstadoUsuarioRequest r,
+      HttpServletRequest q) {
+    return gestion.cambiarEstado(id, r.activo(), Actor.desde(q));
+  }
+
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void eliminar(@PathVariable Long id, HttpServletRequest q) {

@@ -13,4 +13,5 @@ public class UsuarioResponse {
   private String email;
   private Boolean activo;
   private String rol;
+  private java.time.LocalDateTime fechaCreacion;
 }

@@ -29,17 +29,9 @@
   } @else {
     <header>
       <p class="eyebrow">SOL DE SHIRÁN</p>
-      <h1>Gestión y cuenta</h1>
+      <h1>Gestión</h1>
       <p *ngIf="perfil()">{{ perfil().nombreUsuario }} · {{ rol() }}</p>
     </header>
-    <nav aria-label="Secciones de gestión">
-      <button *ngIf="es('ADMIN')" (click)="tab = 'cabanas'">Cabañas</button>
-      <button *ngIf="es('ADMIN')" [attr.aria-pressed]="tab === 'cuentas'" (click)="abrirCuentas()">
-        Usuarios
-      </button>
-      <button *ngIf="es('ADMIN')" (click)="tab = 'bloqueos'">Bloquear fechas</button>
-      <button (click)="tab = 'perfil'">Mi perfil</button>
-    </nav>
   }
   <p class="success" role="status" *ngIf="mensaje()">{{ mensaje() }}</p>
   <p class="error" role="alert" *ngIf="error()">{{ error() }}</p>
@@ -76,51 +68,33 @@
   <section *ngIf="tab === 'cuentas' && es('ADMIN')">
     <div class="management-toolbar">
       <h2>Usuarios</h2>
-      <label
-        >Buscar usuarios<input
-          type="search"
-          placeholder="Nombre de usuario o correo"
-          [ngModel]="buscarUsuario()"
-          (ngModelChange)="buscarUsuario.set($event)"
-      /></label>
+      <label class="role-filter">Filtrar por
+        <select class="form-select" aria-label="Filtrar usuarios por rol" [ngModel]="filtroRol()" (ngModelChange)="filtroRol.set($event)">
+          <option *ngFor="let seccion of seccionesCuentas" [ngValue]="seccion.rol">{{ seccion.titulo }}</option>
+        </select>
+      </label>
+      <label>Buscar usuarios<input class="form-control" type="search" placeholder="Nombre de usuario o correo" [ngModel]="buscarUsuario()" (ngModelChange)="buscarUsuario.set($event)" /></label>
       <button class="primary" type="button" (click)="crearUsuario()">Crear usuario</button>
     </div>
-
-    <div class="table">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre / correo</th>
-            <th>Rol</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle usuarios-table">
+        <thead><tr><th scope="col">ID</th><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
         <tbody>
           <tr *ngFor="let cuenta of usuariosFiltrados()">
-            <td>{{ cuenta.id }}</td>
-            <td>{{ cuenta.nombreUsuario || cuenta.nombre }}<br />{{ cuenta.email }}</td>
-
-            <td>{{ rolCuenta(cuenta) }}</td>
-
-            <td>{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</td>
-            <td>
-              <button [disabled]="ocupado()" (click)="editarUsuario(cuenta)">Editar</button>
-              <button
-                *ngIf="cuenta.id !== perfil()?.id && cuenta.activo"
-                class="danger"
-                [disabled]="ocupado()"
-                (click)="eliminarUsuario(cuenta)"
-              >
-                Desactivar
+            <td>{{ cuenta.id }}</td><td>{{ cuenta.nombreUsuario || cuenta.nombre }}</td><td>{{ cuenta.email }}</td><td>{{ rolCuenta(cuenta) }}</td>
+            <td><span class="badge" [class.text-bg-success]="cuenta.activo" [class.text-bg-secondary]="!cuenta.activo">{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</span></td>
+            <td><div class="usuario-acciones d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary" [disabled]="ocupado()" (click)="verUsuario(cuenta)" [attr.aria-label]="'Ver cuenta de ' + cuenta.email" title="Ver cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <button type="button" class="btn btn-outline-primary" [disabled]="ocupado()" (click)="editarUsuario(cuenta)" [attr.aria-label]="'Editar cuenta de ' + cuenta.email" title="Editar cuenta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6L16 3Z"/><path d="m13 6 5 5"/></svg></button>
+              <button *ngIf="cuenta.id !== perfil()?.id" type="button" class="btn" [class.btn-outline-danger]="cuenta.activo" [class.btn-outline-success]="!cuenta.activo" [disabled]="ocupado()" (click)="solicitarEstado(cuenta)" [attr.aria-label]="(cuenta.activo ? 'Desactivar cuenta de ' : 'Reactivar cuenta de ') + cuenta.email" [attr.title]="cuenta.activo ? 'Desactivar cuenta' : 'Reactivar cuenta'">
+                @if (cuenta.activo) { <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg> } @else { <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> }
               </button>
-            </td>
+            </div></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p *ngIf="!usuariosFiltrados().length">No se encontraron usuarios.</p>
+    <p *ngIf="!usuariosFiltrados().length" role="status">No se encontraron usuarios de este rol con los filtros seleccionados.</p>
   </section>
   <section *ngIf="tab === 'bloqueos' && es('ADMIN')">
     <h2>Bloquear disponibilidad</h2>
@@ -515,4 +489,49 @@
       <button type="button" [disabled]="ocupado()" (click)="cerrarEditor()">Cancelar</button>
     </form>
   }
+</dialog>
+
+<dialog #detalleDialog class="usuario-dialog" aria-labelledby="detalle-usuario-title" (cancel)="$event.preventDefault(); cerrarDetalle()" (click)="$event.target === detalleDialog && cerrarDetalle()">
+  <div class="modal-content" *ngIf="detalleUsuario() as cuenta">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="detalle-usuario-title">Información de la cuenta</h2><button type="button" class="btn-close" aria-label="Cerrar información" (click)="cerrarDetalle()"></button></div>
+    <div class="modal-body">
+      <img *ngIf="cuenta.fotoPerfil" [src]="imagenUrl(cuenta.fotoPerfil)" alt="Foto de perfil de la cuenta" class="rounded-circle mb-3" width="72" height="72" style="object-fit: cover" />
+      <h3 class="fs-6">Cuenta</h3>
+      <dl class="row g-2 datos-cuenta">
+        <dt class="col-sm-4">ID de usuario</dt><dd class="col-sm-8">{{ cuenta.id }}</dd>
+        <dt class="col-sm-4">Nombre de usuario</dt><dd class="col-sm-8">{{ cuenta.nombreUsuario || cuenta.nombre }}</dd>
+        <dt class="col-sm-4">Correo</dt><dd class="col-sm-8">{{ cuenta.email }}</dd>
+        <dt class="col-sm-4">Rol</dt><dd class="col-sm-8">{{ rolCuenta(cuenta) }}</dd>
+        <dt class="col-sm-4">Estado</dt><dd class="col-sm-8">{{ cuenta.activo ? 'Activo' : 'Inactivo' }}</dd>
+        <dt class="col-sm-4">Fecha de creación</dt><dd class="col-sm-8">{{ cuenta.fechaCreacion ? (cuenta.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+      </dl>
+      <h3 class="fs-6">Datos personales</h3>
+      @if (cuenta.persona; as persona) {
+        <dl class="row g-2 datos-cuenta">
+          <dt class="col-sm-4">ID de persona</dt><dd class="col-sm-8">{{ persona.id ?? 'No registrado' }}</dd>
+          <dt class="col-sm-4">Nombres</dt><dd class="col-sm-8">{{ persona.nombres }}</dd>
+          <dt class="col-sm-4">Apellidos</dt><dd class="col-sm-8">{{ persona.apellidos }}</dd>
+          <dt class="col-sm-4">Tipo de documento</dt><dd class="col-sm-8">{{ persona.tipoDocumento === 'CARNET_EXTRANJERIA' ? 'Carné de extranjería' : persona.tipoDocumento }}</dd>
+          <dt class="col-sm-4">Número de documento</dt><dd class="col-sm-8">{{ persona.numeroDocumento }}</dd>
+          <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">{{ persona.telefono }}</dd>
+          <dt class="col-sm-4">Dirección</dt><dd class="col-sm-8">{{ persona.direccion || 'No registrada' }}</dd>
+          <dt class="col-sm-4">Fecha de creación</dt><dd class="col-sm-8">{{ persona.fechaCreacion ? (persona.fechaCreacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+          <dt class="col-sm-4">Última actualización</dt><dd class="col-sm-8">{{ persona.fechaActualizacion ? (persona.fechaActualizacion | date:'dd/MM/yyyy HH:mm') : 'No registrada' }}</dd>
+        </dl>
+      } @else { <p class="text-body-secondary">Esta cuenta no tiene una persona asociada.</p> }
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button></div>
+  </div>
+</dialog>
+<dialog #estadoDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="estado-usuario-title" (cancel)="$event.preventDefault(); cerrarEstado()" (click)="$event.target === estadoDialog && cerrarEstado()">
+  <div class="modal-content" *ngIf="cuentaEstado() as cuenta">
+    <div class="modal-header"><h2 class="modal-title fs-5" id="estado-usuario-title">{{ cuenta.activo ? 'Desactivar cuenta' : 'Reactivar cuenta' }}</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación" [disabled]="ocupado()" (click)="cerrarEstado()"></button></div>
+    <div class="modal-body">
+      <p>{{ cuenta.activo ? '¿Estás seguro de desactivar esta cuenta?' : '¿Estás seguro de reactivar a este usuario?' }}</p>
+      <p><strong>{{ cuenta.nombreUsuario || cuenta.nombre }}</strong><br />{{ cuenta.email }}</p>
+      <p class="small text-body-secondary">{{ cuenta.activo ? 'Se conservarán sus datos e historial. No podrá iniciar sesión mientras esté inactiva.' : 'El usuario podrá volver a iniciar sesión con sus credenciales.' }}</p>
+      <p class="alert alert-danger" role="alert" *ngIf="errorEstado()">{{ errorEstado() }}</p>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" [disabled]="ocupado()" (click)="cerrarEstado()">Cancelar</button><button type="button" class="btn" [class.btn-danger]="cuenta.activo" [class.btn-success]="!cuenta.activo" [disabled]="ocupado()" (click)="confirmarEstado()">{{ ocupado() ? 'Guardando…' : 'Confirmar' }}</button></div>
+  </div>
 </dialog>

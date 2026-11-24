@@ -1,5 +1,7 @@
 export interface Persona {
   id?: number;
+  fechaCreacion?: string | null;
+  fechaActualizacion?: string | null;
   nombres: string;
   apellidos: string;
   tipoDocumento: string;
@@ -9,6 +11,7 @@ export interface Persona {
 }
 export interface Cuenta {
   id: number;
+  fechaCreacion?: string | null;
   nombre: string;
   nombreUsuario: string;
   email: string;

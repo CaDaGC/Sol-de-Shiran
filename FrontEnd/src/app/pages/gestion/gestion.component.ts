@@ -3,8 +3,10 @@ import { Component, computed, ElementRef, viewChild, ChangeDetectorRef, inject, 
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef } from '@angular/core';
 import { PublicNavbarComponent } from '../../shared/public-navbar/public-navbar.component';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { API_CONFIG } from '../../core/api.config';
 import { imagenUrl } from '../../core/imagen-url';
@@ -44,22 +46,32 @@ export class GestionComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   readonly url = API_CONFIG.baseUrl;
+  readonly imagenUrl = imagenUrl;
   private readonly editorDialog = viewChild.required<ElementRef<HTMLDialogElement>>('editorDialog');
   private readonly cambios = inject(ChangeDetectorRef);
   readonly editor = signal<'usuario' | 'cabana' | null>(null);
+  readonly filtroRol = signal<RolCuenta>('CLIENTE');
+  readonly detalleUsuario = signal<Cuenta | null>(null);
+  readonly cuentaEstado = signal<Cuenta | null>(null);
+  readonly errorEstado = signal('');
+  private readonly detalleDialog = viewChild.required<ElementRef<HTMLDialogElement>>('detalleDialog');
+  private readonly estadoDialog = viewChild.required<ElementRef<HTMLDialogElement>>('estadoDialog');
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
   readonly buscarUsuario = signal('');
   readonly buscarCabana = signal('');
   readonly usuariosFiltrados = computed(() => {
     const texto = this.buscarUsuario().trim().toLocaleLowerCase();
-    return this.usuarios().filter(u => (u.nombreUsuario || u.nombre || '').toLocaleLowerCase().includes(texto)
-      || u.email.toLocaleLowerCase().includes(texto));
+    return this.usuarios().filter(u => this.rolCuenta(u) === this.filtroRol()
+      && ((u.nombreUsuario || u.nombre || '').toLocaleLowerCase().includes(texto)
+      || u.email.toLocaleLowerCase().includes(texto)));
   });
   readonly cabanasFiltradas = computed(() => {
     const texto = this.buscarCabana().trim().toLocaleLowerCase();
     return this.cabanas().filter(c => c.nombre.toLocaleLowerCase().includes(texto));
   });
 
-  crearUsuario(): void { this.usuario = this.nuevoUsuario(); this.abrirEditor('usuario'); }
+  crearUsuario(): void { this.usuario = { ...this.nuevoUsuario(), rol: this.filtroRol() }; this.abrirEditor('usuario'); }
   crearCabana(): void { this.nueva(); this.abrirEditor('cabana'); }
   private abrirEditor(tipo: 'usuario' | 'cabana'): void {
     this.limpiar(); this.editor.set(tipo); this.cambios.detectChanges();
@@ -125,15 +137,24 @@ export class GestionComponent implements OnInit {
       void this.router.navigate(['/login']);
       return;
     }
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      if (this.perfil()) this.seleccionarSeccion(params.get('seccion'));
+    });
     this.http.get<any>(this.url + '/usuarios/me').subscribe({
       next: (p) => {
         this.perfil.set({ ...p, nombreUsuario: p.nombreUsuario || p.nombre });
         this.auth.actualizarPerfil(p);
-        this.tab = this.es('ADMIN') ? 'cabanas' : 'perfil';
+        this.seleccionarSeccion(this.route.snapshot.queryParamMap.get('seccion'));
         this.cargar();
       },
       error: (e) => this.fallo(e),
     });
+  }
+  private seleccionarSeccion(seccion: string | null): void {
+    const secciones = ['cabanas', 'cuentas', 'bloqueos', 'perfil'];
+    this.tab = this.es('ADMIN') && secciones.includes(seccion ?? '') ? seccion! : this.es('ADMIN') ? 'cabanas' : 'perfil';
+    this.limpiar();
+    this.cambios.markForCheck();
   }
   cargar(): void {
     if (this.es('ADMIN'))
@@ -290,17 +311,45 @@ export class GestionComponent implements OnInit {
     });
   }
 
-  eliminarUsuario(cuenta: Cuenta): void {
+  verUsuario(cuenta: Cuenta): void {
+    this.detalleUsuario.set({ ...cuenta, persona: cuenta.persona ? { ...cuenta.persona } : null });
+    this.cambios.detectChanges();
+    this.detalleDialog().nativeElement.showModal();
+  }
+  cerrarDetalle(): void {
+    this.detalleDialog().nativeElement.close();
+    this.detalleUsuario.set(null);
+  }
+  solicitarEstado(cuenta: Cuenta): void {
+    if (this.ocupado() || cuenta.id === this.perfil()?.id || !this.es('ADMIN')) return;
+    this.cuentaEstado.set({ ...cuenta });
+    this.errorEstado.set('');
+    this.cambios.detectChanges();
+    this.estadoDialog().nativeElement.showModal();
+  }
+  cerrarEstado(): void {
     if (this.ocupado()) return;
-    if (!cuenta.activo || !confirm('¿Desactivar la cuenta de ' + cuenta.email + '? Se conservarán sus datos e historial.')) return;
+    this.estadoDialog().nativeElement.close();
+    this.cuentaEstado.set(null);
+    this.errorEstado.set('');
+  }
+  confirmarEstado(): void {
+    const cuenta = this.cuentaEstado();
+    if (!cuenta || this.ocupado()) return;
     this.ocupado.set(true);
+    this.errorEstado.set('');
     this.limpiar();
-    this.http.delete(this.url + '/usuarios/' + cuenta.id).subscribe({
-      next: () => {
-        if (this.usuario.id === cuenta.id) this.usuario = this.nuevoUsuario();
-        this.exito('Cuenta desactivada.');
+    this.http.put<Cuenta>(this.url + '/usuarios/' + cuenta.id + '/estado', { activo: !cuenta.activo }).subscribe({
+      next: actualizada => {
+        this.usuarios.update(cuentas => cuentas.map(u => u.id === cuenta.id ? actualizada : u));
+        this.ocupado.set(false);
+        this.cerrarEstado();
+        this.mensaje.set(actualizada.activo ? 'Cuenta reactivada.' : 'Cuenta desactivada.');
       },
-      error: (e) => this.fallo(e),
+      error: (e: HttpErrorResponse) => {
+        this.ocupado.set(false);
+        this.errorEstado.set(e.error?.detail ?? e.error?.message ?? 'No se pudo cambiar el estado. Inténtalo nuevamente.');
+      },
     });
   }
   consultarBloqueos(): void {

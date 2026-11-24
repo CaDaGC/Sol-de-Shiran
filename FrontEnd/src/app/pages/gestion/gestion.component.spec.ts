@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { GestionComponent } from './gestion.component';
 import { AuthService } from '../../services/auth';
@@ -19,12 +19,22 @@ describe('Usuarios y perfil con datos civiles',()=>{
   beforeEach(()=>{TestBed.configureTestingModule({imports:[GestionComponent],providers:[provideHttpClient(),provideHttpClientTesting(),provideRouter([]),{provide:AuthService,useValue:auth}]});http=TestBed.inject(HttpTestingController);auth.actualizarPerfil.mockClear();});
   afterEach(()=>http.verify());
   function crear(){const f=TestBed.createComponent(GestionComponent);f.detectChanges();http.expectOne(r=>r.url.endsWith('/usuarios/me')).flush(perfil);http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([]);return f;}
-  it('presenta una sección Usuarios con cuentas de todos los roles',()=>{
+  it('separa usuario y correo y filtra por rol sin mezclar cuentas',()=>{
     const f=crear();const c=f.componentInstance;c.abrirCuentas();
     c.usuarios.set([{...perfil,id:2,rol:'CLIENTE',nombreUsuario:'cliente'},{...perfil,id:3,rol:'ADMIN',nombreUsuario:'admin2'}]);f.detectChanges();
-    const botones=Array.from(f.nativeElement.querySelectorAll('nav button') as NodeListOf<HTMLButtonElement>).map(b=>b.textContent?.trim());
-    expect(botones).toContain('Usuarios');expect(botones).not.toContain('Clientes');expect(botones).not.toContain('Administradores');
-    expect(f.nativeElement.querySelectorAll('tbody tr')).toHaveLength(2);f.destroy();
+    expect(f.nativeElement.querySelector('nav[aria-label="Secciones de gestión"]')).toBeNull();
+    expect(f.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(c.usuariosFiltrados()[0].rol).toBe('CLIENTE');
+    c.filtroRol.set('ADMIN');f.detectChanges();
+    expect(c.usuariosFiltrados()[0].nombreUsuario).toBe('admin2');
+    const cabeceras=Array.from(f.nativeElement.querySelectorAll('th') as NodeListOf<HTMLElement>).map(e=>e.textContent?.trim());
+    expect(cabeceras).toContain('Usuario');expect(cabeceras).toContain('Correo');f.destroy();
+  });
+  it('actualiza la sección al navegar desde el sidebar sin recargar la página',async()=>{
+    const f=crear();await TestBed.inject(Router).navigateByUrl('/?seccion=cuentas');await f.whenStable();
+    expect(f.componentInstance.tab).toBe('cuentas');expect(f.nativeElement.querySelector('section h2')?.textContent).toBe('Usuarios');
+    await TestBed.inject(Router).navigateByUrl('/?seccion=bloqueos');await f.whenStable();
+    expect(f.nativeElement.textContent).toContain('Bloquear disponibilidad');f.destroy();
   });
   it('oculta persona para ADMIN y no envía dueño ni asignaciones',async()=>{
     const f=crear();const c=f.componentInstance;c.abrirCuentas(); c.crearUsuario(); c.usuario.rol = 'ADMIN';f.detectChanges();await f.whenStable();
@@ -63,7 +73,7 @@ describe('Usuarios y perfil con datos civiles',()=>{
     c.cerrarEditor();f.destroy();
   });
   it('busca por alias o correo sin distinguir mayúsculas y retira la columna de cabañas',()=>{
-    const f=crear();const c=f.componentInstance;c.abrirCuentas();c.usuarios.set([{...perfil,id:2,nombreUsuario:'Ana',email:'ana@example.com'},{...perfil,id:3,nombreUsuario:'Luis',email:'luis@correo.pe'}]);
+    const f=crear();const c=f.componentInstance;c.abrirCuentas();c.usuarios.set([{...perfil,id:2,rol:'CLIENTE',nombreUsuario:'Ana',email:'ana@example.com'},{...perfil,id:3,rol:'CLIENTE',nombreUsuario:'Luis',email:'luis@correo.pe'}]);
     c.buscarUsuario.set('ANA');f.detectChanges();expect(f.nativeElement.querySelectorAll('tbody tr')).toHaveLength(1);expect(c.usuariosFiltrados()[0].nombreUsuario).toBe('Ana');
     c.buscarUsuario.set('@correo.pe');expect(c.usuariosFiltrados()[0].nombreUsuario).toBe('Luis');
     expect(f.nativeElement.textContent).not.toContain('Cabañas del dueño');f.destroy();
@@ -75,12 +85,27 @@ describe('Usuarios y perfil con datos civiles',()=>{
     c.guardarCabana();http.expectOne(r=>r.method==='PUT' && r.url.endsWith('/cabanas/7')).flush({detail:'No disponible'},{status:503,statusText:'Unavailable'});
     expect(c.editor()).toBe('cabana');expect(c.cabana.nombre).toBe('Luna');expect(c.error()).toBe('No disponible');f.destroy();
   });
-  it('desactiva sin anunciar borrado físico y refresca el estado en la lista',()=>{
-    const f=crear();const c=f.componentInstance;const confirmar=vi.spyOn(window,'confirm').mockReturnValue(true);
-    c.eliminarUsuario({...perfil,id:2,rol:'CLIENTE'});expect(confirmar).toHaveBeenCalledWith(expect.stringContaining('Desactivar'));
-    http.expectOne(r=>r.method==='DELETE' && r.url.endsWith('/usuarios/2')).flush(null);
-    http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([{...perfil,id:2,activo:false}]);
-    expect(c.usuarios()[0].activo).toBe(false);expect(c.mensaje()).toBe('Cuenta desactivada.');confirmar.mockRestore();f.destroy();
+  it('confirma desactivación en un modal y cambia el icono al reactivar',()=>{
+    const f=crear();const c=f.componentInstance;c.abrirCuentas();const cuenta={...perfil,id:2,rol:'CLIENTE'};c.usuarios.set([cuenta]);
+    c.solicitarEstado(cuenta);f.detectChanges();expect(f.nativeElement.querySelector('#estado-usuario-title').textContent).toContain('Desactivar');
+    http.expectNone(r=>r.method==='PUT');c.confirmarEstado();
+    const req=http.expectOne(r=>r.method==='PUT' && r.url.endsWith('/usuarios/2/estado'));expect(req.request.body).toEqual({activo:false});req.flush({...cuenta,activo:false});f.detectChanges();
+    expect(c.usuarios()[0].activo).toBe(false);expect(c.mensaje()).toBe('Cuenta desactivada.');
+    expect(f.nativeElement.querySelector('[title="Reactivar cuenta"]').classList.contains('btn-outline-success')).toBe(true);
+    c.solicitarEstado({...cuenta,activo:false});c.confirmarEstado();
+    const reactivar=http.expectOne(r=>r.method==='PUT');expect(reactivar.request.body).toEqual({activo:true});reactivar.flush(cuenta);expect(c.mensaje()).toBe('Cuenta reactivada.');f.destroy();
+  });
+  it('cancelar no cambia datos y un fallo conserva la confirmación para reintentar',()=>{
+    const f=crear();const c=f.componentInstance;const cuenta={...perfil,id:2};
+    c.solicitarEstado(cuenta);c.cerrarEstado();http.expectNone(r=>r.method==='PUT');
+    c.solicitarEstado(cuenta);c.confirmarEstado();http.expectOne(r=>r.method==='PUT').flush({detail:'No disponible'},{status:503,statusText:'Unavailable'});
+    expect(c.errorEstado()).toBe('No disponible');expect(c.cuentaEstado()?.id).toBe(2);expect(c.ocupado()).toBe(false);c.cerrarEstado();f.destroy();
+  });
+  it('muestra datos civiles solo en lectura y admite cuentas sin persona',()=>{
+    const f=crear();const c=f.componentInstance;c.verUsuario({...perfil,id:2,persona});f.detectChanges();
+    const modal=f.nativeElement.querySelector('dialog[aria-labelledby="detalle-usuario-title"]');expect(modal.open).toBe(true);expect(modal.textContent).toContain('12345678');expect(modal.querySelector('input,select,textarea,form')).toBeNull();
+    c.cerrarDetalle();c.verUsuario(perfil);f.detectChanges();expect(modal.textContent).toContain('no tiene una persona asociada');c.cerrarDetalle();
+    c.solicitarEstado(perfil);expect(c.cuentaEstado()).toBeNull();f.destroy();
   });
   it('desplaza foto y seguridad dentro de la cuenta sin seguir el enlace al inicio', () => {
     const f = crear();

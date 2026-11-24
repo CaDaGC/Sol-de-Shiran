@@ -18,6 +18,7 @@ public class PersonaMapper {
     r.setId(p.getId()); r.setNombres(p.getNombres()); r.setApellidos(p.getApellidos());
     r.setTipoDocumento(p.getTipoDocumento()); r.setNumeroDocumento(p.getNumeroDocumento());
     r.setTelefono(p.getTelefono()); r.setDireccion(p.getDireccion());
+    r.setFechaCreacion(p.getFechaCreacion()); r.setFechaActualizacion(p.getFechaActualizacion());
     return r;
   }
 }

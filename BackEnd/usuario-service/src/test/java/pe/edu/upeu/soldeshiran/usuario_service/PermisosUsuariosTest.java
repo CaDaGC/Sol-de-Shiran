@@ -99,6 +99,41 @@ class PermisosUsuariosTest {
   }
 
   @Test
+  void adminCambiaEstadoSinBorrarNiAlterarIdentidad() throws Exception {
+    long total = usuarios.count();
+    var original = usuarios.findById(cliente).orElseThrow();
+    String correo = original.getEmail();
+    String hash = original.getPassword();
+    for (boolean activo : new boolean[] {false, true}) {
+      mvc.perform(put("/api/v1/usuarios/" + cliente + "/estado")
+          .header("Authorization", token(admin))
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("{\"activo\":" + activo + "}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.activo").value(activo))
+          .andExpect(jsonPath("$.password").doesNotExist());
+      var guardado = usuarios.findById(cliente).orElseThrow();
+      Assertions.assertEquals(total, usuarios.count());
+      Assertions.assertEquals(correo, guardado.getEmail());
+      Assertions.assertEquals(hash, guardado.getPassword());
+      Assertions.assertEquals(activo, guardado.getActivo());
+    }
+  }
+
+  @Test
+  void cambioEstadoExigeAdminYEstadoExplicito() throws Exception {
+    mvc.perform(put("/api/v1/usuarios/" + dueno + "/estado")
+        .header("Authorization", token(cliente)).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"activo\":false}")).andExpect(status().isForbidden());
+    mvc.perform(put("/api/v1/usuarios/" + admin + "/estado")
+        .header("Authorization", token(admin)).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"activo\":false}")).andExpect(status().isBadRequest());
+    mvc.perform(put("/api/v1/usuarios/" + cliente + "/estado")
+        .header("Authorization", token(admin)).contentType(MediaType.APPLICATION_JSON)
+        .content("{}")).andExpect(status().isBadRequest());
+  }
+
+  @Test
   void puertoDirectoNoPermiteCrearAdminAnonimo() throws Exception {
     mvc.perform(
             post("/api/v1/usuarios/admin").contentType(MediaType.APPLICATION_JSON).content("{}"))

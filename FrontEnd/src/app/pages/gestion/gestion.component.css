@@ -503,3 +503,32 @@ nav button[aria-pressed='true'] {
     grid-column: 1;
   }
 }
+
+.usuarios-table { min-width: 760px; }
+.usuario-acciones .btn { width: 40px; height: 40px; padding: 0; margin: 0; display: inline-flex; align-items: center; justify-content: center; }
+.usuario-acciones .btn-outline-danger { color: #b02a37; border-color: #b02a37; }
+.usuario-acciones .btn-outline-success { color: #146c43; border-color: #146c43; }
+.usuario-acciones .btn-outline-danger:hover { color: white; background: #b02a37; }
+.usuario-acciones .btn-outline-success:hover { color: white; background: #146c43; }
+.usuario-dialog {
+  --bs-modal-padding: 1rem;
+  --bs-modal-header-padding: 1rem;
+  --bs-modal-header-border-color: #dee5d8;
+  --bs-modal-header-border-width: 1px;
+  --bs-modal-footer-border-color: #dee5d8;
+  --bs-modal-footer-border-width: 1px;
+  --bs-modal-footer-gap: .5rem;
+  --bs-modal-title-line-height: 1.5;
+  --bs-modal-bg: white;
+  --bs-modal-color: #213e2b;
+  width: min(720px, calc(100vw - 32px)); max-height: 90dvh; padding: 0; border: 0; border-radius: 14px; color: #213e2b; background: white; overflow: auto;
+}
+.usuario-dialog::backdrop { background: #11291dbb; }
+.confirmacion-dialog { width: min(500px, calc(100vw - 32px)); }
+.usuario-dialog .modal-content { border: 0; }
+.usuario-dialog .btn-close { padding: 8px; background: transparent var(--bs-btn-close-bg) center / 1em auto no-repeat; }
+.usuario-dialog .btn-danger { color: white; background: #b02a37; border-color: #b02a37; }
+.usuario-dialog .btn-success { color: white; background: #146c43; border-color: #146c43; }
+.usuario-dialog .btn-secondary { color: white; background: #5c636a; }
+.datos-cuenta dd { overflow-wrap: anywhere; }
+.management-toolbar .role-filter { min-width: 160px; }

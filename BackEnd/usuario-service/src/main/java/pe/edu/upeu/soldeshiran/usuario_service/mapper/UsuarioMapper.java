@@ -23,6 +23,7 @@ public class UsuarioMapper {
     UsuarioResponse response = new UsuarioResponse();
 
     response.setId(usuario.getId());
+    response.setFechaCreacion(usuario.getFechaCreacion());
     response.setNombre(usuario.getNombre());
     response.setNombreUsuario(usuario.getNombre());
     response.setFotoPerfil(usuario.getFotoPerfil());
