@@ -33,3 +33,5 @@ BackEnd/config-server/src/main/resources/config/application.properties
 privado/
 **/google-drive.json
 **/client_secret*.json
+
+/outputs/

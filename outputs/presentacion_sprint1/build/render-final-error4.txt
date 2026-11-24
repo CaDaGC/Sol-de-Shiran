@@ -1,5 +1,0 @@
-[artifact-tool] embedded_font_subset_missing_glyph: Embedded font is subsetted; glyph coverage checks are not available yet.
-[artifact-tool] embedded_font_face_mismatch: Decoded font reports weight 700 and italic=false, which does not match the authored regular face (expected weight 300-500 and italic=false).
-[artifact-tool] embedded_font_name_mismatch: EOT family "Myriad" does not match decoded SFNT name "Myriad Pro".
-[artifact-tool] embedded_font_name_mismatch: EOT subfamily "Regular" does not match decoded SFNT name "Light".
-[artifact-tool] embedded_font_name_mismatch: EOT family "Prompt Light" does not match decoded SFNT name "Prompt".
