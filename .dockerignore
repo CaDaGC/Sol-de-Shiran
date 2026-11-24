@@ -20,3 +20,7 @@ BackEnd/config-server/src/main/resources/config/application.properties
 **/*.log
 **/backups
 **/dumps
+
+**/privado
+**/google-drive.json
+**/client_secret*.json

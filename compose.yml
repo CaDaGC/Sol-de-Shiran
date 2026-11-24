@@ -42,6 +42,14 @@ x-domain: &domain
   USUARIOS_URL: http://usuario-service:8087
   CATALOGO_URL: http://catalogo-service:8086
 
+x-archivos: &archivos
+  ARCHIVOS_PROVEEDOR: ${ARCHIVOS_PROVEEDOR:-local}
+  DRIVE_CREDENCIALES: ${DRIVE_CREDENCIALES:-/run/privado/google-drive.json}
+  DRIVE_CARPETA_PERFILES: ${DRIVE_CARPETA_PERFILES:-1DJowW2-fEZ5gdKanuj4P9KufWwRQIO7_}
+  DRIVE_CARPETA_CABANAS: ${DRIVE_CARPETA_CABANAS:-13KmUpK4yKJ0NMMjTOCJdyL4SQwcEs8XR}
+  DRIVE_CARPETA_COMPROBANTES: ${DRIVE_CARPETA_COMPROBANTES:-1bS3PGBQ635RVoXGkplo8ZfP_FKNeErFj}
+  ARCHIVOS_MIGRAR: ${ARCHIVOS_MIGRAR:-false}
+
 x-database: &database
   <<: *domain
   SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:?Configura DB_USERNAME en .env}
@@ -134,7 +142,7 @@ services:
       config-server:
         condition: service_healthy
     environment:
-      <<: *database
+      <<: [*database, *archivos]
       SERVER_PORT: "8087"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/usuario_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
@@ -142,6 +150,7 @@ services:
       USUARIOS_FOTOS_DIRECTORIO: /app/uploads/perfiles
     volumes:
       - ./uploads/perfiles:/app/uploads/perfiles
+      - ./privado:/run/privado:ro
 
   auth-service:
     <<: *java
@@ -176,9 +185,13 @@ services:
       auth-service:
         condition: service_healthy
     environment:
-      <<: *database
+      <<: [*database, *archivos]
       SERVER_PORT: "8086"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_catalogo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
+      CATALOGO_FOTOS_DIRECTORIO: /app/uploads/cabanas
+    volumes:
+      - ./uploads/cabanas:/app/uploads/cabanas
+      - ./privado:/run/privado:ro
 
   reservas-service:
     <<: *java
@@ -196,7 +209,7 @@ services:
       catalogo-service:
         condition: service_healthy
     environment:
-      <<: *database
+      <<: [*database, *archivos]
       SERVER_PORT: "8085"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_reservas?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
 
@@ -216,7 +229,7 @@ services:
       reservas-service:
         condition: service_healthy
     environment:
-      <<: *database
+      <<: [*database, *archivos]
       SERVER_PORT: "8083"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_pagos?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
@@ -226,6 +239,7 @@ services:
       COMPROBANTES_DIRECTORIO: /app/uploads/comprobantes
     volumes:
       - ./uploads/comprobantes:/app/uploads/comprobantes
+      - ./privado:/run/privado:ro
 
   resenas-service:
     <<: *java
@@ -243,7 +257,7 @@ services:
       pagos-service:
         condition: service_healthy
     environment:
-      <<: *database
+      <<: [*database, *archivos]
       SERVER_PORT: "8090"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_resenas?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
 

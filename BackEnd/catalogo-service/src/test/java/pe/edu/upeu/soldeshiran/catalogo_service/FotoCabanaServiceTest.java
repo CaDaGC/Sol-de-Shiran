@@ -14,16 +14,18 @@ import pe.edu.upeu.soldeshiran.catalogo_service.service.FotoCabanaService;
 
 class FotoCabanaServiceTest {
   private final FotoCabanaRepository repository = mock(FotoCabanaRepository.class);
-  private final FotoCabanaService service = new FotoCabanaService(repository);
+  private final pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService almacenamiento = mock(pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService.class);
+  private final FotoCabanaService service = new FotoCabanaService(repository, almacenamiento);
 
   @Test void guardaPngRealYConservaContenido() throws Exception {
     var salida = new ByteArrayOutputStream();
     ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "png", salida);
     var bytes = salida.toByteArray();
-    when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
+    when(repository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
     var foto = service.guardar(new MockMultipartFile("archivo", "foto.png", "image/png", bytes), new Actor(1L,"ADMIN"));
     assertEquals("image/png", foto.getTipo());
-    assertArrayEquals(bytes, foto.getContenido());
+    assertEquals(0, foto.getContenido().length);
+    verify(almacenamiento).guardar(eq(pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo.CABANA), anyString(), eq(bytes), eq("image/png"));
     assertNotNull(java.util.UUID.fromString(foto.getId()));
   }
 

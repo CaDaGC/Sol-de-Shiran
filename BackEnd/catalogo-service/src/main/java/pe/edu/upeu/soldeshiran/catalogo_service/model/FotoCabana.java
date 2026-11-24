@@ -9,5 +9,6 @@ import lombok.*;
 public class FotoCabana {
   @Id private String id;
   @Column(nullable = false) private String tipo;
-  @Lob @Column(nullable = false, columnDefinition = "LONGBLOB") private byte[] contenido;
+  @Column(length = 200) private String archivo;
+  @Lob @Column(columnDefinition = "LONGBLOB") private byte[] contenido;
 }

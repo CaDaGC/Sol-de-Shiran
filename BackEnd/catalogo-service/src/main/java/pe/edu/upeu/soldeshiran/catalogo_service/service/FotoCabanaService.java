@@ -1,6 +1,8 @@
 package pe.edu.upeu.soldeshiran.catalogo_service.service;
 
 import java.io.IOException;
+import pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService;
+import pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,9 @@ import pe.edu.upeu.soldeshiran.catalogo_service.security.Actor;
 @RequiredArgsConstructor
 public class FotoCabanaService {
   private final FotoCabanaRepository repository;
+  private final AlmacenamientoService almacenamiento;
 
+  @org.springframework.transaction.annotation.Transactional
   public FotoCabana guardar(MultipartFile archivo, Actor actor) {
     actor.exigir("ADMIN");
     if (archivo.isEmpty() || archivo.getSize() > 2 * 1024 * 1024)
@@ -38,8 +42,11 @@ public class FotoCabanaService {
       var foto = new FotoCabana();
       foto.setId(UUID.randomUUID().toString());
       foto.setTipo(formato.equals("png") ? "image/png" : "image/jpeg");
-      foto.setContenido(archivo.getBytes());
-      return repository.save(foto);
+      String referencia = almacenamiento.guardar(CategoriaArchivo.CABANA, foto.getId() + (formato.equals("png") ? ".png" : ".jpg"), archivo.getBytes(), foto.getTipo());
+      foto.setArchivo(referencia);
+      foto.setContenido(new byte[0]);
+      try { return repository.saveAndFlush(foto); }
+      catch (RuntimeException e) { almacenamiento.descartar(CategoriaArchivo.CABANA, referencia); throw e; }
     } catch (IOException | IllegalArgumentException ex) {
       throw error("El archivo no contiene una foto válida.");
     }
@@ -50,6 +57,20 @@ public class FotoCabanaService {
         new ResponseStatusException(HttpStatus.NOT_FOUND, "Foto no encontrada."));
   }
 
+  public byte[] contenido(FotoCabana foto) {
+    return foto.getArchivo() == null ? foto.getContenido() : almacenamiento.leer(CategoriaArchivo.CABANA, foto.getArchivo());
+  }
+  @org.springframework.transaction.annotation.Transactional
+  public boolean migrar(String id) {
+    var foto = obtener(id);
+    if (foto.getArchivo() != null && foto.getArchivo().startsWith("drive:")) return false;
+    String referencia = almacenamiento.migrar(CategoriaArchivo.CABANA, foto.getId() + (foto.getTipo().equals("image/png") ? ".png" : ".jpg"), contenido(foto), foto.getTipo());
+    foto.setArchivo(referencia);
+      foto.setContenido(new byte[0]);
+    foto.setContenido(new byte[0]);
+    repository.saveAndFlush(foto);
+    return true;
+  }
   private ResponseStatusException error(String mensaje) {
     return new ResponseStatusException(HttpStatus.BAD_REQUEST, mensaje);
   }

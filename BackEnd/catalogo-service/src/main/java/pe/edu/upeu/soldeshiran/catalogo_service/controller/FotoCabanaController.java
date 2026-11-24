@@ -29,6 +29,6 @@ public class FotoCabanaController {
     return ResponseEntity.ok().contentType(MediaType.parseMediaType(foto.getTipo()))
         .header("X-Content-Type-Options", "nosniff")
         .cacheControl(CacheControl.maxAge(java.time.Duration.ofDays(1)).cachePublic())
-        .body(foto.getContenido());
+        .body(fotos.contenido(foto));
   }
 }

@@ -2,8 +2,10 @@ package pe.edu.upeu.soldeshiran.usuario_service.service;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.nio.file.*;
-import org.springframework.beans.factory.annotation.Value;
+import pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService;
+import pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +21,7 @@ import pe.edu.upeu.soldeshiran.usuario_service.security.Actor;
 @RequiredArgsConstructor
 public class FotoPerfilService {
   private final UsuarioRepository repository;
-  @Value("${usuarios.fotos.directorio:uploads/perfiles}")
-  private String directorio;
+  private final AlmacenamientoService almacenamiento;
 
   @Transactional
   public Usuario guardar(Long id, MultipartFile archivo, Actor actor) {
@@ -52,19 +53,18 @@ public class FotoPerfilService {
           throw error("La foto no debe superar 16 megapíxeles.");
         if (lector.read(0) == null) throw error("No se pudo leer la foto.");
       } finally { lector.dispose(); }
+      String anterior = referenciaActual(usuario);
       var foto = usuario;
-      Path carpeta=Paths.get(directorio).toAbsolutePath().normalize();
-      Files.createDirectories(carpeta);
-      String nombre=UUID.randomUUID() + (formato.equals("png") ? ".png" : ".jpg");
-      Path destino=carpeta.resolve(nombre);
-      Files.write(destino, archivo.getBytes(), StandardOpenOption.CREATE_NEW);
+      String nombre = UUID.randomUUID() + (formato.equals("png") ? ".png" : ".jpg");
+      String referencia = almacenamiento.guardar(CategoriaArchivo.PERFIL, nombre, archivo.getBytes(), formato.equals("png") ? "image/png" : "image/jpeg");
       foto.setFotoPerfil("/api/v1/usuarios/fotos/" + nombre);
+      foto.setFotoPerfilArchivo(referencia);
       try {
-        return repository.saveAndFlush(foto);
-      } catch (RuntimeException e) {
-        Files.deleteIfExists(destino);
-        throw e;
+        var guardado = repository.saveAndFlush(foto);
+        retirarDespuesDeGuardar(anterior);
+        return guardado;
       }
+      catch (RuntimeException e) { almacenamiento.descartar(CategoriaArchivo.PERFIL, referencia); throw e; }
     } catch (IOException | IllegalArgumentException ex) {
       throw error("El archivo no contiene una foto válida.");
     }
@@ -75,10 +75,45 @@ public class FotoPerfilService {
         new ResponseStatusException(HttpStatus.NOT_FOUND, "Cuenta no encontrada."));
   }
 
+  @Transactional
   public void quitar(Actor actor) {
     var usuario = obtener(actor);
+    String anterior = referenciaActual(usuario);
     usuario.setFotoPerfil(null);
-    repository.save(usuario);
+    usuario.setFotoPerfilArchivo(null);
+    repository.saveAndFlush(usuario);
+    retirarDespuesDeGuardar(anterior);
+  }
+  private String referenciaActual(Usuario usuario) {
+    if (usuario.getFotoPerfilArchivo() != null) return usuario.getFotoPerfilArchivo();
+    String url = usuario.getFotoPerfil();
+    if (url == null || !url.startsWith("/api/v1/usuarios/fotos/")) return null;
+    return url.substring(url.lastIndexOf('/') + 1);
+  }
+  private void retirarDespuesDeGuardar(String referencia) {
+    if (referencia == null) return;
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override public void afterCommit() { almacenamiento.descartar(CategoriaArchivo.PERFIL, referencia); }
+      });
+    } else almacenamiento.descartar(CategoriaArchivo.PERFIL, referencia);
+  }
+  public byte[] leerPublica(String nombre) {
+    if (!nombre.matches("(?:[a-f0-9-]{36}|migrada-[0-9]+)\\.(png|jpg)")) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    var usuario = repository.findByFotoPerfil("/api/v1/usuarios/fotos/" + nombre);
+    String referencia = usuario.map(Usuario::getFotoPerfilArchivo).orElse(nombre);
+    return almacenamiento.leer(CategoriaArchivo.PERFIL, referencia);
+  }
+  @Transactional
+  public boolean migrar(Long id) {
+    var usuario = repository.findById(id).orElseThrow();
+    if (usuario.getFotoPerfil() == null || (usuario.getFotoPerfilArchivo() != null && usuario.getFotoPerfilArchivo().startsWith("drive:"))) return false;
+    String nombre = usuario.getFotoPerfil().substring(usuario.getFotoPerfil().lastIndexOf('/') + 1);
+    byte[] contenido = almacenamiento.leer(CategoriaArchivo.PERFIL, usuario.getFotoPerfilArchivo() == null ? nombre : usuario.getFotoPerfilArchivo());
+    String referencia = almacenamiento.migrar(CategoriaArchivo.PERFIL, nombre, contenido, nombre.endsWith(".png") ? "image/png" : "image/jpeg");
+    usuario.setFotoPerfilArchivo(referencia);
+    repository.saveAndFlush(usuario);
+    return true;
   }
   private ResponseStatusException error(String mensaje) {
     return new ResponseStatusException(HttpStatus.BAD_REQUEST, mensaje);

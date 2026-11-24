@@ -18,6 +18,7 @@ public class Usuario {
   @Column(name = "estado", nullable = false, columnDefinition = "boolean default true")
   private Boolean activo = true;
   @Column(name = "foto_perfil", length = 500) private String fotoPerfil;
+  @Column(name = "foto_perfil_archivo", length = 200) private String fotoPerfilArchivo;
   @Column(name = "fecha_creacion", updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
   private LocalDateTime fechaCreacion;
   @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})

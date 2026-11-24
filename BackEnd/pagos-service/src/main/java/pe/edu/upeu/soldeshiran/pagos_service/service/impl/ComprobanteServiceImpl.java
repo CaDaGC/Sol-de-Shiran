@@ -13,7 +13,8 @@ import pe.edu.upeu.soldeshiran.pagos_service.repository.*;
 import pe.edu.upeu.soldeshiran.pagos_service.service.*;
 import pe.edu.upeu.soldeshiran.pagos_service.client.ReservaInternaClient;
 import pe.edu.upeu.soldeshiran.pagos_service.security.*;
-import java.nio.file.*;
+import pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService;
+import pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo;
 @Service @RequiredArgsConstructor
 public class ComprobanteServiceImpl implements ComprobanteService {
   private final ComprobantePagoRepository comprobantes;
@@ -25,7 +26,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
   @Value("${servicios.interno.token}") private String token;
   @Value("${seguridad.internal-key}") private String key;
   @Value("${usuarios.url:http://localhost:8087}") private String usuariosUrl;
-  @Value("${comprobantes.directorio:uploads/comprobantes}") private String directorio;
+  private final AlmacenamientoService almacenamiento;
 
   @Override @Transactional
   public ComprobantePago consultar(Long idReserva,Actor actor){
@@ -56,22 +57,29 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     var ahora=java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
     String numero=String.format(java.util.Locale.ROOT,"CP-%08d",tx.getIdTransaccion());
     var d=datosMapper.snapshot(numero,ahora,tx,r,usuario);
-    Path archivo=null;
+    String archivo=null;
     try{
       var c=new ComprobantePago();c.setIdTransaccion(tx.getIdTransaccion());c.setIdReserva(tx.getIdReserva());c.setIdUsuario(r.idUsuario());c.setNumero(numero);c.setFechaEmision(ahora);
-      c.setDatosJson(mapper.writeValueAsString(d));c.setArchivo(java.util.UUID.randomUUID()+".pdf");
-      Files.createDirectories(carpeta());archivo=carpeta().resolve(c.getArchivo());
-      Files.write(archivo,generador.generar(d),StandardOpenOption.CREATE_NEW);
+      c.setDatosJson(mapper.writeValueAsString(d));
+      archivo=almacenamiento.guardar(CategoriaArchivo.COMPROBANTE,java.util.UUID.randomUUID()+".pdf",generador.generar(d),"application/pdf");
+      c.setArchivo(archivo);
       return comprobantes.saveAndFlush(c);
     }catch(java.io.IOException|RuntimeException e){
-      if(archivo!=null)try{Files.deleteIfExists(archivo);}catch(java.io.IOException ignored){}
+      if(archivo!=null)almacenamiento.descartar(CategoriaArchivo.COMPROBANTE,archivo);
       if(e instanceof ResponseStatusException re)throw re;
       throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"No se pudo emitir el comprobante. Puedes reintentar sin volver a pagar.",e);
     }
   }
-  private Path carpeta(){return Paths.get(directorio).toAbsolutePath().normalize();}
-  @Override public byte[] pdf(ComprobantePago c){
-    try{Path archivo=carpeta().resolve(c.getArchivo()).normalize();if(!archivo.getParent().equals(carpeta()))throw new java.io.IOException();return Files.readAllBytes(archivo);}
-    catch(java.io.IOException e){throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"El archivo no está disponible. Contacta con administración.",e);}
+  @Override public byte[] pdf(ComprobantePago comprobante) {
+    return almacenamiento.leer(CategoriaArchivo.COMPROBANTE, comprobante.getArchivo());
+  }
+  @Transactional public boolean migrar(Long id) {
+    var comprobante = comprobantes.findById(id).orElseThrow();
+    if (comprobante.getArchivo().startsWith("drive:")) return false;
+    byte[] contenido = pdf(comprobante);
+    String referencia = almacenamiento.migrar(CategoriaArchivo.COMPROBANTE, comprobante.getNumero() + ".pdf", contenido, "application/pdf");
+    comprobante.setArchivo(referencia);
+    comprobantes.saveAndFlush(comprobante);
+    return true;
   }
 }

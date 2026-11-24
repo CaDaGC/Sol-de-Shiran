@@ -16,10 +16,12 @@ import pe.edu.upeu.soldeshiran.usuario_service.service.FotoPerfilService;
 
 class FotoPerfilServiceTest {
   final UsuarioRepository repository = mock(UsuarioRepository.class);
-  final FotoPerfilService service = new FotoPerfilService(repository);
+  FotoPerfilService service;
   @org.junit.jupiter.api.io.TempDir java.nio.file.Path carpeta;
   @org.junit.jupiter.api.BeforeEach void configurarCarpeta() {
-    org.springframework.test.util.ReflectionTestUtils.setField(service,"directorio",carpeta.toString());
+    var almacenamiento = new pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService("local",
+      new pe.edu.upeu.soldeshiran.almacenamiento.LocalStorage(java.util.Map.of(pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo.PERFIL, carpeta)), null);
+    service = new FotoPerfilService(repository, almacenamiento);
     when(repository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
   }
   final Actor cliente = new Actor(7L, "CLIENTE");
@@ -49,7 +51,7 @@ class FotoPerfilServiceTest {
     service.quitar(cliente);
     assertNull(u.getFotoPerfil());
     assertEquals(7L, u.getId());
-    verify(repository).save(u);
+    verify(repository).saveAndFlush(u);
   }
 
   @Test void rechazaContenidoQueNoEsImagen() {
@@ -66,5 +68,48 @@ class FotoPerfilServiceTest {
     assertEquals(400, assertThrows(ResponseStatusException.class,
         () -> service.guardar(archivo, cliente)).getStatusCode().value());
     verify(repository, never()).save(any());
+  }
+
+  @Test void quitarRetiraDeDriveSoloDespuesDeConfirmarLaTransaccion() {
+    var u = cuenta(); u.setFotoPerfilArchivo("drive:foto_anterior_123");
+    var almacenamiento = mock(pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService.class);
+    var servicio = new FotoPerfilService(repository, almacenamiento);
+    org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+    try {
+      servicio.quitar(cliente);
+      verifyNoInteractions(almacenamiento);
+      for (var sincronizacion : org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()) sincronizacion.afterCommit();
+      verify(almacenamiento).descartar(pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo.PERFIL, "drive:foto_anterior_123");
+      assertNull(u.getFotoPerfilArchivo());
+    } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+  }
+  @Test void reemplazarNoRetiraLaFotoAnteriorSiLaTransaccionSeRevierte() throws Exception {
+    var u = cuenta(); u.setFotoPerfilArchivo("drive:foto_anterior_123");
+    var almacenamiento = mock(pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService.class);
+    when(almacenamiento.guardar(any(), anyString(), any(), anyString())).thenReturn("drive:foto_nueva_123");
+    var servicio = new FotoPerfilService(repository, almacenamiento);
+    var salida = new ByteArrayOutputStream();
+    ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "png", salida);
+    org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+    try {
+      servicio.guardar(new MockMultipartFile("archivo", "foto.png", "image/png", salida.toByteArray()), cliente);
+      verify(almacenamiento, never()).descartar(any(), eq("drive:foto_anterior_123"));
+      for (var sincronizacion : org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()) sincronizacion.afterCompletion(1);
+      verify(almacenamiento, never()).descartar(any(), eq("drive:foto_anterior_123"));
+    } finally { org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization(); }
+  }
+  @Test void reemplazarRetiraLaAnteriorDespuesDelGuardadoCorrecto() throws Exception {
+    var u = cuenta(); u.setFotoPerfilArchivo("drive:foto_anterior_123");
+    var almacenamiento = mock(pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService.class);
+    when(almacenamiento.guardar(any(), anyString(), any(), anyString())).thenReturn("drive:foto_nueva_123");
+    var servicio = new FotoPerfilService(repository, almacenamiento);
+    var salida = new ByteArrayOutputStream();
+    ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "png", salida);
+    servicio.guardar(new MockMultipartFile("archivo", "foto.png", "image/png", salida.toByteArray()), cliente);
+    var orden = inOrder(repository, almacenamiento);
+    orden.verify(almacenamiento).guardar(any(), anyString(), any(), anyString());
+    orden.verify(repository).saveAndFlush(u);
+    orden.verify(almacenamiento).descartar(pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo.PERFIL, "drive:foto_anterior_123");
+    assertEquals("drive:foto_nueva_123", u.getFotoPerfilArchivo());
   }
 }

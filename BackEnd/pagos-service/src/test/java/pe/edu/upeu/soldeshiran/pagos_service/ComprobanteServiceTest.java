@@ -26,8 +26,8 @@ class ComprobanteServiceTest {
   @BeforeEach void setup() throws Exception {
     repo=mock(ComprobantePagoRepository.class);pagos=mock(TransaccionPagoRepository.class);reservas=mock(ReservaInternaClient.class);
     mapper=new ObjectMapper().findAndRegisterModules();
-    service=new ComprobanteServiceImpl(repo,pagos,reservas,mapper,new ComprobantePdf(),new ComprobanteMapper());
-    ReflectionTestUtils.setField(service,"directorio",carpeta.toString());ReflectionTestUtils.setField(service,"token","interno");ReflectionTestUtils.setField(service,"key","clave");
+    service=new ComprobanteServiceImpl(repo,pagos,reservas,mapper,new ComprobantePdf(),new ComprobanteMapper(), new pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoService("local", new pe.edu.upeu.soldeshiran.almacenamiento.LocalStorage(Map.of(pe.edu.upeu.soldeshiran.almacenamiento.CategoriaArchivo.COMPROBANTE, carpeta)), null));
+    ReflectionTestUtils.setField(service,"token","interno");ReflectionTestUtils.setField(service,"key","clave");
     usuarios=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
     usuarios.createContext("/internal/usuarios/5/perfil",exchange->{
       assertEquals("clave",exchange.getRequestHeaders().getFirst("X-Internal-Key"));

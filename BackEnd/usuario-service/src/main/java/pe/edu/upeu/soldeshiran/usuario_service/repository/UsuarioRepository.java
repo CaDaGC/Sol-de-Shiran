@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
+    Optional<Usuario> findByFotoPerfil(String fotoPerfil);
+
     Optional<Usuario> findByEmail(String email);
 
     List<Usuario> findAllByRol(pe.edu.upeu.soldeshiran.usuario_service.model.Rol rol);

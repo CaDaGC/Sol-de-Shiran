@@ -9,6 +9,6 @@ public class ComprobantePago {
   @Column(nullable=false) private Long idUsuario;
   @Column(nullable=false,unique=true,length=40) private String numero;
   @Column(nullable=false) private java.time.LocalDateTime fechaEmision;
-  @Column(nullable=false,length=80) private String archivo;
+  @Column(nullable=false,length=200) private String archivo;
   @Column(nullable=false,columnDefinition="LONGTEXT") private String datosJson;
 }

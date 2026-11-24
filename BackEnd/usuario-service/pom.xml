@@ -105,6 +105,11 @@
 
 	<build>
 		<plugins>
+            <plugin><groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>3.8.0</version>
+                <executions><execution><id>almacenamiento-compartido</id><phase>generate-sources</phase><goals><goal>add-source</goal></goals>
+                    <configuration><sources><source>${project.basedir}/../almacenamiento-compartido/src/main/java</source></sources></configuration>
+                </execution></executions>
+            </plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
