@@ -28,6 +28,7 @@ public class PagoServiceImpl implements PagoService {
     private final TransaccionPagoRepository transaccionRepository;
     private final ReservaInternaClient reservaClient;
     private final RestClient mercadoPago;
+    private final boolean mercadoPagoConfigurado;
     @org.springframework.beans.factory.annotation.Autowired
     private org.springframework.context.ApplicationEventPublisher eventos;
     private final ObjectMapper objectMapper;
@@ -40,6 +41,7 @@ public class PagoServiceImpl implements PagoService {
         transaccionRepository = repository;
         reservaClient = client;
         objectMapper = mapper;
+        mercadoPagoConfigurado = accessToken != null && !accessToken.isBlank();
         var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(5000);
         requestFactory.setReadTimeout(12000);
@@ -56,6 +58,10 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PreferenciaResponse crearPreferencia(Long usuario, Long idReserva, CrearPreferenciaRequest request) {
+        if (!mercadoPagoConfigurado) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "La pasarela de pagos no está configurada. Configura MP_ACCESS_TOKEN en el entorno de producción.");
+        }
         ReservaPagoResponse reserva = validarReserva(usuario, idReserva);
         try {
             reservaClient.iniciarAdelanto(idReserva, usuario, internalToken);
@@ -133,6 +139,12 @@ public class PagoServiceImpl implements PagoService {
                         "Mercado Pago informa que la clave de este intento ya fue utilizada. "
                                 + "Verifica la orden anterior antes de iniciar otro pago; "
                                 + "no se ha creado un nuevo intento.", e);
+            }
+            if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 403) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Mercado Pago rechazó la credencial o la política de la cuenta (HTTP "
+                                + e.getStatusCode().value()
+                                + "). Revisa el Access Token de producción y los permisos de Checkout Orders.", e);
             }
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Mercado Pago respondió HTTP " + e.getStatusCode().value() + ": "

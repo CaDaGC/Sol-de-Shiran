@@ -62,6 +62,27 @@ class OrdersFlowTests {
         verify(repo).save(argThat(saved -> "ORDTST123".equals(saved.getIdExternoPasarela())));
         server.verify();
     }
+    @Test void rechazaOrdenSinTokenAntesDeBloquearReserva() {
+        var sinToken = new PagoServiceImpl(repo, reservas, RestClient.builder(), new ObjectMapper(), " ");
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> sinToken.crearPreferencia(2L, 3L, new CrearPreferenciaRequest("buyer@example.com")));
+        assertEquals(503, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("MP_ACCESS_TOKEN"));
+        verify(reservas, never()).iniciarAdelanto(anyLong(), anyLong(), anyString());
+        verify(repo, never()).saveAndFlush(any());
+    }
+    @Test void convierteDenegacionDeMercadoPagoEnErrorDeConfiguracionAccionable() {
+        server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
+            .andRespond(withStatus(org.springframework.http.HttpStatus.FORBIDDEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"message\":\"At least one policy returned UNAUTHORIZED.\"}"));
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.crearPreferencia(2L, 3L, new CrearPreferenciaRequest("buyer@example.com")));
+        assertEquals(503, error.getStatusCode().value());
+        assertTrue(error.getReason().contains("Access Token de producción"));
+        verify(repo).save(argThat(saved -> saved.getEstadoTransaccion() == EstadoTransaccion.RECHAZADA));
+        server.verify();
+    }
     @Test void conflictoTransitorioReintentaLaMismaOrdenSinOtraTransaccion() {
         server.expect(requestTo("https://api.mercadopago.com/v1/orders"))
             .andExpect(request -> assertEquals(claveCheckout, request.getHeaders().getFirst("X-Idempotency-Key")))

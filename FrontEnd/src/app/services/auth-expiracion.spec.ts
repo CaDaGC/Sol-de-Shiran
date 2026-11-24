@@ -3,9 +3,20 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
 import { AuthService } from './auth';
 const token=(iat:number,exp:number)=>'e30.'+btoa(JSON.stringify({iat,exp,userId:1,rol:'CLIENTE',email:'test@example.com'}))+'.firma';
+function crearStorage(): Storage {
+  const valores = new Map<string, string>();
+  return {
+    get length() { return valores.size; },
+    clear: () => valores.clear(),
+    getItem: (clave) => valores.get(clave) ?? null,
+    key: (indice) => Array.from(valores.keys())[indice] ?? null,
+    removeItem: (clave) => { valores.delete(clave); },
+    setItem: (clave, valor) => { valores.set(clave, String(valor)); },
+  };
+}
 describe('Expiración obligatoria de sesión',()=>{
-  beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-20T20:00:00Z'));localStorage.clear();sessionStorage.clear();TestBed.configureTestingModule({providers:[provideHttpClient(),provideRouter([])]});});
-  afterEach(()=>{TestBed.inject(AuthService).cerrarSesion();localStorage.clear();sessionStorage.clear();vi.useRealTimers();});
+  beforeEach(()=>{vi.stubGlobal('localStorage', crearStorage());vi.stubGlobal('sessionStorage', crearStorage());vi.useFakeTimers();vi.setSystemTime(new Date('2026-11-20T20:00:00Z'));TestBed.configureTestingModule({providers:[provideHttpClient(),provideRouter([])]});});
+  afterEach(()=>{TestBed.inject(AuthService).cerrarSesion();localStorage.clear();sessionStorage.clear();vi.unstubAllGlobals();vi.useRealTimers();});
   it('expulsa al cumplirse una hora aunque el JWT antiguo anuncie 24 horas',async()=>{
     const ahora=Date.now()/1000;localStorage.setItem('token',token(ahora,ahora+86400));
     const navegar=vi.spyOn(TestBed.inject(Router),'navigate').mockResolvedValue(true);
