@@ -11,7 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import pe.edu.upeu.soldeshiran.restaurante_service.client.ReservasClient;
 import pe.edu.upeu.soldeshiran.restaurante_service.dto.EstadiaActivaResponse;
 import pe.edu.upeu.soldeshiran.restaurante_service.dto.EstadiaResponse;
+import pe.edu.upeu.soldeshiran.restaurante_service.dto.InicioRestaurantesResponse;
 import pe.edu.upeu.soldeshiran.restaurante_service.dto.RestauranteResponse;
+import pe.edu.upeu.soldeshiran.restaurante_service.dto.SeleccionRestauranteResponse;
 import pe.edu.upeu.soldeshiran.restaurante_service.mapper.RestauranteMapper;
 import pe.edu.upeu.soldeshiran.restaurante_service.model.EstadoRestaurante;
 import pe.edu.upeu.soldeshiran.restaurante_service.repository.RestauranteRepository;
@@ -70,20 +72,16 @@ public class RestauranteConsultaServiceImpl
 
     @Override
     public List<RestauranteResponse> listarLocales(Actor actor) {
-        var estadia = consultarEstadias(actor.id(), actor);
+        var estadias = consultarEstadias(actor.id(), actor);
 
-        if (!estadia.activa()) {
+        if (!estadias.activa()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Necesitas una estadía activa para acceder a los restaurantes."
             );
         }
 
-        return restaurantes
-                .findByEstadoOrderByNombreAsc(EstadoRestaurante.ACTIVO)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return consultarLocalesActivos();
     }
 
     @Override
@@ -112,6 +110,116 @@ public class RestauranteConsultaServiceImpl
         }
 
         return mapper.toResponse(restaurante);
+    }
+
+    @Override
+    public InicioRestaurantesResponse consultarInicio(
+            Long idReserva,
+            Actor actor) {
+
+        var estadias = consultarEstadias(actor.id(), actor);
+
+        var entrega = resolverEstadia(
+                estadias.estadias(),
+                idReserva
+        );
+
+        List<RestauranteResponse> locales = entrega == null
+                ? List.of()
+                : consultarLocalesActivos();
+
+        return new InicioRestaurantesResponse(
+                estadias,
+                entrega,
+                locales
+        );
+    }
+
+    @Override
+    public SeleccionRestauranteResponse seleccionarRestaurante(
+            Long idRestaurante,
+            Long idReserva,
+            Actor actor) {
+
+        var estadias = consultarEstadias(actor.id(), actor);
+
+        if (!estadias.activa()) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Necesitas una estadía activa para seleccionar un restaurante."
+            );
+        }
+
+        var entrega = resolverEstadia(
+                estadias.estadias(),
+                idReserva
+        );
+
+        if (entrega == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Selecciona primero la cabaña donde recibirás tu pedido."
+            );
+        }
+
+        if (idRestaurante == null || idRestaurante <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El restaurante debe ser válido."
+            );
+        }
+
+        var restaurante = restaurantes.findById(idRestaurante)
+                .filter(local ->
+                        local.getEstado() == EstadoRestaurante.ACTIVO
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "El restaurante no está disponible."
+                ));
+
+        return new SeleccionRestauranteResponse(
+                entrega,
+                mapper.toResponse(restaurante)
+        );
+    }
+
+    private List<RestauranteResponse> consultarLocalesActivos() {
+        return restaurantes
+                .findByEstadoOrderByNombreAsc(EstadoRestaurante.ACTIVO)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    private EstadiaResponse resolverEstadia(
+            List<EstadiaResponse> estadias,
+            Long idReserva) {
+
+        if (idReserva != null) {
+            if (idReserva <= 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "La reserva debe ser válida."
+                );
+            }
+
+            return estadias.stream()
+                    .filter(estadia ->
+                            idReserva.equals(estadia.idReserva())
+                    )
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "La reserva seleccionada no corresponde a una estadía activa de tu cuenta."
+                    ));
+        }
+
+        if (estadias.size() == 1) {
+            return estadias.getFirst();
+        }
+
+        return null;
     }
 
     private void exigirUsuarioPropio(Long idUsuario, Actor actor) {

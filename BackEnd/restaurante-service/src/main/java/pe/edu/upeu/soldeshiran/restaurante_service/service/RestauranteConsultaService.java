@@ -2,7 +2,9 @@ package pe.edu.upeu.soldeshiran.restaurante_service.service;
 
 import java.util.List;
 import pe.edu.upeu.soldeshiran.restaurante_service.dto.EstadiaActivaResponse;
+import pe.edu.upeu.soldeshiran.restaurante_service.dto.InicioRestaurantesResponse;
 import pe.edu.upeu.soldeshiran.restaurante_service.dto.RestauranteResponse;
+import pe.edu.upeu.soldeshiran.restaurante_service.dto.SeleccionRestauranteResponse;
 import pe.edu.upeu.soldeshiran.restaurante_service.security.Actor;
 
 public interface RestauranteConsultaService {
@@ -16,6 +18,17 @@ public interface RestauranteConsultaService {
 
     RestauranteResponse consultarMiLocal(
             Long idUsuario,
+            Actor actor
+    );
+
+    InicioRestaurantesResponse consultarInicio(
+            Long idReserva,
+            Actor actor
+    );
+
+    SeleccionRestauranteResponse seleccionarRestaurante(
+            Long idRestaurante,
+            Long idReserva,
             Actor actor
     );
 }
