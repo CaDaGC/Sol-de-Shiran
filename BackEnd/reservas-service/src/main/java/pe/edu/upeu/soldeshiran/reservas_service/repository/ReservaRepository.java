@@ -124,4 +124,9 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             @Param("expirada") EstadoReserva expirada,
             @Param("ahora") LocalDateTime ahora
     );
+
+  List<Reserva> findByIdUsuarioAndEstadoReservaOrderByFechaIngresoAscIdReservaAsc(
+          Long idUsuario,
+          EstadoReserva estadoReserva
+  );
 }

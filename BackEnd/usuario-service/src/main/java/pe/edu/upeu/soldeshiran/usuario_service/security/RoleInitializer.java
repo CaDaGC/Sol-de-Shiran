@@ -17,7 +17,7 @@ public class RoleInitializer implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) {
-    for (String name : java.util.List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE")) {
+    for (String name : java.util.List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE", "RESTAURANTE")) {
       if (roles.findByNombre(name).isEmpty()) {
         Rol r = new Rol();
         r.setNombre(name);

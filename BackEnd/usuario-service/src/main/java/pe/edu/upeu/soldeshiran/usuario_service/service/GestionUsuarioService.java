@@ -137,7 +137,7 @@ public class GestionUsuarioService {
   }
 
   public UsuarioResponse password(Long id, String password, String actual, Actor a) {
-    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR", "RESTAURANTE");
     if (!id.equals(a.id())) prohibido();
     Usuario u = find(id);
     if (actual == null || !passwords.matches(actual, u.getPassword())) prohibido();
@@ -147,13 +147,13 @@ public class GestionUsuarioService {
   }
 
   private void exigirVisible(Usuario u, Actor a) {
-    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR");
+    a.exigir("ADMIN", "CLIENTE", "TRABAJADOR", "RESTAURANTE");
     if (!a.es("ADMIN") && !u.getId().equals(a.id()))
       prohibido();
   }
 
   private Rol rol(String nombre) {
-    if (!List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE").contains(nombre)) malo("Rol invÃ¡lido");
+    if (!List.of("ADMIN", "DUENO", "TRABAJADOR", "CLIENTE", "RESTAURANTE").contains(nombre)) malo("Rol invÃ¡lido");
     return roles
         .findByNombre(nombre)
         .orElseThrow(
