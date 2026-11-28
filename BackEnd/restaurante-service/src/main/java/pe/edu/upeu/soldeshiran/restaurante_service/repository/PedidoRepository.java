@@ -42,4 +42,14 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
             @Param("idReserva") Long idReserva,
             Pageable pageable
     );
+
+    @EntityGraph(attributePaths = {
+            "restaurante",
+            "detalles",
+            "detalles.producto"
+    })
+    Optional<Pedido> findByIdPedidoAndIdUsuario(
+            Long idPedido,
+            Long idUsuario
+    );
 }
