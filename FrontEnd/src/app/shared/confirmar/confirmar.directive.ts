@@ -40,7 +40,7 @@ export class ConfirmarDirective {
         aceptar.type = 'button'; aceptar.className = 'btn btn-success'; aceptar.textContent = 'Confirmar';
         const cerrar = () => { dialogo.close(); dialogo.remove(); this.dialogo = undefined; };
         cancelar.onclick = cerrar;
-        dialogo.oncancel = evento => { evento.preventDefault(); cerrar(); };
+        dialogo.oncancel = evento => { evento.preventDefault(); };
         aceptar.onclick = () => {
           cerrar();
           if (!this.elemento.isConnected) return;

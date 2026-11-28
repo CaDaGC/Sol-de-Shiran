@@ -154,6 +154,9 @@ describe('Integración del panel de reservas', () => {
     const pendiente = http.expectOne(req => req.url.endsWith('/reservas/panel/1'));
     fixture.nativeElement.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
+    expect(pendiente.cancelled).toBe(false);
+    fixture.nativeElement.querySelector('[aria-label="Cerrar detalle de reserva"]').click();
+    fixture.detectChanges();
     expect(pendiente.cancelled).toBe(true);
 
     fixture.nativeElement.querySelector('button[aria-label="Administrar reserva RSS00002"]').click();

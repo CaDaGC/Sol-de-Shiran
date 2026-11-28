@@ -19,6 +19,15 @@ describe('Usuarios y perfil con datos civiles',()=>{
   beforeEach(()=>{TestBed.configureTestingModule({imports:[GestionComponent],providers:[provideHttpClient(),provideHttpClientTesting(),provideRouter([]),{provide:AuthService,useValue:auth}]});http=TestBed.inject(HttpTestingController);auth.actualizarPerfil.mockClear();});
   afterEach(()=>http.verify());
   function crear(){const f=TestBed.createComponent(GestionComponent);f.detectChanges();http.expectOne(r=>r.url.endsWith('/usuarios/me')).flush(perfil);http.expectOne(r=>r.url.endsWith('/cabanas/gestion')).flush([]);http.expectOne(r=>r.url.endsWith('/usuarios')).flush([]);return f;}
+  it('correo de trabajador y restaurante es de solo lectura en Mi perfil', () => {
+    const f=crear(); const c=f.componentInstance; c.tab='perfil';
+    for(const rol of ['TRABAJADOR','RESTAURANTE']) {
+      c.perfil.set({...perfil,rol}); f.detectChanges();
+      expect(f.nativeElement.querySelector('input[name="memail"]').readOnly).toBe(true);
+    }
+    c.perfil.set({...perfil,rol:'ADMIN'}); f.detectChanges();
+    expect(f.nativeElement.querySelector('input[name="memail"]').readOnly).toBe(false); f.destroy();
+  });
   it('separa usuario y correo y filtra por rol sin mezclar cuentas',()=>{
     const f=crear();const c=f.componentInstance;c.abrirCuentas();
     c.usuarios.set([{...perfil,id:2,rol:'CLIENTE',nombreUsuario:'cliente'},{...perfil,id:3,rol:'ADMIN',nombreUsuario:'admin2'}]);f.detectChanges();

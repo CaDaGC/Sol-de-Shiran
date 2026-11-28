@@ -142,6 +142,9 @@ describe('Mis reservas del cliente', () => {
     expect(dialog.textContent).toContain('Saldo pendiente');
     dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
     fixture.detectChanges();
+    expect(dialog.open).toBe(true);
+    dialog.querySelector<HTMLButtonElement>('[aria-label="Cerrar detalle"]')!.click();
+    fixture.detectChanges();
     expect(dialog.open).toBe(false);
     http.expectNone((r) => !r.url.endsWith('/mis-reservas'));
   });

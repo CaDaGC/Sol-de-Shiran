@@ -206,7 +206,5 @@ export class MisReservasComponent {
     this.detalle.set(null);
   }
 
-  cerrarDesdeFondo(event: MouseEvent): void {
-    if (event.target === this.dialog().nativeElement) this.cerrarDetalle();
-  }
+
 }

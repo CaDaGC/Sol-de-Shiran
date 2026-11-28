@@ -74,6 +74,11 @@ public class GestionUsuarioService {
     Usuario u = find(id);
     exigirVisible(u, a);
     validar(r);
+    if (a.es("TRABAJADOR", "RESTAURANTE")
+        && !u.getEmail().equalsIgnoreCase(r.getEmail().trim())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+          "El correo de esta cuenta solo puede modificarlo el administrador");
+    }
     usuarios
         .findByEmail(r.getEmail().trim().toLowerCase())
         .filter(x -> !x.getId().equals(id))

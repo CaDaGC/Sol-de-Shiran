@@ -1,6 +1,8 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
+  { path: 'restaurante/pedidos', renderMode: RenderMode.Client },
+  { path: 'gestion/restaurantes', renderMode: RenderMode.Client },
   { path: 'catalogo', renderMode: RenderMode.Client },
   { path: 'inicio-dueno', renderMode: RenderMode.Client },
   { path: 'gestion', renderMode: RenderMode.Client },

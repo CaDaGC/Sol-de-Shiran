@@ -134,6 +134,11 @@
       class="side-nav d-flex flex-column gap-2"
       aria-label="Navegación principal"
     >
+      @if (['ADMIN', 'RESTAURANTE'].includes(perfil()?.rol ?? '')) {
+        <a class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none" routerLink="/restaurante/pedidos" routerLinkActive="active" [attr.title]="contraido() ? 'Pedidos de restaurante' : null" aria-label="Pedidos de restaurante">
+          <span class="nav-icon" aria-hidden="true">▤</span><span>{{ perfil()?.rol === 'ADMIN' ? 'Pedidos de restaurantes' : 'Pedidos' }}</span>
+        </a>
+      }
       @if (perfil()?.rol === 'CLIENTE') {
         <a
           class="d-flex align-items-center gap-3 rounded-3 px-3 py-2 text-decoration-none"
@@ -181,7 +186,7 @@
         <span>Catálogo</span>
       </a>
 
-      @if (['ADMIN', 'CLIENTE', 'TRABAJADOR'].includes(perfil()?.rol ?? '')) {
+      @if (['ADMIN', 'CLIENTE', 'TRABAJADOR', 'RESTAURANTE'].includes(perfil()?.rol ?? '')) {
         <button type="button" class="gestion-toggle d-flex align-items-center gap-3 rounded-3 px-3 py-2 border-0 text-start" [class.active]="!!seccionGestion()" [attr.aria-expanded]="gestionAbierta()" aria-controls="gestion-submenu" aria-label="Gestión" [attr.title]="contraido() ? 'Gestión' : null" (click)="alternarGestion($event)">
           <span class="nav-icon" aria-hidden="true">⚙</span><span class="gestion-label">Gestión</span><span class="gestion-chevron ms-auto" aria-hidden="true">{{ gestionAbierta() ? '▴' : '▾' }}</span>
         </button>
@@ -190,6 +195,10 @@
             <a routerLink="/gestion" [queryParams]="{ seccion: 'cabanas' }" [class.active]="seccionGestion() === 'cabanas'" [attr.aria-current]="seccionGestion() === 'cabanas' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Cabañas</a>
             <a routerLink="/gestion" [queryParams]="{ seccion: 'cuentas' }" [class.active]="seccionGestion() === 'cuentas'" [attr.aria-current]="seccionGestion() === 'cuentas' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Usuarios</a>
             <a routerLink="/gestion" [queryParams]="{ seccion: 'bloqueos' }" [class.active]="seccionGestion() === 'bloqueos'" [attr.aria-current]="seccionGestion() === 'bloqueos' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Bloquear fechas</a>
+            <a routerLink="/gestion/restaurantes" [queryParams]="{ seccion: 'restaurantes' }" [class.active]="seccionGestion() === 'restaurantes'" [attr.aria-current]="seccionGestion() === 'restaurantes' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Restaurantes</a>
+            <a routerLink="/gestion/restaurantes" [queryParams]="{ seccion: 'categorias-menu' }" [class.active]="seccionGestion() === 'categorias-menu'" [attr.aria-current]="seccionGestion() === 'categorias-menu' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Categorías del menú</a>
+            <a routerLink="/gestion/restaurantes" [queryParams]="{ seccion: 'productos-menu' }" [class.active]="seccionGestion() === 'productos-menu'" [attr.aria-current]="seccionGestion() === 'productos-menu' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Productos del menú</a>
+            <a routerLink="/gestion/restaurantes" [queryParams]="{ seccion: 'encargados' }" [class.active]="seccionGestion() === 'encargados'" [attr.aria-current]="seccionGestion() === 'encargados' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Encargados de restaurante</a>
           }
           <a routerLink="/gestion" [queryParams]="{ seccion: 'perfil' }" [class.active]="seccionGestion() === 'perfil'" [attr.aria-current]="seccionGestion() === 'perfil' ? 'page' : null" class="rounded-3 px-3 py-2 text-decoration-none">Mi perfil</a>
         </div>

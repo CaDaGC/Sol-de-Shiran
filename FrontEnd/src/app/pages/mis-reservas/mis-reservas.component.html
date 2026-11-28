@@ -270,8 +270,7 @@
 <dialog
   #detalleDialog
   aria-labelledby="my-detail-title"
-  (cancel)="$event.preventDefault(); cerrarDetalle()"
-  (click)="cerrarDesdeFondo($event)"
+  (cancel)="$event.preventDefault()"
 >
   <header class="dialog-header">
     <h2 id="my-detail-title">Reserva {{ detalle()?.codigo }}</h2>

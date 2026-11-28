@@ -31,6 +31,7 @@ import pe.edu.upeu.soldeshiran.restaurante_service.service.*;
 class RestauranteFlujoTest {
     @Autowired GestionRestauranteService gestion;
     @Autowired PedidoService pedidos;
+    @Autowired RestauranteConsultaService consultas;
     @Autowired AtencionPedidoService atencion;
     @Autowired HistorialPedidosService historial;
     @Autowired DetallePedidoService detalle;
@@ -168,6 +169,16 @@ class RestauranteFlujoTest {
             assertThat(guardadas.count()).isZero();
         }
         assertThatThrownBy(() -> fotos.guardar("productos", producto, archivo, encargado)).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void restauranteInactivoConservaAccesoOperativoPeroNoRecibePedidosNuevos() {
+        var id = pedidos.crear(solicitud(UUID.randomUUID()), cliente).pedido().idPedido();
+        gestion.cambiarEstado(local, new EstadoDatos(EstadoRestaurante.INACTIVO), admin);
+        assertThat(consultas.consultarMiLocal(7L, encargado).estado()).isEqualTo("INACTIVO");
+        assertThat(panel.consultar(local, null, null, 0, 20, encargado).totalElementos()).isEqualTo(1);
+        assertThatThrownBy(() -> pedidos.crear(solicitud(UUID.randomUUID()), cliente)).isInstanceOf(ResponseStatusException.class);
+        atencion.cambiarEstado(local, id, new EstadoPedidoRequest(EstadoPedido.RECHAZADO, "Local cerrado"), encargado);
     }
 
     @Test

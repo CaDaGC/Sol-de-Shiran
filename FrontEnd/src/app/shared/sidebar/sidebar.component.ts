@@ -32,7 +32,8 @@ export class SidebarComponent {
   private actualizarGestion(): void {
     const ruta = this.router.parseUrl(this.router.url);
     const enGestion = ruta.root.children['primary']?.segments[0]?.path === 'gestion';
-    this.seccionGestion.set(enGestion ? ruta.queryParams['seccion'] ?? (this.perfil()?.rol === 'ADMIN' ? 'cabanas' : 'perfil') : '');
+    const restaurantes = ruta.root.children['primary']?.segments[1]?.path === 'restaurantes';
+    this.seccionGestion.set(enGestion ? ruta.queryParams['seccion'] ?? (restaurantes ? 'restaurantes' : this.perfil()?.rol === 'ADMIN' ? 'cabanas' : 'perfil') : '');
     if (enGestion) this.gestionAbierta.set(true);
   }
   alternarGestion(evento: MouseEvent): void {

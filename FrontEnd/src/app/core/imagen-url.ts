@@ -13,5 +13,5 @@ export function imagenUrl(valor: string | null | undefined): string {
 }
 
 function esFotoSubida(ruta: string): boolean {
-  return ruta.startsWith('/api/v1/cabanas/fotos/') || ruta.startsWith('/api/v1/usuarios/fotos/');
+  return ruta.startsWith('/api/restaurante/imagenes/') || ruta.startsWith('/api/v1/cabanas/fotos/') || ruta.startsWith('/api/v1/usuarios/fotos/');
 }

@@ -102,13 +102,6 @@ public class RestauranteConsultaServiceImpl
 
         var restaurante = asignacion.getRestaurante();
 
-        if (restaurante.getEstado() != EstadoRestaurante.ACTIVO) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Tu restaurante está inactivo."
-            );
-        }
-
         return mapper.toResponse(restaurante);
     }
 

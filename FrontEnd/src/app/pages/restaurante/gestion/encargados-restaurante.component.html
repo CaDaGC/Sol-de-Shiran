@@ -1,0 +1,17 @@
+@if (cargando()) { <p class="mensaje-carga" role="status">Cargando encargados…</p> }
+@else if (errorCarga()) { <div class="alert alert-danger" role="alert">{{ errorCarga() }} <button class="btn btn-sm btn-outline-danger ms-2" (click)="cargar()">Reintentar</button></div> }
+@else {
+  <div class="superficie mb-4"><h2 class="h4">Asignar encargado</h2><p class="small text-secondary">Selecciona una cuenta activa con rol RESTAURANTE. Cada cuenta puede trabajar en un solo restaurante.</p>
+    @if (opciones().length) {
+      <form class="row align-items-end g-3" (ngSubmit)="asignar()" appConfirmar="¿Confirmas que deseas asignar esta cuenta al restaurante seleccionado? Si tenía otro restaurante asignado, su asignación se trasladará a este local.">
+        <div class="col-md-8"><label class="form-label d-block">Cuenta del encargado<select class="form-select mt-2" name="encargado" [(ngModel)]="seleccionado" required><option [ngValue]="null">Seleccionar cuenta</option>@for (usuario of opciones(); track usuario.id) { <option [ngValue]="usuario.id">{{ usuario.nombreUsuario || usuario.nombre }} · {{ usuario.email }}</option> }</select></label></div>
+        <div class="col-md-4"><button class="btn btn-success mb-2" type="submit" [disabled]="ocupado()">{{ ocupado() ? 'Asignando…' : 'Asignar encargado' }}</button></div>
+      </form>
+    } @else { <p class="nota">No hay cuentas disponibles para asignar. Puedes crear una cuenta con rol RESTAURANTE en Gestión → Usuarios.</p> }
+    @if (error()) { <div class="alert alert-danger mt-3" role="alert">{{ error() }}</div> }
+  </div>
+  @if (!asignaciones().length) { <div class="vacio"><h2>Sin encargados asignados</h2><p>Asigna una cuenta para que el personal pueda atender los pedidos de este restaurante.</p></div> }
+  @else { <div class="tabla-contenedor"><div class="table-responsive"><table class="table tabla-menu"><thead><tr><th>Nombre de usuario</th><th>Correo</th><th>Estado de la cuenta</th><th>Acciones</th></tr></thead><tbody>
+    @for (asignacion of asignaciones(); track asignacion.idAsignacion) { <tr><td>{{ cuenta(asignacion.idUsuario)?.nombreUsuario || cuenta(asignacion.idUsuario)?.nombre || 'Cuenta no disponible' }}</td><td>{{ cuenta(asignacion.idUsuario)?.email || '—' }}</td><td><span class="estado" [attr.data-estado]="cuenta(asignacion.idUsuario)?.activo ? 'ACTIVO' : 'INACTIVO'">{{ cuenta(asignacion.idUsuario)?.activo ? 'Activa' : 'Inactiva' }}</span></td><td><button class="btn btn-outline-danger btn-sm" type="button" aria-label="Retirar asignación" title="Retirar asignación" [disabled]="ocupado()" appConfirmar="¿Deseas retirar a este encargado del restaurante? Su cuenta no se eliminará." (click)="retirar(asignacion)"><app-icono nombre="basura" /></button></td></tr> }
+  </tbody></table></div></div> }
+}

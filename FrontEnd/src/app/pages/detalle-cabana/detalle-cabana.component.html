@@ -199,7 +199,7 @@
     <app-resenas-cabana *ngIf="cabana() as detalle" [idCabana]="detalle.idCabana" />
   </ng-container>
 
-  <div class="modal-backdrop" *ngIf="modalReservaAbierto()" (click)="cerrarModalReserva()">
+  <div class="modal-backdrop" *ngIf="modalReservaAbierto()">
     <section
       class="reservation-modal"
       role="dialog"
@@ -447,7 +447,7 @@
   <div
     class="confirmation-backdrop"
     *ngIf="confirmacionReservaAbierta()"
-    (click)="cerrarConfirmacionReserva()"
+
   >
     <section
       class="confirmation-modal"

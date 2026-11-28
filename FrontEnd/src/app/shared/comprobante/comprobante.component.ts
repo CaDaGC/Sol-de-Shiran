@@ -45,7 +45,7 @@ export class ComprobanteComponent implements OnDestroy {
     finally{this.descargando.set(false);}
   }
   cerrar():void{if(this.descargando())return;this.solicitud++;this.dialog().nativeElement.close();this.cargando.set(false);this.liberar();}
-  cerrarFondo(e:MouseEvent):void{if(e.target===this.dialog().nativeElement)this.cerrar();}
+
   private liberar():void{this.vista.set(null);this.archivo=null;if(this.url)URL.revokeObjectURL(this.url);this.url=null;}
   ngOnDestroy():void{this.destruido=true;this.solicitud++;this.liberar();}
 }

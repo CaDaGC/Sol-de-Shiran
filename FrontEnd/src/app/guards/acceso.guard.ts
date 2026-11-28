@@ -10,7 +10,7 @@ export const catalogoGuard: CanActivateFn = () => {
 };
 
 export const cuentaGuard: CanActivateFn = (_route, state) => {
-  return accesoAutenticado(state.url, ['ADMIN', 'CLIENTE', 'TRABAJADOR']);
+  return accesoAutenticado(state.url, ['ADMIN', 'CLIENTE', 'TRABAJADOR', 'RESTAURANTE']);
 };
 
 export const adminGuard: CanActivateFn = (_route, state) => {
@@ -31,3 +31,5 @@ function accesoAutenticado(url: string, roles: string[]) {
   return roles.includes(rol ?? '')
     ? true : router.createUrlTree([inicioPorRol(rol)]);
 }
+
+export const restauranteGuard: CanActivateFn = (_route, state) => accesoAutenticado(state.url, ['ADMIN', 'RESTAURANTE']);

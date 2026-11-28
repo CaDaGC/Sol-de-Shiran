@@ -12,7 +12,7 @@ describe('Submenú de Gestión', () => {
     TestBed.configureTestingModule({
       imports: [SidebarComponent],
       providers: [
-        provideRouter([{ path: 'gestion', children: [] }]),
+        provideRouter([{ path: 'gestion/restaurantes', children: [] }, { path: 'gestion', children: [] }]),
         { provide: AuthService, useValue: { usuarioActual: perfil, fotoPerfil: signal(null), cargarFotoPerfil: vi.fn() } },
       ],
     });
@@ -26,11 +26,21 @@ describe('Submenú de Gestión', () => {
     boton.click(); f.detectChanges();
     expect(boton.getAttribute('aria-expanded')).toBe('true');
     expect(f.componentInstance.menuMovilAbierto()).toBe(true);
-    expect(f.nativeElement.querySelectorAll('#gestion-submenu a')).toHaveLength(4);
+    expect(f.nativeElement.querySelectorAll('#gestion-submenu a')).toHaveLength(8);
     await TestBed.inject(Router).navigateByUrl('/gestion?seccion=cuentas'); f.detectChanges();
     expect(f.componentInstance.seccionGestion()).toBe('cuentas');
     expect(f.nativeElement.querySelector('#gestion-submenu a.active').textContent.trim()).toBe('Usuarios');
     boton.click(); f.detectChanges(); expect(f.nativeElement.querySelector('#gestion-submenu').hidden).toBe(true);
+    f.destroy();
+  });
+
+  it('personal de restaurante ve pedidos y perfil sin gestión administrativa', () => {
+    perfil.update(p => ({ ...p, rol: 'RESTAURANTE' }));
+    const f = TestBed.createComponent(SidebarComponent); f.detectChanges();
+    expect(f.nativeElement.querySelector('a[href="/restaurante/pedidos"]')).not.toBeNull();
+    expect(f.nativeElement.querySelectorAll('#gestion-submenu a')).toHaveLength(1);
+    expect(f.nativeElement.querySelector('a[href="/guardian/reservas"]')).toBeNull();
+    expect(f.nativeElement.querySelector('a[href="/catalogo"]')).toBeNull();
     f.destroy();
   });
 

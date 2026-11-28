@@ -196,7 +196,7 @@
             name="memail"
             type="email"
             email
-            [readOnly]="es('CLIENTE')"
+            [readOnly]="es('CLIENTE', 'TRABAJADOR', 'RESTAURANTE')"
             [(ngModel)]="perfil().email"
             required
             maxlength="150"
@@ -224,7 +224,7 @@
           <label>Documento de identidad<input [value]="persona.numeroDocumento" readonly /></label>
         </ng-container>
       </div>
-      <p class="identity-help" *ngIf="es('CLIENTE')">
+      <p class="identity-help" *ngIf="es('CLIENTE', 'TRABAJADOR', 'RESTAURANTE')">
         El correo se utiliza para iniciar sesión y no se puede cambiar desde esta pantalla.
       </p>
       <p class="identity-help" *ngIf="es('CLIENTE') && perfil().persona">
@@ -260,8 +260,7 @@
   #editorDialog
   class="management-dialog"
   aria-labelledby="editor-title"
-  (cancel)="$event.preventDefault(); cerrarEditor()"
-  (click)="cerrarFondo($event)"
+  (cancel)="$event.preventDefault()"
 >
   <header class="modal-heading">
     <h2 id="editor-title">
@@ -494,7 +493,7 @@
   }
 </dialog>
 
-<dialog #detalleDialog class="usuario-dialog detalle-dialog" aria-labelledby="detalle-usuario-title" (cancel)="$event.preventDefault(); cerrarDetalle()" (click)="$event.target === detalleDialog && cerrarDetalle()">
+<dialog #detalleDialog class="usuario-dialog detalle-dialog" aria-labelledby="detalle-usuario-title" (cancel)="$event.preventDefault()">
   <div class="modal-content" *ngIf="detalleUsuario() as cuenta">
     <div class="modal-header"><h2 class="modal-title fs-5" id="detalle-usuario-title">Información de la cuenta</h2><button type="button" class="btn-close" aria-label="Cerrar información" (click)="cerrarDetalle()"></button></div>
     <div class="modal-body detalle-contenido">
@@ -536,7 +535,7 @@
     <div class="modal-footer"><button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button></div>
   </div>
 </dialog>
-<dialog #estadoDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="estado-usuario-title" (cancel)="$event.preventDefault(); cerrarEstado()" (click)="$event.target === estadoDialog && cerrarEstado()">
+<dialog #estadoDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="estado-usuario-title" (cancel)="$event.preventDefault()">
   <div class="modal-content" *ngIf="cuentaEstado() as cuenta">
     <div class="modal-header"><h2 class="modal-title fs-5" id="estado-usuario-title">{{ cuenta.activo ? 'Desactivar cuenta' : 'Reactivar cuenta' }}</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación" [disabled]="ocupado()" (click)="cerrarEstado()"></button></div>
     <div class="modal-body">
@@ -548,7 +547,7 @@
   </div>
 </dialog>
 
-<dialog #edicionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-edicion-title" (cancel)="$event.preventDefault(); cerrarConfirmacionEdicion()" (click)="$event.target === edicionDialog && cerrarConfirmacionEdicion()">
+<dialog #edicionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-edicion-title" (cancel)="$event.preventDefault()">
   <div class="modal-content" *ngIf="edicionPendiente() as pendiente">
     <div class="modal-header"><h2 class="modal-title fs-5" id="confirmar-edicion-title">Confirmar cambios</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación de edición" [disabled]="ocupado()" (click)="cerrarConfirmacionEdicion()"></button></div>
     <div class="modal-body">
@@ -560,7 +559,7 @@
   </div>
 </dialog>
 
-<dialog #accionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-accion-title" (cancel)="$event.preventDefault(); cancelarAccion()" (click)="$event.target === accionDialog && cancelarAccion()">
+<dialog #accionDialog class="usuario-dialog confirmacion-dialog" aria-labelledby="confirmar-accion-title" (cancel)="$event.preventDefault()">
   <div class="modal-content" *ngIf="confirmacion() as accion">
     <div class="modal-header"><h2 class="modal-title fs-5" id="confirmar-accion-title">{{ accion.titulo }}</h2><button type="button" class="btn-close" aria-label="Cerrar confirmación" (click)="cancelarAccion()"></button></div>
     <div class="modal-body"><p>{{ accion.mensaje }}</p></div>

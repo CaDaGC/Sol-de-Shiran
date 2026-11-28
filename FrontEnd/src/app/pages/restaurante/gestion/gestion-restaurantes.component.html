@@ -1,0 +1,16 @@
+<section class="modulo-restaurante"><header class="cabecera-modulo"><div><p class="eyebrow">Sol de Shirán · Gestión</p><h1>{{ titulo() }}</h1><p class="subtitulo">Administra los restaurantes del complejo y organiza su atención.</p></div></header>
+@if (error()) { <div class="alert alert-danger error-contenido" role="alert">{{ error() }} Se volverá a intentar automáticamente.</div> }
+@if ((cargando() || error()) && !locales().length) { @if (cargando()) { <p class="mensaje-carga" role="status">Cargando restaurantes…</p> } }
+@else if (seccion() === 'restaurantes') { <app-lista-restaurantes [locales]="locales()" (actualizado)="cargar()" /> }
+@else if (!locales().length) { <div class="vacio"><h2>Primero crea un restaurante</h2><p>Abre Restaurantes dentro de Gestión para registrar el primer local.</p></div> }
+@else {
+  <label class="form-label d-block restaurante-seleccion mb-4">Restaurante<select class="form-select mt-2" [ngModel]="idLocal()" (ngModelChange)="seleccionar($event)">@for (local of locales(); track local.idRestaurante) { <option [ngValue]="local.idRestaurante">{{ local.nombre }}{{ local.estado === 'INACTIVO' ? ' · Inactivo' : '' }}</option> }</select></label>
+  @for (local of localesSeleccionados(); track local.idRestaurante) {
+    @switch (seccion()) {
+      @case ('categorias-menu') { <app-categorias-menu [idRestaurante]="local.idRestaurante" [revisionCarga]="revisionCarga()" /> }
+      @case ('productos-menu') { <app-productos-menu [idRestaurante]="local.idRestaurante" [revisionCarga]="revisionCarga()" /> }
+      @case ('encargados') { <app-encargados-restaurante [idRestaurante]="local.idRestaurante" [revisionCarga]="revisionCarga()" /> }
+    }
+  }
+}
+</section>

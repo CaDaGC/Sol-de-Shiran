@@ -182,7 +182,5 @@ export class ReservaDetalleComponent implements OnInit {
     this.dialog().nativeElement.close();
     this.cerrar.emit();
   }
-  cerrarDesdeFondo(event: MouseEvent): void {
-    if (event.target === this.dialog().nativeElement) this.cerrarModal();
-  }
+
 }

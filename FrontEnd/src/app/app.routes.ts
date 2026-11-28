@@ -1,7 +1,7 @@
 import { PagoResultadoComponent } from './shared/pago-modal/pago-resultado.component';
 import { Routes } from '@angular/router';
 import { Component } from '@angular/core';
-import { adminGuard, catalogoGuard, cuentaGuard, pagoGuard } from './guards/acceso.guard';
+import { adminGuard, catalogoGuard, cuentaGuard, pagoGuard, restauranteGuard } from './guards/acceso.guard';
 import { BusinessLayoutComponent } from './layouts/business-layout/business-layout.component';
 import { DetalleCabanaComponent } from './pages/detalle-cabana/detalle-cabana.component';
 import { CatalogoComponent } from './pages/catalogo/catalogo.component';
@@ -43,6 +43,16 @@ export const routes: Routes = [
     path: '',
     component: BusinessLayoutComponent,
     children: [
+      {
+        path: 'restaurante/pedidos',
+        canActivate: [restauranteGuard],
+        loadComponent: () => import('./pages/restaurante/pedidos/panel-restaurante.component').then(m => m.PanelRestauranteComponent),
+      },
+      {
+        path: 'gestion/restaurantes',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./pages/restaurante/gestion/gestion-restaurantes.component').then(m => m.GestionRestaurantesComponent),
+      },
       {
         path: 'gestion',
         canActivate: [cuentaGuard],

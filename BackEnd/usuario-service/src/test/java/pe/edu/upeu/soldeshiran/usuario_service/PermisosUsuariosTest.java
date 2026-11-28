@@ -379,6 +379,24 @@ class PermisosUsuariosTest {
         .andExpect(jsonPath("$.persona.numeroDocumento").value("99999999"));
   }
 
+  @Test
+  void personalNoPuedeCambiarSuCorreoPeroAdminSiPuede() throws Exception {
+    for (String rol : new String[] {"TRABAJADOR", "RESTAURANTE"}) {
+      String original = rol.toLowerCase() + "-correo@test.local";
+      String nuevo = rol.toLowerCase() + "-nuevo@test.local";
+      long id = crear(rol, original);
+      String cuerpo = "{\"nombreUsuario\":\"alias-" + rol + "\",\"email\":\"" + nuevo + "\"}";
+      mvc.perform(put("/api/v1/usuarios/" + id).header("Authorization", token(id))
+          .contentType(MediaType.APPLICATION_JSON).content(cuerpo)).andExpect(status().isForbidden());
+      Assertions.assertEquals(original, usuarios.findById(id).orElseThrow().getEmail());
+      mvc.perform(put("/api/v1/usuarios/" + id).header("Authorization", token(id))
+          .contentType(MediaType.APPLICATION_JSON).content(cuerpo.replace(nuevo, original))).andExpect(status().isOk());
+      mvc.perform(put("/api/v1/usuarios/" + id).header("Authorization", token(admin))
+          .contentType(MediaType.APPLICATION_JSON).content(cuerpo)).andExpect(status().isOk());
+      Assertions.assertEquals(nuevo, usuarios.findById(id).orElseThrow().getEmail());
+    }
+  }
+
   private String token(long id) throws Exception {
     var encoder = java.util.Base64.getUrlEncoder().withoutPadding();
     String header =

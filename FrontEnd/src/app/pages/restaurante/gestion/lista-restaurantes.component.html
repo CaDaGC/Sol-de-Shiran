@@ -1,0 +1,32 @@
+<div class="barra-herramientas">
+  <label class="form-label">Buscar restaurante<input class="form-control mt-2" type="search" placeholder="Nombre del restaurante" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" /></label>
+  <label class="form-label">Estado<select class="form-select mt-2" [ngModel]="estado()" (ngModelChange)="estado.set($event)"><option value="">Todos</option><option value="ACTIVO">Activos</option><option value="INACTIVO">Inactivos</option></select></label>
+  <button class="btn btn-success align-self-end mb-2" type="button" (click)="abrir()"><app-icono nombre="nuevo" /> Crear restaurante</button>
+</div>
+@if (!filtrados().length) {
+  <div class="vacio"><h2>{{ locales().length ? 'Sin coincidencias' : 'Todavía no hay restaurantes' }}</h2><p>{{ locales().length ? 'Prueba con otro nombre o estado.' : 'Crea el primer restaurante para añadir su carta y asignar encargados.' }}</p></div>
+}
+<div class="row g-4">
+  @for (local of filtrados(); track local.idRestaurante) {
+    <div class="col-md-6 col-xl-4"><article class="card h-100 border rounded-4 overflow-hidden">
+      <img class="card-img-top" style="height:190px;object-fit:cover" [src]="foto(local)" [alt]="local.nombre" (error)="$any($event.target).src = '/images/restaurante-placeholder.svg'" />
+      <div class="card-body p-4 d-flex flex-column"><div class="d-flex justify-content-between gap-2 align-items-start"><h2 class="h4">{{ local.nombre }}</h2><span class="estado" [attr.data-estado]="local.estado">{{ local.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</span></div>
+        <p class="text-secondary small">{{ local.especialidad || 'Sin especialidad registrada' }}</p><p class="small mt-auto">{{ local.horarioAtencion }}</p>
+        <div class="acciones"><button type="button" class="btn btn-outline-secondary btn-sm" title="Editar restaurante" aria-label="Editar restaurante" (click)="abrir(local)"><app-icono nombre="editar" /></button>
+        <button type="button" class="btn btn-sm" [class.btn-outline-danger]="local.estado === 'ACTIVO'" [class.btn-outline-success]="local.estado === 'INACTIVO'" [disabled]="ocupado()" [attr.aria-label]="local.estado === 'ACTIVO' ? 'Desactivar restaurante' : 'Reactivar restaurante'" [title]="local.estado === 'ACTIVO' ? 'Desactivar restaurante' : 'Reactivar restaurante'" [appConfirmar]="local.estado === 'ACTIVO' ? '¿Deseas desactivar este restaurante? Dejará de recibir pedidos nuevos y conservará su historial.' : '¿Deseas reactivar este restaurante?'" (click)="cambiarEstado(local)"><app-icono [nombre]="local.estado === 'ACTIVO' ? 'basura' : 'activar'" /></button></div>
+      </div>
+    </article></div>
+  }
+</div>
+@if (editando()) {
+  <app-ventana-modal [titulo]="idEdicion ? 'Editar restaurante' : 'Crear restaurante'" [ocupado]="ocupado()" (cerrar)="cerrar()">
+    <form (ngSubmit)="guardar()" appConfirmar="¿Confirmas que deseas guardar los datos de este restaurante?">
+      <label class="form-label d-block">Nombre<input class="form-control mt-2" name="nombreRestaurante" [(ngModel)]="formulario.nombre" required maxlength="100" /></label>
+      <label class="form-label d-block mt-3">Especialidad<input class="form-control mt-2" name="especialidad" [(ngModel)]="formulario.especialidad" maxlength="150" /></label>
+      <app-imagen-menu-formulario class="d-block mt-3" etiqueta="Imagen del restaurante" [actual]="imagenActual" [ocupado]="ocupado()" (seleccion)="imagen = $event" />
+      <p class="nota mt-3">Horario común: 8:00 a. m. a 10:00 p. m., hora de Perú. </p>
+      @if (error()) { <div class="alert alert-danger" role="alert">{{ error() }}</div> }
+      <div class="acciones mt-4"><button class="btn btn-success" type="submit" [disabled]="ocupado()">{{ ocupado() ? 'Guardando…' : 'Guardar restaurante' }}</button><button class="btn btn-outline-secondary" type="button" [disabled]="ocupado()" (click)="cerrar()">Cancelar</button></div>
+    </form>
+  </app-ventana-modal>
+}

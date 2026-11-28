@@ -22,18 +22,19 @@ export interface AuthResponse {
 }
 
 export function normalizarRol(rol: string): string {
-  switch (rol.trim().toUpperCase()) {
+  switch (rol.trim().toUpperCase().replace(/^ROLE_/, '')) {
     case 'USUARIO': return 'CLIENTE';
     case 'GUARDIAN':
     case 'EMPLEADO': return 'TRABAJADOR';
     case 'DUEÑO':
     case 'PROPIETARIO': return 'DUENO';
-    default: return rol.trim().toUpperCase();
+    default: return rol.trim().toUpperCase().replace(/^ROLE_/, '');
   }
 }
 
 export function inicioPorRol(rol?: string): string {
   switch (normalizarRol(rol ?? '')) {
+    case 'RESTAURANTE': return '/restaurante/pedidos';
     case 'TRABAJADOR': return '/guardian/reservas';
     case 'CLIENTE': return '/mis-reservas';
     case 'DUENO': return '/inicio-dueno';

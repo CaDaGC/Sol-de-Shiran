@@ -16,7 +16,7 @@ import { imagenUrl } from '../../core/imagen-url';
 import { DisponibilidadNombreComponent } from '../../shared/disponibilidad-nombre/disponibilidad-nombre.component';
 import { Cuenta, Persona, nuevaPersona } from '../../models/usuario.model';
 
-type RolCuenta = 'CLIENTE' | 'TRABAJADOR' | 'DUENO' | 'ADMIN';
+type RolCuenta = 'CLIENTE' | 'TRABAJADOR' | 'DUENO' | 'ADMIN' | 'RESTAURANTE';
 
 interface FormularioCuenta {
   id: number | null;
@@ -122,9 +122,6 @@ export class GestionComponent implements OnInit {
     if (this.ocupado() || this.subiendoFotos()) return;
     this.editorDialog().nativeElement.close(); this.editor.set(null); this.limpiar();
   }
-  cerrarFondo(event: MouseEvent): void {
-    if (event.target === this.editorDialog().nativeElement) this.cerrarEditor();
-  }
   readonly perfil = signal<any>(null);
   readonly cabanas = signal<any[]>([]);
   readonly usuarios = signal<Cuenta[]>([]);
@@ -133,6 +130,7 @@ export class GestionComponent implements OnInit {
     { rol: 'TRABAJADOR', titulo: 'Trabajadores', singular: 'trabajador' },
     { rol: 'DUENO', titulo: 'Dueños', singular: 'dueño' },
     { rol: 'ADMIN', titulo: 'Administradores', singular: 'administrador' },
+    { rol: 'RESTAURANTE', titulo: 'Personal de restaurante', singular: 'encargado de restaurante' },
   ];
   readonly mensaje = signal('');
   readonly error = signal('');
@@ -558,7 +556,7 @@ export class GestionComponent implements OnInit {
         this.auth.actualizarPerfil(x);
         this.nombrePerfilOriginal.set(x.nombreUsuario || x.nombre);
         this.ocupado.set(false);
-        this.avisarExito('Perfil guardado. Inicia sesión nuevamente si cambiaste el correo.');
+        this.avisarExito('Perfil guardado correctamente.');
       },
       error: (e) => this.fallo(e),
     });
