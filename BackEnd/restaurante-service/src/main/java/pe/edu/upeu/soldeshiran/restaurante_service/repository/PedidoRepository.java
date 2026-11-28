@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pe.edu.upeu.soldeshiran.restaurante_service.model.Pedido;
+import java.time.LocalDateTime;
+import pe.edu.upeu.soldeshiran.restaurante_service.model.EstadoPedido;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
@@ -51,5 +53,56 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     Optional<Pedido> findByIdPedidoAndIdUsuario(
             Long idPedido,
             Long idUsuario
+    );
+
+    @EntityGraph(attributePaths = "restaurante")
+    @Query(
+            value = """
+                    select p
+                    from Pedido p
+                    where p.restaurante.idRestaurante = :idRestaurante
+                    and (:estado is null or p.estadoPedido = :estado)
+                    and (
+                        :cabana is null
+                        or lower(p.nombreCabana) like :cabana escape '!'
+                    )
+                    order by p.fechaPedido desc, p.idPedido desc
+                    """,
+            countQuery = """
+                    select count(p)
+                    from Pedido p
+                    where p.restaurante.idRestaurante = :idRestaurante
+                    and (:estado is null or p.estadoPedido = :estado)
+                    and (
+                        :cabana is null
+                        or lower(p.nombreCabana) like :cabana escape '!'
+                    )
+                    """
+    )
+    Page<Pedido> consultarPanelRestaurante(
+            @Param("idRestaurante") Long idRestaurante,
+            @Param("estado") EstadoPedido estado,
+            @Param("cabana") String cabana,
+            Pageable pageable
+    );
+
+    long countByRestauranteIdRestauranteAndEstadoPedido(
+            Long idRestaurante,
+            EstadoPedido estadoPedido
+    );
+
+    @Query("""
+            select count(p)
+            from Pedido p
+            where p.restaurante.idRestaurante = :idRestaurante
+            and p.estadoPedido = :estado
+            and p.fechaEntrega >= :desde
+            and p.fechaEntrega < :hasta
+            """)
+    long contarFinalizadosEnPeriodo(
+            @Param("idRestaurante") Long idRestaurante,
+            @Param("estado") EstadoPedido estado,
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta
     );
 }
