@@ -22,13 +22,20 @@ spring:
               - GET
               - POST
               - PUT
+              - PATCH
               - DELETE
               - OPTIONS
             allowedHeaders: "*"
             exposedHeaders:
               - Location
+              - Content-Disposition
             allowCredentials: true
       routes:
+        - id: restaurante-service
+          uri: lb://RESTAURANTE-SERVICE
+          predicates:
+            - Path=/api/restaurante,/api/restaurante/**,/api/pedidos,/api/pedidos/**
+
         - id: usuario-service
           uri: lb://USUARIO-SERVICE
           predicates:

@@ -15,7 +15,8 @@ import pe.edu.upeu.soldeshiran.restaurante_service.mapper.PanelPedidosMapper;
 import pe.edu.upeu.soldeshiran.restaurante_service.mapper.RestauranteMapper;
 import pe.edu.upeu.soldeshiran.restaurante_service.model.EstadoPedido;
 import pe.edu.upeu.soldeshiran.restaurante_service.repository.PedidoRepository;
-import pe.edu.upeu.soldeshiran.restaurante_service.repository.RestauranteTrabajadorRepository;
+import pe.edu.upeu.soldeshiran.restaurante_service.repository.RestauranteRepository;
+import pe.edu.upeu.soldeshiran.restaurante_service.security.AccesoRestaurante;
 import pe.edu.upeu.soldeshiran.restaurante_service.security.Actor;
 import pe.edu.upeu.soldeshiran.restaurante_service.service.PanelPedidosService;
 
@@ -25,7 +26,9 @@ import pe.edu.upeu.soldeshiran.restaurante_service.service.PanelPedidosService;
 public class PanelPedidosServiceImpl implements PanelPedidosService {
 
     private final PedidoRepository pedidos;
-    private final RestauranteTrabajadorRepository asignaciones;
+    private final java.time.Clock reloj;
+    private final RestauranteRepository restaurantes;
+    private final AccesoRestaurante acceso;
     private final PanelPedidosMapper pedidosMapper;
     private final RestauranteMapper restauranteMapper;
 
@@ -38,7 +41,7 @@ public class PanelPedidosServiceImpl implements PanelPedidosService {
             int tamanio,
             Actor actor) {
 
-        actor.exigir("RESTAURANTE");
+        actor.exigir("ADMIN", "RESTAURANTE");
 
         if (idRestaurante == null || idRestaurante <= 0) {
             throw new ResponseStatusException(
@@ -61,20 +64,9 @@ public class PanelPedidosServiceImpl implements PanelPedidosService {
             );
         }
 
-        var asignacion = asignaciones.findByIdUsuario(actor.id())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN,
-                        "Tu cuenta no tiene un restaurante asignado"
-                ));
-
-        var restaurante = asignacion.getRestaurante();
-
-        if (!restaurante.getIdRestaurante().equals(idRestaurante)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Solo puedes consultar los pedidos de tu restaurante"
-            );
-        }
+        acceso.exigir(idRestaurante, actor);
+        var restaurante = restaurantes.findById(idRestaurante).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Restaurante no encontrado"));
 
         var filtroCabana = prepararFiltroCabana(cabana);
 
@@ -85,7 +77,7 @@ public class PanelPedidosServiceImpl implements PanelPedidosService {
                 PageRequest.of(pagina, tamanio)
         );
 
-        var hoy = LocalDate.now(ZoneId.of("America/Lima"));
+        var hoy = LocalDate.now(reloj);
         var desde = hoy.atStartOfDay();
         var hasta = hoy.plusDays(1).atStartOfDay();
 

@@ -92,6 +92,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     || path.equals("/api/v1/usuarios/register")
                     || path.equals("/api/v1/pagos/webhook");
         }
+        if ("GET".equals(method) && path.matches("/api/restaurante/imagenes/(locales|productos)/[0-9]+")) return true;
         return "GET".equals(method) && (path.equals("/api/v1/usuarios/nombre-disponible")
                 || path.matches("/api/v1/resenas/cabanas/[0-9]+")
                 || path.matches("/api/v1/cabanas/fotos/[a-f0-9-]{36}")
@@ -115,8 +116,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean permitido(String rol, String path, String method) {
+        if (path.startsWith("/api/restaurante") || path.equals("/api/pedidos") || path.startsWith("/api/pedidos/")) {
+            if ("ADMIN".equals(rol)) return true;
+            if (path.startsWith("/api/restaurante/admin/")) return false;
+            if ("CLIENTE".equals(rol)) {
+                return ("POST".equals(method) && path.equals("/api/pedidos"))
+                    || ("GET".equals(method) && (path.startsWith("/api/restaurante/")
+                        && !path.startsWith("/api/restaurante/mi-local/")
+                        || path.matches("/api/pedidos/usuario/[0-9]+")
+                        || path.matches("/api/pedidos/[0-9]+")));
+            }
+            return "RESTAURANTE".equals(rol) && (
+                "GET".equals(method) && (path.startsWith("/api/restaurante/mi-local/")
+                    || path.startsWith("/api/pedidos/restaurante/")
+                    || path.matches("/api/restaurante/locales/[0-9]+/carta-operativa"))
+                || "PATCH".equals(method) && (path.matches("/api/pedidos/restaurante/[0-9]+/[0-9]+/estado")
+                    || path.matches("/api/restaurante/locales/[0-9]+/productos/[0-9]+/disponibilidad")));
+        }
         if (path.equals("/api/v1/usuarios/me/foto"))
-            return java.util.Set.of("ADMIN", "CLIENTE", "TRABAJADOR", "DUENO", "DUEÑO").contains(rol)
+            return java.util.Set.of("ADMIN", "CLIENTE", "TRABAJADOR", "DUENO", "DUEÑO", "RESTAURANTE").contains(rol)
                 && java.util.Set.of("GET", "PUT", "DELETE").contains(method);
         if (path.equals("/api/v1/reservas/mis-reservas")) return "CLIENTE".equals(rol);
         if (path.startsWith("/api/v1/resenas/")) return "CLIENTE".equals(rol);
@@ -134,6 +152,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         boolean cuenta = foto || path.equals("/api/v1/usuarios/me")
                 || path.matches("/api/v1/usuarios/[0-9]+(/password)?")
                     && ("GET".equals(method) || "PUT".equals(method));
+        if ("RESTAURANTE".equals(rol)) return cuenta;
         if ("TRABAJADOR".equals(rol)) {
             return cuenta || path.equals("/api/v1/reservas/panel")
                     || path.startsWith("/api/v1/reservas/panel/")

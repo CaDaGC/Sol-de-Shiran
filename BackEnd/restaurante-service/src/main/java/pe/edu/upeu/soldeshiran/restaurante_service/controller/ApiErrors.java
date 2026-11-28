@@ -13,6 +13,11 @@ import pe.edu.upeu.soldeshiran.restaurante_service.model.TipoCategoria;
 
 @RestControllerAdvice
 public class ApiErrors {
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ProblemDetail imagenGrande() {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "La imagen debe pesar como máximo 2 MB");
+    }
+
 
     @ExceptionHandler(ResponseStatusException.class)
     public ProblemDetail controlar(ResponseStatusException exception) {

@@ -30,6 +30,16 @@ import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
 @SpringBootTest(properties = "reservas.exportar-danos-cada-ms=3600000")
 class ReservasServiceApplicationTests {
 
+    @MockitoBean private pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva candado;
+    @MockitoBean private pe.edu.upeu.soldeshiran.reservas_service.client.RestauranteClient restaurante;
+
+    @org.junit.jupiter.api.BeforeEach
+    void coordinarPedidos() {
+        doAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(1)).get())
+            .when(candado).ejecutar(anyLong(), any());
+        when(restaurante.tienePendientes(anyLong(), anyString())).thenReturn(false);
+    }
+
     @Autowired private ObjectMapper mapper;
     @Autowired private ReservaRepository reservas;
     @Autowired private pe.edu.upeu.soldeshiran.reservas_service.service.ReservaExpirationScheduler limpieza;

@@ -8,7 +8,7 @@ import pe.edu.upeu.soldeshiran.almacenamiento.AlmacenamientoConfig;
 
 @SpringBootApplication
 @EnableFeignClients
-@Import(AlmacenamientoConfig.class)
+@Import({AlmacenamientoConfig.class, pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva.class})
 public class RestauranteServiceApplication {
 
 	public static void main(String[] args) {

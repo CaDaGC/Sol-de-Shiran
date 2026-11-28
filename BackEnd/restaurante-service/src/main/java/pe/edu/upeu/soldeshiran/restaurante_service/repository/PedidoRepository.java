@@ -15,6 +15,9 @@ import org.springframework.data.jpa.repository.Lock;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
+    boolean existsByIdReservaAndEstadoPedidoIn(Long idReserva,
+            java.util.Collection<EstadoPedido> estados);
+
     @EntityGraph(attributePaths = {
             "restaurante",
             "detalles",

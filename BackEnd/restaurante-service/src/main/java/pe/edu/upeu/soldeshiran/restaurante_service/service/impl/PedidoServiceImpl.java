@@ -42,18 +42,28 @@ public class PedidoServiceImpl implements PedidoService {
             new BigDecimal("99999999.99");
 
     private final PedidoRepository pedidos;
+    private final java.time.Clock reloj;
     private final RestauranteRepository restaurantes;
     private final ProductoMenuRepository productos;
     private final RestauranteConsultaService consultas;
     private final HorarioRestauranteService horarios;
     private final PedidoMapper mapper;
     private final ObjectMapper json;
+    private final pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva candado;
+    private final org.springframework.transaction.support.TransactionTemplate transacciones;
 
     @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public CreacionPedidoResultado crear(
             CrearPedidoRequest request,
             Actor actor) {
 
+        actor.exigir("CLIENTE");
+        return candado.ejecutar(request.idReserva(), () -> transacciones.execute(
+                estado -> crearInterno(request, actor)));
+    }
+
+    private CreacionPedidoResultado crearInterno(CrearPedidoRequest request, Actor actor) {
         actor.exigir("CLIENTE");
 
         String clave = request.claveSolicitud().toString();
@@ -143,7 +153,7 @@ public class PedidoServiceImpl implements PedidoService {
         pedido.setClaveSolicitud(clave);
         pedido.setHuellaSolicitud(huella);
         pedido.setFechaPedido(
-                LocalDateTime.now(ZoneId.of("America/Lima"))
+                LocalDateTime.now(reloj).truncatedTo(java.time.temporal.ChronoUnit.MICROS)
         );
 
         BigDecimal total = BigDecimal.ZERO;

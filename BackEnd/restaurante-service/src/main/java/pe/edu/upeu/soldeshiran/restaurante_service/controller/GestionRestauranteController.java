@@ -121,7 +121,7 @@ public class GestionRestauranteController {
         );
     }
 
-    @GetMapping("/admin/locales/{idRestaurante}/productos")
+    @GetMapping({"/admin/locales/{idRestaurante}/productos", "/locales/{idRestaurante}/carta-operativa"})
     public List<ProductoMenuResponse> listarProductos(
             @PathVariable("idRestaurante") Long idRestaurante,
             HttpServletRequest request) {

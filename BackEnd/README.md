@@ -14,6 +14,7 @@ Servicios Java 21 con Spring Boot, Spring Cloud, Spring Data JPA y MySQL. Cada m
 | reservas-service | 8085 | Disponibilidad, reservas temporales, códigos RSS, bloqueos y estancias. |
 | pagos-service | 8083 | Mercado Pago, pagos presenciales, conciliación y comprobantes PDF. |
 | resenas-service | 8090 | Valoraciones de una a cinco estrellas y comentarios por estancia. |
+| restaurante-service | 8091 | Restaurantes, carta, pedidos presenciales y comandas PDF. |
 | api-gateway | 8061 | Entrada de las API y controles de acceso. |
 
 Verifica los puertos en el Compose de la raíz antes de combinar ejecuciones del IDE y Docker.
@@ -37,7 +38,7 @@ Los tokens JWT identifican al usuario. Las credenciales internas autentican llam
 
 ## Almacenamiento
 
-`almacenamiento-compartido` contiene el adaptador local y el adaptador de Google Drive. Sus fuentes se compilan dentro de usuario-service, catalogo-service y pagos-service mediante Maven; no se ejecuta como servicio adicional.
+`almacenamiento-compartido` contiene el adaptador local y el adaptador de Google Drive. Sus fuentes se compilan dentro de usuario-service, catalogo-service, pagos-service, restaurante-service y reservas-service mediante Maven; no se ejecuta como servicio adicional.
 
 Las API mantienen sus rutas al cambiar de proveedor. La base de datos guarda la referencia del archivo y los metadatos. Durante la transición se admite leer fotografías antiguas de cabañas almacenadas en MySQL y archivos locales anteriores. La migración opcional verifica el contenido antes de cambiar la referencia.
 
@@ -51,7 +52,7 @@ La opción integrada se ejecuta desde la raíz:
 docker compose up -d --build
 ```
 
-Orden de dependencias: MySQL, Eureka, Config Server, usuarios, autenticación, catálogo, reservas, pagos, reseñas y Gateway. El frontend se inicia después del Gateway.
+Orden de dependencias: MySQL, Eureka, Config Server, usuarios, autenticación, catálogo, reservas, pagos, reseñas, restaurantes y Gateway. El frontend se inicia después del Gateway.
 
 Para ejecutar desde IntelliJ, importa el POM de cada módulo, selecciona JDK 21 y configura las variables del proceso. Spring Boot no carga automáticamente el archivo .env. Los nombres DNS de Compose, como mysql o config-server, deben adaptarse a localhost cuando el proceso corre fuera de Docker.
 
@@ -67,3 +68,11 @@ Desde el módulo correspondiente:
 ```
 
 También puede utilizarse Maven instalado con `mvn test`. Las pruebas de persistencia utilizan H2 en varios módulos. Revisa la configuración de cada prueba de contexto: algunas pueden consultar Config Server o Eureka si no se deshabilitan explícitamente. Los cambios de almacenamiento incluyen pruebas con HTTP simulado y comprobación de permisos y transacciones.
+
+## Restaurantes y pedidos
+
+El módulo expone `/api/restaurante/**` y `/api/pedidos/**` a través del Gateway. ADMIN gestiona locales, categorías, productos y asignaciones; RESTAURANTE atiende exclusivamente su local. CLIENTE crea pedidos para una estadía activa y consulta sus propios pedidos.
+
+El horario común es de 08:00 a 22:00, hora de Perú. Los pedidos se pagan al recibir mediante efectivo, Yape/Plin o tarjeta POS. La comanda se genera al aceptar y no acredita el cobro. Los PDF se almacenan en la carpeta indicada por `DRIVE_CARPETA_COMANDAS`; las fotos utilizan `DRIVE_CARPETA_RESTAURANTES` y `DRIVE_CARPETA_PRODUCTOS`.
+
+La creación de pedidos y el checkout se coordinan por reserva mediante un candado con nombre de MySQL. Ambos servicios deben conectarse a la misma instancia MySQL, como ocurre en Compose. El checkout se rechaza mientras haya pedidos nuevos, en preparación o en entrega; también se rechaza si no se puede comprobar esa condición.

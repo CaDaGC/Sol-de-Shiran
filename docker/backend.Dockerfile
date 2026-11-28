@@ -10,6 +10,6 @@ FROM eclipse-temurin:21-jre-jammy
 RUN apt-get update && apt-get install -y --no-install-recommends curl fontconfig && rm -rf /var/lib/apt/lists/*     && groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 WORKDIR /app
 COPY --from=build --chown=app:app /build/target/*.jar /app/app.jar
-RUN mkdir -p /app/uploads/perfiles /app/uploads/cabanas /app/uploads/comprobantes && chown -R app:app /app
+RUN mkdir -p /app/uploads/perfiles /app/uploads/cabanas /app/uploads/comprobantes /app/uploads/comandas /app/uploads/restaurantes /app/uploads/productos && chown -R app:app /app
 USER app
 ENTRYPOINT ["java","-jar","/app/app.jar"]

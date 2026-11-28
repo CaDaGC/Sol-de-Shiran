@@ -48,6 +48,9 @@ x-archivos: &archivos
   DRIVE_CARPETA_PERFILES: ${DRIVE_CARPETA_PERFILES:-1DJowW2-fEZ5gdKanuj4P9KufWwRQIO7_}
   DRIVE_CARPETA_CABANAS: ${DRIVE_CARPETA_CABANAS:-13KmUpK4yKJ0NMMjTOCJdyL4SQwcEs8XR}
   DRIVE_CARPETA_COMPROBANTES: ${DRIVE_CARPETA_COMPROBANTES:-1bS3PGBQ635RVoXGkplo8ZfP_FKNeErFj}
+  DRIVE_CARPETA_COMANDAS: ${DRIVE_CARPETA_COMANDAS:-1M5pbP76eqBPmhfS2l6Ukb9P7qc2YmuyB}
+  DRIVE_CARPETA_RESTAURANTES: ${DRIVE_CARPETA_RESTAURANTES:-}
+  DRIVE_CARPETA_PRODUCTOS: ${DRIVE_CARPETA_PRODUCTOS:-}
   ARCHIVOS_MIGRAR: ${ARCHIVOS_MIGRAR:-false}
 
 x-database: &database
@@ -261,6 +264,37 @@ services:
       SERVER_PORT: "8090"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_resenas?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
 
+  restaurante-service:
+    <<: *java
+    image: sol-de-shiran/restaurante-service:local
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      args:
+        MODULE: restaurante-service
+    ports:
+      - "127.0.0.1:8091:8091"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      resenas-service:
+        condition: service_healthy
+    environment:
+      <<: [*database, *archivos]
+      SERVER_PORT: "8091"
+      MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE: readinessState,db,discoveryComposite
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/db_restaurante?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima"
+      RESTAURANTE_HORARIO_APERTURA: "08:00"
+      RESTAURANTE_HORARIO_CIERRE: "22:00"
+      COMANDAS_DIRECTORIO: /app/uploads/comandas
+      RESTAURANTE_FOTOS_DIRECTORIO: /app/uploads/restaurantes
+      PRODUCTOS_FOTOS_DIRECTORIO: /app/uploads/productos
+    volumes:
+      - ./uploads/comandas:/app/uploads/comandas
+      - ./uploads/restaurantes:/app/uploads/restaurantes
+      - ./uploads/productos:/app/uploads/productos
+      - ./privado:/run/privado:ro
+
   api-gateway:
     <<: *java
     image: sol-de-shiran/api-gateway:local
@@ -272,7 +306,7 @@ services:
     ports:
       - "127.0.0.1:8061:8061"
     depends_on:
-      resenas-service:
+      restaurante-service:
         condition: service_healthy
     environment:
       <<: *domain

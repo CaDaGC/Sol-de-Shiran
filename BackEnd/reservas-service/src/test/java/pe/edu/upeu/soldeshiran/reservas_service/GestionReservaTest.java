@@ -20,13 +20,23 @@ class GestionReservaTest {
   GestionReservaService service;
   CatalogoClient catalogo;
   Reserva r;
+  pe.edu.upeu.soldeshiran.reservas_service.client.RestauranteClient restaurante;
   Actor admin = new Actor(1L, "ADMIN");
 
   @BeforeEach
   void setup() {
     repo = mock(ReservaRepository.class);
     catalogo = mock(CatalogoClient.class);
-    service = new GestionReservaService(repo, mock(BloqueoFechaRepository.class), catalogo);
+    var candado = mock(pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva.class);
+    var transacciones = mock(org.springframework.transaction.support.TransactionTemplate.class);
+    restaurante = mock(pe.edu.upeu.soldeshiran.reservas_service.client.RestauranteClient.class);
+    doAnswer(i -> ((java.util.function.Supplier<?>) i.getArgument(1)).get())
+        .when(candado).ejecutar(anyLong(), any());
+    doAnswer(i -> ((org.springframework.transaction.support.TransactionCallback<?>) i.getArgument(0))
+        .doInTransaction(mock(org.springframework.transaction.TransactionStatus.class)))
+        .when(transacciones).execute(any());
+    when(restaurante.tienePendientes(anyLong(), nullable(String.class))).thenReturn(false);
+    service = new GestionReservaService(repo, mock(BloqueoFechaRepository.class), candado, transacciones, restaurante, catalogo);
     r = new Reserva();
     r.setIdReserva(1L);
     r.setIdCabana(1L);
@@ -35,10 +45,31 @@ class GestionReservaTest {
     r.setMontoAdelanto(new BigDecimal("100"));
     r.setSaldoPendiente(new BigDecimal("100"));
     r.setExpiraEn(LocalDateTime.now().plusMinutes(15));
-    r.setFechaIngreso(LocalDate.now());
-    r.setFechaSalida(LocalDate.now().plusDays(2));
+    r.setFechaIngreso(LocalDate.now(ZoneId.of("America/Lima")));
+    r.setFechaSalida(LocalDate.now(ZoneId.of("America/Lima")).plusDays(2));
     when(repo.bloquearPorId(1L)).thenReturn(Optional.of(r));
     when(repo.findById(1L)).thenReturn(Optional.of(r));
+  }
+
+  @Test
+  void checkoutNoCierraConPedidosEnCurso() {
+    r.setEstadoReserva(EstadoReserva.OCUPADA);
+    when(restaurante.tienePendientes(anyLong(), nullable(String.class))).thenReturn(true);
+    assertEquals(409, assertThrows(ResponseStatusException.class,
+        () -> service.checkout(1L, null, admin)).getStatusCode().value());
+    assertEquals(EstadoReserva.OCUPADA, r.getEstadoReserva());
+    verify(repo, never()).saveAndFlush(any());
+    verifyNoInteractions(catalogo);
+  }
+
+  @Test
+  void checkoutNoCierraSiRestauranteNoResponde() {
+    r.setEstadoReserva(EstadoReserva.OCUPADA);
+    when(restaurante.tienePendientes(anyLong(), nullable(String.class))).thenReturn(null);
+    assertEquals(503, assertThrows(ResponseStatusException.class,
+        () -> service.checkout(1L, null, admin)).getStatusCode().value());
+    assertEquals(EstadoReserva.OCUPADA, r.getEstadoReserva());
+    verify(repo, never()).saveAndFlush(any());
   }
 
   @Test

@@ -23,6 +23,9 @@ import pe.edu.upeu.soldeshiran.reservas_service.security.Actor;
 public class GestionReservaService {
   private final ReservaRepository reservas;
   private final BloqueoFechaRepository bloqueos;
+  private final pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva candado;
+  private final org.springframework.transaction.support.TransactionTemplate transacciones;
+  private final pe.edu.upeu.soldeshiran.reservas_service.client.RestauranteClient restaurante;
   private final pe.edu.upeu.soldeshiran.reservas_service.client.CatalogoClient catalogo;
 
   @Value("${usuarios.url:http://localhost:8087}")
@@ -134,7 +137,14 @@ public class GestionReservaService {
     return r;
   }
 
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
   public Reserva checkout(Long id, CheckoutRequest request, Actor a) {
+    exigirOperativo(a);
+    return candado.ejecutar(id, () -> transacciones.execute(
+        estado -> checkoutInterno(id, request, a)));
+  }
+
+  private Reserva checkoutInterno(Long id, CheckoutRequest request, Actor a) {
     Reserva r = find(id, true);
     exigirOperativo(a);
 
@@ -152,6 +162,16 @@ public class GestionReservaService {
       conflicto("El check-out ya se registró con otros datos");
     }
     if (r.getEstadoReserva() != EstadoReserva.OCUPADA) conflicto("La reserva no está ocupada");
+
+    try {
+      Boolean pendientes = restaurante.tienePendientes(id, key);
+      if (pendientes == null) throw new ResponseStatusException(
+          HttpStatus.SERVICE_UNAVAILABLE, "No se pudo verificar los pedidos de la reserva");
+      if (pendientes) conflicto("Finaliza o rechaza los pedidos pendientes antes de registrar el check-out");
+    } catch (feign.FeignException exception) {
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+          "No se pudieron verificar los pedidos. El check-out no se ha registrado.", exception);
+    }
 
     r.setCheckout(new RegistroCheckout(
         LocalDateTime.now(ZoneId.of("America/Lima")).truncatedTo(ChronoUnit.SECONDS),

@@ -23,6 +23,10 @@ public class AlmacenamientoConfig {
                 entorno.getProperty("drive.carpeta.cabanas", ""),
                 CategoriaArchivo.COMPROBANTE,
                 entorno.getProperty("drive.carpeta.comprobantes", ""),
+                CategoriaArchivo.RESTAURANTE,
+                entorno.getProperty("drive.carpeta.restaurantes", ""),
+                CategoriaArchivo.PRODUCTO,
+                entorno.getProperty("drive.carpeta.productos", ""),
                 CategoriaArchivo.COMANDA,
                 entorno.getProperty("drive.carpeta.comandas", "")
         );
@@ -43,6 +47,10 @@ public class AlmacenamientoConfig {
                         "comprobantes.directorio",
                         "uploads/comprobantes"
                 )),
+                CategoriaArchivo.RESTAURANTE,
+                Path.of(entorno.getProperty("restaurantes.fotos.directorio", "uploads/restaurantes")),
+                CategoriaArchivo.PRODUCTO,
+                Path.of(entorno.getProperty("productos.fotos.directorio", "uploads/productos")),
                 CategoriaArchivo.COMANDA,
                 Path.of(entorno.getProperty(
                         "comandas.directorio",

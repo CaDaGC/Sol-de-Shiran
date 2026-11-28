@@ -21,7 +21,8 @@ El código del backend se organiza por responsabilidad: modelos, repositorios, D
 | Rol | Funciones |
 | --- | --- |
 | ADMIN | Administración de cabañas y usuarios, reservas, bloqueos de fechas y métricas administrativas. |
-| CLIENTE | Catálogo, reservas propias, adelantos, comprobantes, reseñas después de la estancia y perfil. |
+| CLIENTE | Catálogo, reservas propias, adelantos, comprobantes, reseñas, perfil y pedidos durante una estadía activa. |
+| RESTAURANTE | Consulta y atención de pedidos del restaurante asignado. |
 | TRABAJADOR | Consulta general de reservas, registro presencial de pago restante, check-in, check-out y daños opcionales, además de su perfil. |
 | DUENO | Rol conservado para el acceso a reportes por propiedad; la navegación web de reportes del dueño no está completada. |
 
@@ -50,7 +51,7 @@ Compose crea MySQL y conserva sus datos en un volumen. El puerto 3307 debe estar
 
 ## Archivos y configuración privada
 
-Se admite almacenamiento local o Google Drive para fotos y comprobantes. El valor predeterminado es local. Para Drive se necesita `ARCHIVOS_PROVEEDOR=drive`, una autorización OAuth guardada en `privado/google-drive.json` y los identificadores de las carpetas. Los PDF mantienen sus permisos de consulta; no se publican enlaces abiertos de Drive.
+Se admite almacenamiento local o Google Drive para fotos, comprobantes y comandas de restaurante. El valor predeterminado es local. Para Drive se necesita `ARCHIVOS_PROVEEDOR=drive`, una autorización OAuth guardada en `privado/google-drive.json` y los identificadores de las carpetas. Los PDF mantienen sus permisos de consulta; no se publican enlaces abiertos de Drive.
 
 Al reemplazar o retirar una foto de perfil, el archivo anterior se envía a la papelera después de confirmar el cambio en la cuenta. La papelera debe gestionarse periódicamente. Los comprobantes se conservan como historial.
 

@@ -36,6 +36,9 @@ public class Restaurante {
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
+    @Column(name = "imagen_archivo", length = 500)
+    private String imagenArchivo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EstadoRestaurante estado = EstadoRestaurante.ACTIVO;

@@ -81,6 +81,9 @@ public class ProductoMenu {
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
+    @Column(name = "imagen_archivo", length = 500)
+    private String imagenArchivo;
+
     @PrePersist
     @PreUpdate
     private void validarCategoriaRestaurante() {

@@ -30,6 +30,7 @@ import pe.edu.upeu.soldeshiran.restaurante_service.service.ComandaPdf;
 public class AtencionPedidoServiceImpl implements AtencionPedidoService {
 
     private final PedidoRepository pedidos;
+    private final java.time.Clock reloj;
     private final PedidoMapper mapper;
     private final AccesoRestaurante acceso;
     private final ComandaPdf pdf;
@@ -129,7 +130,7 @@ public class AtencionPedidoServiceImpl implements AtencionPedidoService {
             );
         }
 
-        var ahora = LocalDateTime.now(ZoneId.of("America/Lima"));
+        var ahora = LocalDateTime.now(reloj).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 
         if (destino == EstadoPedido.EN_PREPARACION) {
             pedido.setFechaAceptacion(ahora);

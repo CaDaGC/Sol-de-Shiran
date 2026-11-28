@@ -27,7 +27,8 @@ public class IdentityFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/")
+        return !(request.getServletPath().startsWith("/api/")
+                || request.getServletPath().startsWith("/internal/"))
                 || "OPTIONS".equals(request.getMethod());
     }
 
@@ -38,6 +39,23 @@ public class IdentityFilter extends OncePerRequestFilter {
             FilterChain chain)
             throws ServletException, IOException {
 
+        if (request.getServletPath().startsWith("/internal/")) {
+            String recibida = request.getHeader("X-Internal-Key");
+            if (claveInterna == null || claveInterna.isBlank() || recibida == null
+                    || !java.security.MessageDigest.isEqual(
+                        claveInterna.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                        recibida.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+                response.sendError(403, "Credencial interna inválida");
+                return;
+            }
+            chain.doFilter(request, response);
+            return;
+        }
+        if ("GET".equals(request.getMethod()) && request.getServletPath()
+                .matches("/api/restaurante/imagenes/(locales|productos)/[0-9]+")) {
+            chain.doFilter(request, response);
+            return;
+        }
         try {
             Long idUsuario = tokens.verificar(
                     request.getHeader(HttpHeaders.AUTHORIZATION)

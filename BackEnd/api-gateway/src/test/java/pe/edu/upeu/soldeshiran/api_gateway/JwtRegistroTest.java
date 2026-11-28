@@ -17,15 +17,15 @@ class JwtRegistroTest {
     var filtro = new JwtAuthenticationFilter(mock(JwtUtil.class));
     GatewayFilterChain chain = mock(GatewayFilterChain.class);
     when(chain.filter(any())).thenReturn(Mono.empty());
-    var registro = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/auth/register"));
+    var registro = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/usuarios/register"));
     filtro.filter(registro, chain).block();
     verify(chain).filter(any());
 
-    var otraRuta = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/auth/register/extra"));
+    var otraRuta = MockServerWebExchange.from(MockServerHttpRequest.post("/api/v1/usuarios/register/extra"));
     filtro.filter(otraRuta, chain).block();
     assertEquals(HttpStatus.UNAUTHORIZED, otraRuta.getResponse().getStatusCode());
 
-    var otroMetodo = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/auth/register"));
+    var otroMetodo = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/usuarios/register"));
     filtro.filter(otroMetodo, chain).block();
     assertEquals(HttpStatus.UNAUTHORIZED, otroMetodo.getResponse().getStatusCode());
     verifyNoMoreInteractions(chain);

@@ -183,7 +183,7 @@ public class GestionRestauranteServiceImpl
             Long idRestaurante,
             Actor actor) {
 
-        actor.exigir("ADMIN");
+        acceso.exigir(idRestaurante, actor);
         buscarRestaurante(idRestaurante);
 
         return productos.consultarCarta(idRestaurante, null, null)
@@ -218,7 +218,7 @@ public class GestionRestauranteServiceImpl
         producto.setPrecio(datos.precio());
         producto.setTiempoPreparacionMin(datos.tiempoPreparacionMin());
         producto.setDisponible(datos.disponible());
-        producto.setImagenUrl(normalizar(datos.imagenUrl()));
+        if (producto.getImagenArchivo() == null) producto.setImagenUrl(normalizar(datos.imagenUrl()));
 
         return cartaMapper.toResponse(
                 productos.saveAndFlush(producto)
@@ -313,7 +313,7 @@ public class GestionRestauranteServiceImpl
 
         restaurante.setNombre(datos.nombre().strip());
         restaurante.setEspecialidad(normalizar(datos.especialidad()));
-        restaurante.setImagenUrl(normalizar(datos.imagenUrl()));
+        if (restaurante.getImagenArchivo() == null) restaurante.setImagenUrl(normalizar(datos.imagenUrl()));
         restaurante.setHorarioAtencion(horarios.describirHorario());
     }
 

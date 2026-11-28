@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class HorarioRestauranteService {
+    private final java.time.Clock reloj;
 
     @Value("${restaurante.horario.apertura:}")
     private String aperturaConfigurada;
@@ -32,7 +34,7 @@ public class HorarioRestauranteService {
             throw sinConfiguracion();
         }
 
-        LocalTime ahora = LocalTime.now(ZoneId.of("America/Lima"));
+        LocalTime ahora = LocalTime.now(reloj);
 
         boolean permitido;
 

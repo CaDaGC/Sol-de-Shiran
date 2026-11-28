@@ -6,6 +6,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@org.springframework.context.annotation.Import(pe.edu.upeu.soldeshiran.coordinacion.CandadoReserva.class)
 @EnableFeignClients
 @EnableScheduling
 public class ReservasServiceApplication {
