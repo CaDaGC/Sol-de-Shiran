@@ -130,4 +130,10 @@ public class Pedido {
         detalles.add(detalle);
         detalle.setPedido(this);
     }
+
+    @Column(name = "fecha_aceptacion")
+    private LocalDateTime fechaAceptacion;
+
+    @Column(name = "comanda_referencia", length = 500)
+    private String comandaReferencia;
 }

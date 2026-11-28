@@ -48,4 +48,6 @@ public interface ProductoMenuRepository
             @Param("ids") List<Long> ids,
             @Param("idRestaurante") Long idRestaurante
     );
+
+    boolean existsByCategoriaIdCategoria(Long idCategoria);
 }

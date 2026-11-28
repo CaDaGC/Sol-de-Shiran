@@ -1,3 +1,8 @@
 package pe.edu.upeu.soldeshiran.almacenamiento;
 
-public enum CategoriaArchivo { PERFIL, CABANA, COMPROBANTE }
+public enum CategoriaArchivo {
+    PERFIL,
+    CABANA,
+    COMPROBANTE,
+    COMANDA
+}

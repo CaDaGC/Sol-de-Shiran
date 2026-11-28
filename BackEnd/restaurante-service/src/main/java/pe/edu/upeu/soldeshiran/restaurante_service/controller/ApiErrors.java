@@ -55,7 +55,7 @@ public class ApiErrors {
 
         var respuesta = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                "Revisa los datos del pedido."
+                "Revisa los campos de la solicitud."
         );
 
         respuesta.setProperty("errores", errores);
@@ -67,8 +67,7 @@ public class ApiErrors {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
                 "El contenido de la solicitud no es válido. "
-                        + "Revisa los identificadores, la clave de solicitud "
-                        + "y el método de pago: EFECTIVO, YAPE_PLIN o TARJETA_POS."
+                        + "Revisa los tipos de datos y los valores permitidos."
         );
     }
 

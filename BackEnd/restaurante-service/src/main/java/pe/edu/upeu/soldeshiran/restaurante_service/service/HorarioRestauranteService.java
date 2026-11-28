@@ -63,4 +63,19 @@ public class HorarioRestauranteService {
                 "El horario común de los restaurantes todavía no está configurado."
         );
     }
+
+    public String describirHorario() {
+        try {
+            var apertura = LocalTime.parse(aperturaConfigurada.trim());
+            var cierre = LocalTime.parse(cierreConfigurado.trim());
+
+            if (apertura.equals(cierre)) {
+                throw sinConfiguracion();
+            }
+
+            return apertura + " a " + cierre + " (hora de Perú)";
+        } catch (DateTimeParseException exception) {
+            throw sinConfiguracion();
+        }
+    }
 }

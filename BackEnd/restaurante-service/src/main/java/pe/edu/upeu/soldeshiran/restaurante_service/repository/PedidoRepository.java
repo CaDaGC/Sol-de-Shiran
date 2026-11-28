@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import pe.edu.upeu.soldeshiran.restaurante_service.model.Pedido;
 import java.time.LocalDateTime;
 import pe.edu.upeu.soldeshiran.restaurante_service.model.EstadoPedido;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
@@ -104,5 +106,25 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
             @Param("estado") EstadoPedido estado,
             @Param("desde") LocalDateTime desde,
             @Param("hasta") LocalDateTime hasta
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select p
+            from Pedido p
+            where p.idPedido = :idPedido
+            """)
+    Optional<Pedido> bloquearPorId(
+            @Param("idPedido") Long idPedido
+    );
+
+    @EntityGraph(attributePaths = {
+            "restaurante",
+            "detalles",
+            "detalles.producto"
+    })
+    Optional<Pedido> findByIdPedidoAndRestauranteIdRestaurante(
+            Long idPedido,
+            Long idRestaurante
     );
 }
